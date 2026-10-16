@@ -1,0 +1,1 @@
+{"version":"0.0.1","configurations":[{"name":"perf-calc","runtimeExecutable":"python","runtimeArgs":["server.py","8770"],"port":8770}]}

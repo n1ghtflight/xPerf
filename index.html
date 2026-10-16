@@ -1,0 +1,1261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flight Performance Calculator</title>
+<style>
+:root{
+  --bg:#0b1118;--panel:#121b26;--panel2:#18232f;--line:#24323f;--text:#e6edf3;--muted:#8b9bab;
+  --accent:#3fb8ff;--green:#38d39f;--amber:#ffb547;--red:#ff6b6b;--magenta:#e07bff;
+  --mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;letter-spacing:.3px}
+header .sub{color:var(--muted);font-size:12px}
+#status{margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)}
+main{display:grid;grid-template-columns:340px 1fr;gap:18px;padding:18px 24px;max-width:1500px;margin:0 auto}
+@media(max-width:900px){main{grid-template-columns:1fr;padding:16px}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:0 0 12px;font-weight:600}
+label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px}
+input,select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font:inherit}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:var(--muted)}
+.chk input{width:auto}
+.chk label{margin:0}
+button{margin-top:16px;width:100%;padding:11px;border:0;border-radius:7px;background:var(--accent);color:#04121d;font-weight:700;font-size:14px;cursor:pointer}
+button.sm{margin-top:0;width:auto;padding:8px 12px;font-size:12px}
+button:disabled{opacity:.5;cursor:wait}
+.hint{font-size:11px;color:var(--muted);margin-top:4px;min-height:14px}
+.badge{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);margin:2px 4px 0 0}
+.badge.ok{color:var(--green);border-color:#1f5a47}.badge.warn{color:var(--amber);border-color:#5a4520}
+#results{display:flex;flex-direction:column;gap:18px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.kpi .v{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:4px}
+.kpi .s{font-size:11px;color:var(--muted);margin-top:2px}
+.kpi.hl .v{color:var(--green)}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
+th{text-align:right;color:var(--muted);font-weight:500;font-family:system-ui,sans-serif;font-size:11px;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{text-align:right;padding:6px 8px;border-bottom:1px solid #1a2531;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+tr.best td{color:var(--green)}
+tr.sel td{background:#13283a}
+tr.dim td{color:#5d6b79}
+.tblwrap{overflow-x:auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid2>*{min-width:0}
+@media(max-width:1100px){.grid2{grid-template-columns:1fr}}
+.empty{color:var(--muted);text-align:center;padding:60px 20px}
+.note{font-size:12px;color:var(--muted)}
+.warnbox{background:#2a2112;border:1px solid #5a4520;color:var(--amber);border-radius:8px;padding:10px 12px;font-size:12px}
+svg text{font-family:var(--mono)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:12.5px}
+dt{color:var(--muted)}dd{margin:0;font-family:var(--mono);text-align:right}
+a{color:var(--accent)}
+#otherRow{display:none;gap:8px;margin-top:8px}
+.acpick{position:relative}
+.acpick input{padding-left:30px}
+.acicon{position:absolute;left:10px;top:7px;color:var(--muted);font-size:16px;pointer-events:none}
+.aclist{position:absolute;z-index:1000;left:0;right:0;top:calc(100% + 4px);max-height:min(420px,60vh);overflow:auto;background:var(--panel2);
+  border:1px solid var(--accent);border-radius:8px;box-shadow:0 10px 30px #0009;padding:4px 0}
+.acgrp{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);padding:8px 12px 3px;position:sticky;top:-4px;background:var(--panel2)}
+.acopt{display:flex;align-items:baseline;gap:8px;padding:6px 12px;cursor:pointer;font-size:13px}
+.acopt .acname{flex:1;min-width:0}
+.acopt .accode{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.acopt .acgroup{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.acopt.on,.acopt:hover{background:#1d3348}
+.acopt.cur .acname{color:var(--green)}
+.acopt.lookup{border-top:1px solid var(--line);color:var(--amber)}
+.acopt mark{background:none;color:var(--accent);font-weight:700}
+.acnone{padding:10px 12px;font-size:12.5px;color:var(--muted)}
+.navlog td{vertical-align:top}
+.awy{color:var(--magenta);font-family:var(--mono)}
+.awylbl{background:#2a1838;color:#e07bff;border:1px solid #5b3a73;border-radius:3px;font:10px ui-monospace,Consolas,monospace;padding:0 3px;white-space:nowrap}
+.routestr{font-family:var(--mono);font-size:13px;margin:-4px 0 10px;line-height:1.7}
+.morse{font-size:10px;color:var(--muted);letter-spacing:1px;white-space:nowrap}
+.fixes{margin-top:10px;font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.wxrow{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12.5px;margin-bottom:6px}
+.cat{color:#04121d;font-weight:700;border-radius:4px;padding:1px 7px;font-size:11px}
+.raw{font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-top:6px;white-space:pre-wrap;word-break:break-word}
+.raw.taf{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.chip{font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 8px;text-decoration:none;color:var(--text)}
+.chip.link:hover{border-color:var(--accent)}
+.chip.precision,.chipkey.precision{border-left:3px solid var(--green)}
+.chip.radio,.chipkey.radio{border-left:3px solid var(--amber)}
+.chip.gps,.chipkey.gps{border-left:3px solid var(--accent)}
+.chipkey{padding:0 6px;font-size:11px}
+.apcard h3{font-size:12px;color:var(--accent);margin:16px 0 6px;font-weight:600;letter-spacing:.5px}
+.apcard h3:first-of-type{margin-top:4px}
+#map{height:380px;border-radius:8px;margin-bottom:12px;background:#0b1118}
+.maplbl{background:#0b1118cc;color:#e6edf3;border:1px solid #24323f;font:11px ui-monospace,Consolas,monospace;box-shadow:none;padding:1px 4px}
+.leaflet-tooltip-right.maplbl::before,.leaflet-tooltip-top.maplbl::before{display:none}
+details summary{cursor:pointer;margin:6px 0}
+/* ---- sticky form column on wide screens */
+@media(min-width:901px){ main>section:first-child{position:sticky;top:12px;align-self:start;max-height:calc(100vh - 24px);overflow:auto;scrollbar-width:thin} }
+/* ---- FS2024 setup card */
+.setup{border-color:#2b4a63;background:linear-gradient(0deg,#121b26,#121b26)}
+.setuphead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.setuphead .title{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:.5px}
+.cats{display:flex;gap:6px;align-items:center}
+.cat{cursor:help}
+.catlbl{font-size:9px;font-weight:600;opacity:.75;text-transform:uppercase;letter-spacing:.5px}
+.rulesbadge{display:inline-block;font-family:var(--mono);font-size:13px;font-weight:700;border-radius:5px;padding:1px 8px;margin:0 8px 0 10px;vertical-align:3px;border:1.5px solid}
+.rulesbadge.vfr{color:var(--green);border-color:var(--green)}
+.rulesbadge.ifr{color:#7fd4ff;border-color:#7fd4ff}
+.ssec{font-size:12px;text-transform:uppercase;letter-spacing:1.1px;color:var(--accent);font-weight:600;margin:18px 0 8px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px}
+.sbox{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0}
+.sbox[data-copy]{cursor:copy}
+.sbox[data-copy]:hover,.chip[data-copy]:hover{border-color:var(--accent)}
+.sbox .k{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sbox .v{font-family:var(--mono);font-size:18px;font-weight:600;margin-top:2px;line-height:1.25;overflow-wrap:anywhere}
+.sbox .v small{font-size:12px;color:var(--muted);font-weight:400}
+.sbox .s{font-size:11.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.sbox.radio .v{color:#7fd4ff}
+.copied{outline:2px solid var(--green)!important}
+.good{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}
+table.legs td,table.navlog td{vertical-align:middle}
+@media(max-width:600px){ table.legs{font-size:12px} table.legs td,table.legs th{padding:5px 4px}
+  table.legs .obs{display:block} table.legs td:nth-child(5),table.legs th:nth-child(5){display:none}
+  table.legs td:first-child .note{display:none} .setuphead .title{font-size:18px} }
+table.legs th:nth-child(-n+2),table.navlog th:nth-child(-n+2){text-align:left}
+.hdg{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--text)}
+.freq{font-family:var(--mono);font-weight:700;color:#7fd4ff}
+.obs{font-family:var(--mono);color:var(--text)}
+.adf{font-size:10px;color:var(--amber);border:1px solid #5a4520;border-radius:3px;padding:0 3px}
+.tag{font-size:10px;font-weight:700;border-radius:3px;padding:0 4px;margin-left:4px;font-family:system-ui,sans-serif}
+.tag.toc{background:#1f5a47;color:#9ff0d0}.tag.tod{background:#4b2a5c;color:#f0c0ff}
+table.navlog .det{display:none} table.navlog.full .det{display:table-cell}
+/* ---- airport card summary strip */
+.apsum{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-bottom:6px}
+.apsum .cat{align-self:center;font-size:12px;padding:3px 9px}
+.sumchip{background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 10px;display:flex;flex-direction:column}
+.sumchip .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.sumchip .v{font-family:var(--mono);font-size:15px;font-weight:600}
+.sumchip.freq .v{color:#7fd4ff}
+details.sub{border-top:1px solid var(--line);margin-top:12px;padding-top:4px}
+details.sub>summary{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:.4px}
+.maplegend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11.5px;color:var(--muted);margin:-4px 0 6px}
+.maplegend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.maplegend i.ring{background:transparent;border:2px solid;width:7px;height:7px}
+.maplbl.apt{font-weight:700}
+.plnbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 2px}
+.plnbar button{margin:0;width:auto;padding:8px 14px}
+/* ---- result tabs */
+.tabs{position:sticky;top:0;z-index:500;display:flex;gap:6px;overflow-x:auto;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--line);scrollbar-width:thin}
+.tab{margin:0;width:auto;flex:1 0 auto;background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:7px 14px;text-align:left;
+  display:flex;flex-direction:column;gap:1px;font-weight:600;font-size:13px;cursor:pointer}
+.tab small{font-size:10.5px;font-weight:400;color:var(--muted);white-space:nowrap}
+.tab:hover{border-color:var(--accent);color:var(--text)}
+.tab.on{background:#13283a;border-color:var(--accent);color:var(--text)}
+.tab.on small{color:#9fc9e8}
+.tabpanel{display:flex;flex-direction:column;gap:18px}
+.tabpanel[hidden]{display:none}
+.srcnote>summary{font-size:12px;color:var(--accent);font-weight:600}
+/* ---- collapsible setup sections */
+details.ssecd{border-top:1px solid var(--line);margin-top:12px}
+details.ssecd:first-of-type{border-top:0}
+details.ssecd>summary.ssec{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;margin:12px 0 8px;user-select:none}
+details.ssecd>summary.ssec::-webkit-details-marker{display:none}
+details.ssecd>summary.ssec::before{content:"▸";color:var(--accent);font-size:13px;transition:transform .15s}
+details.ssecd[open]>summary.ssec::before{transform:rotate(90deg)}
+details.ssecd:not([open])>summary.ssec{margin-bottom:12px}
+.secbtns{display:flex;gap:6px}
+.secbtns button{margin:0;width:auto;padding:4px 9px;font-size:11px;background:transparent;color:var(--muted);border:1px solid var(--line)}
+.secbtns button:hover{color:var(--text);border-color:var(--accent)}
+/* ---- approach picker & plate viewer */
+.apprbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:-2px 0 10px}
+.apprbar label{margin:0;font-size:12px;color:var(--muted)}
+.apprbar select{width:auto;min-width:260px;max-width:100%;font-weight:600}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.pv{position:fixed;inset:0;z-index:2000;background:#000a;display:flex;align-items:center;justify-content:center;padding:2vh 2vw}
+.pv[hidden]{display:none}
+.pvbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;width:min(1100px,96vw);height:96vh;display:flex;flex-direction:column;overflow:hidden}
+.pvbar{display:flex;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}
+.pvbar select{flex:1;min-width:0}
+.pvbar a{white-space:nowrap;font-size:12.5px}
+.pvbox iframe{flex:1;border:0;background:#fff;width:100%}
+/* ---- charts */
+.cardhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.cardhead h2{margin:0}
+.nowinds .windlayer,.nowinds .windlegend{display:none}
+.windlegend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);margin-top:4px}
+.windlegend .wbar{width:160px;height:9px;border-radius:5px;background:linear-gradient(90deg,rgba(255,107,107,.65),rgba(255,107,107,.1) 45%,rgba(56,211,159,.1) 55%,rgba(56,211,159,.65))}
+.chartkey{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11.5px;color:var(--muted);margin:2px 0 10px}
+.chartkey i{display:inline-block;width:12px;height:4px;border-radius:2px;margin-right:6px;vertical-align:2px}
+.chartkey i.hatchkey{height:10px;width:12px;background:repeating-linear-gradient(45deg,#ffffff12 0 3px,transparent 3px 6px);vertical-align:-1px}
+.rwyviz{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;align-items:center;margin-bottom:6px}
+@media(max-width:700px){ .rwyviz{grid-template-columns:1fr} .rwydiag{justify-self:center} }
+.dbhead{font-size:12px;color:var(--muted);margin-bottom:6px}
+.dbrow{display:grid;grid-template-columns:52px minmax(0,1fr) 130px 64px;gap:8px;align-items:center;font-size:12.5px;padding:3px 0}
+.dbrow.best .dbid{color:var(--green)}
+.dbid{font-family:var(--mono);font-weight:700}
+.dbtrack{position:relative;height:14px}
+.dbavail{position:absolute;left:0;top:0;bottom:0;background:#2a3a4a;border-radius:3px}
+.dbreq{position:absolute;left:0;top:3px;bottom:3px;border-radius:2px;opacity:.9}
+.dbraw{position:absolute;top:0;bottom:0;width:2px;background:#e6edf3cc}
+.dbnum{font-family:var(--mono);font-size:12px;text-align:right}
+.dbwind{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.taftl{margin-top:6px}
+.tiles-dark{filter:invert(1) hue-rotate(190deg) brightness(.85) contrast(.9) saturate(.35)}
+.leaflet-control-layers{background:#121b26;color:#e6edf3;border:1px solid #24323f!important}
+.leaflet-tooltip-left.maplbl::before{display:none}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>✈ Flight Performance Calculator</h1>
+  <span class="sub">Optimum cruise level · climb / descent rates · TOC / TOD · live winds aloft · terrain</span>
+  <span id="status">loading data…</span>
+</header>
+<main>
+  <section>
+    <div class="card">
+      <h2>Flight</h2>
+      <label for="ac">Aircraft</label>
+      <select id="ac"><option>Loading aircraft…</option></select>
+      <div id="otherRow"><input id="otherCode" placeholder="ICAO type, e.g. C82R" maxlength="4"><button class="sm" id="otherGo">Load</button></div>
+      <div class="hint" id="acHint"></div>
+
+      <div class="row2">
+        <div><label for="dep">Departure</label><input id="dep" list="aptList" placeholder="ICAO / IATA / name" autocomplete="off"></div>
+        <div><label for="arr">Arrival</label><input id="arr" list="aptList" placeholder="ICAO / IATA / name" autocomplete="off"></div>
+      </div>
+      <datalist id="aptList"></datalist>
+      <div class="row2">
+        <div><label for="nav">Navigation</label>
+          <select id="nav"><option value="direct">Direct (GPS / pilotage)</option><option value="vor">VOR to VOR</option><option value="vorndb">VOR + NDB</option><option value="awy">Airways — US Victor / Jet</option><option value="pub">Published routes — FAA preferred / CDR</option></select></div>
+        <div><label for="alt">Alternate (optional)</label><input id="alt" list="aptList" placeholder="ICAO" autocomplete="off"></div>
+      </div>
+
+      <label for="etd">Departure time (UTC)</label>
+      <input id="etd" type="datetime-local">
+
+      <div class="row2">
+        <div><label for="load" id="loadLbl">Payload (kg)</label><input id="load" type="number" min="0" step="10"></div>
+        <div><label for="extra">Extra fuel (kg)</label><input id="extra" type="number" min="0" step="10" value="0"></div>
+      </div>
+
+      <div class="row2">
+        <div><label for="rules">Level rules</label>
+          <select id="rules"><option value="ifr">IFR (semicircular)</option><option value="vfr">VFR (+500 ft)</option><option value="any">Any level</option></select></div>
+        <div><label for="opt">Optimize for</label>
+          <select id="opt"><option value="fuel">Minimum fuel</option><option value="time">Minimum time</option></select></div>
+      </div>
+      <label for="fl">Cruise level</label>
+      <select id="fl"><option value="auto">Auto — optimum</option></select>
+      <div class="chk" id="oxyRow"><input type="checkbox" id="oxy" checked><label for="oxy">No supplemental O₂ — stay at or below 12,500 ft</label></div>
+
+      <button id="go" disabled>Calculate</button>
+      <div class="hint" id="err" style="color:var(--red)"></div>
+    </div>
+    <div class="card" style="margin-top:18px" id="acCard"><h2>Aircraft data</h2><div class="note">Select an aircraft.</div></div>
+  </section>
+
+  <section id="results">
+    <div class="card empty">Pick an aircraft, departure and arrival, then press <b>Calculate</b>.<br><br>
+      <span class="note">Examples: Cessna 172 · KPAO → KTRK &nbsp;·&nbsp; SR22 · EGTF → LFPN &nbsp;·&nbsp; A320 · EGLL → LFPG &nbsp;·&nbsp; B789 · KJFK → EGLL</span></div>
+  </section>
+</main>
+
+<script src="data.js?v=2026.10.16a"></script>
+<script src="nav.js?v=2026.10.16s"></script>
+<script src="acpicker.js?v=2026.10.16b"></script>
+<script src="charts.js?v=2026.10.16c"></script>
+<script src="pln.js?v=2026.10.16c"></script>
+<script>
+"use strict";
+/* ====================== Data sources ====================== */
+const OPENAP_MIRRORS = ["https://raw.githubusercontent.com/TUDelft-CNS-ATM/openap/master/openap/data/",
+  "https://cdn.jsdelivr.net/gh/TUDelft-CNS-ATM/openap@master/openap/data/"];
+// airliners & large jets: OpenAP (TU Delft)
+const AC_NAMES = {a19n:"Airbus A319neo",a20n:"Airbus A320neo",a21n:"Airbus A321neo",a318:"Airbus A318",a319:"Airbus A319",a320:"Airbus A320",a321:"Airbus A321",a332:"Airbus A330-200",a333:"Airbus A330-300",a343:"Airbus A340-300",a359:"Airbus A350-900",a388:"Airbus A380-800",b37m:"Boeing 737 MAX 7",b38m:"Boeing 737 MAX 8",b39m:"Boeing 737 MAX 9",b3xm:"Boeing 737 MAX 10",b734:"Boeing 737-400",b737:"Boeing 737-700",b738:"Boeing 737-800",b739:"Boeing 737-900",b744:"Boeing 747-400",b748:"Boeing 747-8",b752:"Boeing 757-200",b763:"Boeing 767-300",b772:"Boeing 777-200/200ER",b773:"Boeing 777-300",b77w:"Boeing 777-300ER",b788:"Boeing 787-8",b789:"Boeing 787-9",c550:"Cessna Citation II",crj9:"Bombardier CRJ900",e145:"Embraer ERJ145 (LR)",e170:"Embraer E170",e190:"Embraer E190 (LR)",e195:"Embraer E195 (LR)",e75l:"Embraer E175 (LR)",glf6:"Gulfstream G650 / 650ER"};
+const WRAP_CODES = new Set(["a319","a320","a321","a332","a333","a343","a388","b77w","b737","b738","b739","b744","b752","b763","b788","b789","e190"]);
+// general aviation & business aircraft: EUROCONTROL Aircraft Performance Database (live via server.py)
+const GA_GROUPS = {
+  "Single-engine piston": {C150:"Cessna 150",C152:"Cessna 152",C172:"Cessna 172 Skyhawk",C177:"Cessna 177 Cardinal",C182:"Cessna 182 Skylane",
+    C206:"Cessna 206 Stationair",C207:"Cessna 207 Skywagon",C210:"Cessna 210 Centurion",PA18:"Piper PA-18 Super Cub",PA38:"Piper PA-38 Tomahawk",
+    P28A:"Piper PA-28 Cherokee / Warrior / Archer",P28R:"Piper PA-28R Arrow",P28T:"Piper PA-28RT Turbo Arrow",PA32:"Piper PA-32 Cherokee Six",
+    P32R:"Piper PA-32R Lance / Saratoga",PA46:"Piper PA-46 Malibu / Mirage",SR20:"Cirrus SR20",SR22:"Cirrus SR22",DA40:"Diamond DA40",DA50:"Diamond DA50",
+    DR40:"Robin DR400",BE23:"Beechcraft Musketeer / Sundowner",BE33:"Beechcraft Debonair / Bonanza 33",BE36:"Beechcraft Bonanza A36",
+    M20P:"Mooney M20 (normally aspirated)",M20T:"Mooney M20 Turbo",TAMP:"Socata TB-9 Tampico",TOBA:"Socata TB-10 Tobago",TRIN:"Socata TB-20 Trinidad",
+    RALL:"Socata Rallye",G115:"Grob G115"},
+  "Multi-engine piston": {PA44:"Piper PA-44 Seminole",PA34:"Piper PA-34 Seneca",PA23:"Piper PA-23 Apache",PA27:"Piper PA-23 Aztec",PA31:"Piper PA-31 Navajo / Chieftain",
+    BE76:"Beechcraft Duchess",BE55:"Beechcraft Baron 55",BE58:"Beechcraft Baron 58",DA42:"Diamond DA42 Twin Star",C310:"Cessna 310",C337:"Cessna 337 Skymaster",
+    C340:"Cessna 340",C402:"Cessna 401 / 402",C414:"Cessna 414 Chancellor",C421:"Cessna 421 Golden Eagle"},
+  "Turboprop": {C208:"Cessna 208 Caravan",P46T:"Piper PA-46 Meridian",M600:"Piper M600",TBM7:"Daher TBM 700",TBM8:"Daher TBM 850",PC12:"Pilatus PC-12",
+    PC6T:"Pilatus PC-6 Porter",BE9L:"Beechcraft King Air 90",BE20:"Beechcraft King Air 200",B350:"Beechcraft King Air 350",C425:"Cessna 425 Conquest I",
+    C441:"Cessna 441 Conquest II",DHC6:"DHC-6 Twin Otter",P180:"Piaggio P.180 Avanti"},
+  "Business jet": {HDJT:"HondaJet",E50P:"Embraer Phenom 100",E55P:"Embraer Phenom 300",C525:"Cessna Citation CJ1",C25A:"Cessna Citation CJ2",C25B:"Cessna Citation CJ3",
+    C560:"Cessna Citation V / Ultra / Encore",C56X:"Cessna Citation Excel / XLS",C680:"Cessna Citation Sovereign",C750:"Cessna Citation X",PRM1:"Beechcraft Premier I",
+    LJ45:"Learjet 45",LJ60:"Learjet 60",CL30:"Bombardier Challenger 300",CL35:"Bombardier Challenger 350",CL60:"Bombardier Challenger 600 / 604",
+    F2TH:"Dassault Falcon 2000",F900:"Dassault Falcon 900",FA7X:"Dassault Falcon 7X",GLF4:"Gulfstream IV",GLF5:"Gulfstream V",GLEX:"Bombardier Global Express"}
+};
+const GA_NAMES = Object.assign({},...Object.values(GA_GROUPS));
+const PRESSURIZED = new Set(["PA46","P46T","M600","TBM7","TBM8","PC12","C340","C414","C421","C425","C441","BE9L","BE20","B350","P180"]);
+const TURBO_PISTON = new Set(["P28T","M20T","PA46","C340","C414","C421","PA31"]);   // types whose base model is turbocharged
+// engine ratings where the EUROCONTROL power-plant text is wrong or missing (per engine: hp/shp, or thrust in kN)
+const ENGINE_FIX = {C152:{hp:110}, P46T:{hp:500}, C25A:{kN:10.5}, PRM1:{kN:10.2}, CL60:{kN:40.7}};
+const PLEVELS = [1000,925,850,700,600,500,400,300,250,200,150];
+
+/* ====================== Constants / ISA ====================== */
+const KT=0.514444, FT=0.3048, NM=1852, G0=9.80665, R=287.05287, P0=101325, T0=288.15, RHO0=1.225, A0=340.294, FPM=0.00508, LBH=0.45359237/3600;
+// typical 1g buffet-onset CL for swept-wing transports, falling with Mach (assumption)
+const clBuffet = M => Math.min(0.85, Math.max(0.55, 0.80 - 1.5*(M-0.78)));
+const BUFFET_MARGIN = 1.3;
+
+function isaT(h){ return h<11000 ? T0-0.0065*h : 216.65; }
+function pressure(h){ return h<11000 ? P0*Math.pow(isaT(h)/T0,5.25588) : 22632.06*Math.exp(-(h-11000)/6341.62); }
+function atm(h,dT=0){ const p=pressure(h), T=isaT(h)+dT; return {p,T,rho:p/(R*T),a:Math.sqrt(1.4*R*T)}; }
+function pAlt(pPa){ return pPa>22632.06 ? (T0/0.0065)*(1-Math.pow(pPa/P0,1/5.25588)) : 11000-6341.62*Math.log(pPa/22632.06); }
+function cas2tas(cas,h,dT=0){ const {p,rho}=atm(h,dT); const qc=P0*(Math.pow(1+0.2*(cas/A0)**2,3.5)-1);
+  return Math.sqrt(7*p/rho*(Math.pow(qc/p+1,2/7)-1)); }
+function tas2cas(tas,h,dT=0){ const {p,rho}=atm(h,dT); const qc=p*(Math.pow(1+rho*tas*tas/(7*p),3.5)-1);
+  return Math.sqrt(7*P0/RHO0*(Math.pow(qc/P0+1,2/7)-1)); }
+function mach2tas(M,h,dT=0){ return M*atm(h,dT).a; }
+function tas2mach(tas,h,dT=0){ return tas/atm(h,dT).a; }
+const sigma=(hft,dT=0)=>atm(hft*FT,dT).rho/RHO0;
+
+/* ====================== Geo ====================== */
+const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
+function gcDist(a,b){ const dl=rad(b.lat-a.lat), dn=rad(b.lon-a.lon);
+  const x=Math.sin(dl/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dn/2)**2;
+  return 2*6371008.8*Math.asin(Math.min(1,Math.sqrt(x))); }
+function course(a,b){ const f1=rad(a.lat),f2=rad(b.lat),dl=rad(b.lon-a.lon);
+  return (deg(Math.atan2(Math.sin(dl)*Math.cos(f2),Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl)))+360)%360; }
+function gcInterp(a,b,f){ const d=gcDist(a,b)/6371008.8; if(d<1e-9) return {...a};
+  const A=Math.sin((1-f)*d)/Math.sin(d), B=Math.sin(f*d)/Math.sin(d);
+  const f1=rad(a.lat),l1=rad(a.lon),f2=rad(b.lat),l2=rad(b.lon);
+  const x=A*Math.cos(f1)*Math.cos(l1)+B*Math.cos(f2)*Math.cos(l2), y=A*Math.cos(f1)*Math.sin(l1)+B*Math.cos(f2)*Math.sin(l2), z=A*Math.sin(f1)+B*Math.sin(f2);
+  return {lat:deg(Math.atan2(z,Math.hypot(x,y))), lon:deg(Math.atan2(y,x))}; }
+
+/* ====================== Parsers ====================== */
+function yval(v){ if(v==="null"||v==="~") return null; if(v==="true") return true; if(v==="false") return false;
+  const n=Number(v); return v!=="" && !isNaN(n) ? n : v.replace(/^["']|["']$/g,""); }
+function parseYaml(txt){
+  const root={}, stack=[{ind:-1,obj:root}];
+  for(const raw of txt.split(/\r?\n/)){
+    const line=raw.replace(/\s+#.*$/,"").trimEnd(); if(!line.trim()||line.trim().startsWith("#")) continue;
+    const ind=line.match(/^ */)[0].length, s=line.trim();
+    while(stack.length>1 && ind<=stack[stack.length-1].ind) stack.pop();
+    const parent=stack[stack.length-1].obj;
+    if(s.startsWith("- ")){ parent[Object.keys(parent).length]=yval(s.slice(2).trim()); continue; }
+    const i=s.indexOf(":"); if(i<0) continue;
+    const k=s.slice(0,i).trim(), v=s.slice(i+1).trim();
+    if(v===""){ parent[k]={}; stack.push({ind,obj:parent[k]}); } else parent[k]=yval(v);
+  }
+  return root;
+}
+function parseCSV(txt){
+  const lines=txt.trim().split(/\r?\n/), head=splitCSV(lines[0]);
+  return lines.slice(1).map(l=>{ const c=splitCSV(l), o={}; head.forEach((h,i)=>o[h]=c[i]); return o; });
+}
+function splitCSV(l){ const out=[]; let cur="",q=false;
+  for(const ch of l){ if(ch==='"'){q=!q;} else if(ch===","&&!q){out.push(cur);cur="";} else cur+=ch; }
+  out.push(cur); return out; }
+function parseWrap(txt){
+  const o={};
+  for(const l of txt.trim().split(/\r?\n/).slice(1)){
+    const t=l.trim().split(/\s+/); if(t.length<7) continue;
+    const n=t.length; o[t[0]]={opt:+t[n-5],min:+t[n-4],max:+t[n-3]};
+  }
+  return o;
+}
+
+/* ====================== Loading ====================== */
+const cache={}; const DB={aircraft:{},airports:[],aptIndex:{},engines:[],fuelModels:[],wrapSyn:{},aptSource:""};
+async function fetchT(url,type,ms=15000){ const c=new AbortController(), t=setTimeout(()=>c.abort(),ms);
+  try{ const r=await fetch(url,{signal:c.signal}); const d=await r[type]().catch(()=>null);
+    if(!r.ok||d?.error===true) throw new Error(d?.reason||(typeof d?.error==="string"?d.error:`HTTP ${r.status}`)); return d; } finally{ clearTimeout(t); } }
+async function get(url,type="text",ms){ if(!cache[url]) cache[url]=fetchT(url,type,ms).catch(e=>{ delete cache[url]; throw e; }); return cache[url]; }
+async function openap(path){ let last; for(const base of OPENAP_MIRRORS){ try{ return await get(base+path); }catch(e){ last=e; } }
+  throw new Error(`could not fetch OpenAP ${path} (${last?.message||last})`); }
+const $=id=>document.getElementById(id);
+function status(t){ $("status").textContent=t; }
+const HAS_SERVER = XD.ok;      // python server.py or offline data packs (data.js)
+
+async function loadAirports(){
+  if(HAS_SERVER){ try{
+    const rows=await XD.airports();
+    DB.airports=rows.map(r=>({icao:r[0],name:r[1],lat:r[2],lon:r[3],alt:r[4],country:r[5],loc:r[6],iata:r[7],aliases:r[8]||[]}));
+    DB.aptSource="OurAirports"; return; }catch(e){ console.warn("OurAirports data failed, using OpenAP list",e); } }
+  DB.airports=parseCSV(await openap("nav/airports.csv")).map(a=>({icao:a.icao,lat:+a.lat,lon:+a.lon,alt:+a.alt||0,country:a.country,name:a.name,loc:a.location,iata:""}));
+  DB.aptSource="OpenAP";
+}
+
+async function init(){
+  try{
+    status("fetching OpenAP + airport databases…");
+    const [,eng,fm,ws]=await Promise.all([loadAirports(), openap("engine/engines.csv"), openap("fuel/fuel_models.csv"), openap("wrap/_synonym.csv")]);
+    DB.airports.forEach(a=>DB.aptIndex[a.icao.toUpperCase()]=a);
+    // IATA codes and former/alternate identifiers resolve only when they don't clash with a real ident
+    DB.airports.forEach(a=>[a.iata,...(a.aliases||[])].forEach(c=>{ if(c && !DB.aptIndex[c]) DB.aptIndex[c]=a; }));
+    DB.engines=parseCSV(eng); DB.fuelModels=parseCSV(fm);
+    parseCSV(ws).forEach(r=>DB.wrapSyn[r.orig]=r.new);
+    const sel=$("ac"); sel.innerHTML="";
+    const group=(label,entries)=>{ const g=document.createElement("optgroup"); g.label=label;
+      entries.forEach(([v,t])=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; g.appendChild(o); }); sel.appendChild(g); };
+    for(const [g,list] of Object.entries(GA_GROUPS)) group(g+" — EUROCONTROL", Object.entries(list).sort((a,b)=>a[1].localeCompare(b[1])).map(([c,n])=>["apm:"+c,`${n} (${c})`]));
+    group("Airliners & large jets — OpenAP", Object.keys(AC_NAMES).sort().map(c=>["oap:"+c,`${AC_NAMES[c]} (${c.toUpperCase()})`]));
+    group("Other", [["other","Other ICAO type (EUROCONTROL lookup)…"]]);
+    sel.value="apm:C172";
+    AcPicker.init();          // searchable picker over the list (restores the last aircraft used)
+    status(`${Object.keys(GA_NAMES).length+Object.keys(AC_NAMES).length} aircraft types · ${DB.airports.length.toLocaleString()} airports (${DB.aptSource})${XD.mode==="packs"?" · "+await XD.label().catch(()=>"offline packs unavailable"):""}`);
+    $("go").disabled=false; onAircraft();
+    window.NAV_READY=loadNavaids();
+  }catch(e){ status("data load failed"); $("err").textContent="Could not load data: "+e.message; }
+}
+
+/* ====================== OpenAP model (airliners) ====================== */
+function findEngine(name){ if(!name) return null; const N=String(name).toUpperCase();
+  return DB.engines.find(e=>e.name.toUpperCase()===N) || DB.engines.find(e=>e.name.toUpperCase().startsWith(N)) || null; }
+
+async function loadOpenapModel(code){
+  const ac=DB.aircraft[code]||(DB.aircraft[code]=parseYaml(await openap(`aircraft/${code}.yml`)));
+  const wrapCode=WRAP_CODES.has(code)?code:(DB.wrapSyn[code]||"a320");
+  const wrap=parseWrap(await openap(`wrap/${wrapCode}.txt`));
+  let eng=findEngine(ac.engine?.default)||findEngine(ac.fuel?.engine)||null;
+  if(eng){ eng={name:eng.name,max_thrust:+eng.max_thrust,ff_to:+eng.ff_to,bpr:+eng.bpr,cruise_thrust:+eng.cruise_thrust||0,cruise_mach:+eng.cruise_mach||0}; }
+  else { const n=ac.engine?.number||2; const mt=0.30*ac.mtow*G0/n;
+    eng={name:(ac.engine?.default||"generic")+" (estimated)",max_thrust:mt,ff_to:mt*1.0e-5,bpr:5,cruise_thrust:0,cruise_mach:0,estimated:true}; }
+  // OpenAP fuel model: ff = scale*(c1 - exp(-c2*(x*exp(c3*x) - ln(c1)/c2))) per engine, x = thrust ratio
+  let fm=DB.fuelModels.find(r=>r.typecode.toLowerCase()===code), scale=1;
+  if(!fm){ fm=DB.fuelModels.find(r=>r.typecode==="default"); scale=eng.ff_to; }
+  else if(fm.engine_type.toUpperCase()!==eng.name.toUpperCase()){ const ref=findEngine(fm.engine_type); if(ref) scale=eng.ff_to/+ref.ff_to; }
+  const c1=+fm.c1,c2=+fm.c2,c3=+fm.c3;
+  const polar={cd0:ac.drag?.cd0??0.02,k:ac.drag?.k??0.045};
+  const nEng=ac.engine?.number||2;
+  // speed schedule: own ADS-B stats when available, else the type's published cruise Mach; never above MMO / VMO
+  const own=wrapCode===code, mmo=ac.mmo||0.82, vmoMs=(ac.vmo||(mmo>0.85?340:320))*KT;
+  const cruiseMach=Math.min(own?(wrap.cr_v_mach_mean?.opt||ac.cruise?.mach):(ac.cruise?.mach||wrap.cr_v_mach_mean?.opt)||0.78, mmo-0.01);
+  const capM=k=>{ if(wrap[k]) wrap[k].opt=Math.min(wrap[k].opt, own?mmo-0.01:cruiseMach); };
+  const capV=k=>{ if(wrap[k]) wrap[k].opt=Math.min(wrap[k].opt, vmoMs-10*KT); };
+  ["cl_v_mach_const","de_v_mach_const"].forEach(capM); ["cl_v_cas_const","de_v_cas_const"].forEach(capV);
+  const m={kind:"openap",code,id:"oap:"+code,label:AC_NAMES[code],ac,wrap,wrapCode,eng,polar,nEng,cruiseMach,
+    ceilFt:(ac.ceiling||12500)/FT, mtow:ac.mtow, pressurized:true, fuelDensity:3.03, fuelName:"Jet A",
+    defaultLoad:Math.round((ac.pax?.max||ac.pax?.high||100)*0.85*95/100)*100, loadLabel:"Payload (kg)", defaultRules:"ifr",
+    climbOrder:["ic","lo","cas","mach"], descOrder:["mach","cas","lo","app"],
+    climbLabels:{ic:"Initial climb",lo:"Climb ≤ FL100 (250 kt)",cas:`Const CAS ${kt(wrap.cl_v_cas_const.opt)} kt`,mach:`Const Mach ${wrap.cl_v_mach_const.opt}`},
+    descLabels:{mach:`Const Mach ${wrap.de_v_mach_const.opt}`,cas:`Const CAS ${kt(wrap.de_v_cas_const.opt)} kt`,lo:"Decelerating descent",app:`Final approach ${wrap.fa_agl.opt}°`},
+    fuelFlow(T){ let x=(Math.max(T,0)/nEng)/eng.max_thrust;
+      x=(Math.log(1+Math.exp(50*(x-0.03)))-Math.log(1+Math.exp(45*(x-1.2))))/Math.log(1+Math.exp(50))+0.03;
+      return scale*(c1-Math.exp(-c2*(x*Math.exp(c3*x)-Math.log(c1)/c2)))*nEng; } };
+  m.cruiseState=(mass,hft,dT)=>oapCruiseState(m,mass,hft,dT);
+  m.simulate=(dep,arr,ft,load,extra,wxf,total)=>oapSimulate(m,dep,arr,ft,ac.oew+load,extra,wxf,total);
+  m.limits=(mass,ft,dT)=>oapLimits(m,mass,ft,dT);
+  return m;
+}
+
+function drag(m,mass,tas,h,dT,vs=0){
+  const ac=m.ac,{rho,a}=atm(h,dT),S=ac.wing.area, qS=Math.max(0.5*rho*tas*tas*S,1e-3);
+  const gam=Math.atan2(vs,tas), cl=mass*G0*Math.cos(gam)/qS;
+  // wave drag (Gur et al. 2010, as in OpenAP)
+  const sw=rad(ac.wing.sweep||25), tc=ac.wing["t/c"]||0.12, M=tas/a;
+  const mcrit=0.95/Math.cos(sw)-tc/Math.cos(sw)**2-0.1*cl/Math.cos(sw)**3-0.108;
+  const cdw=20*Math.max(M-mcrit,0)**4;
+  return {D:(m.polar.cd0+cdw+m.polar.k*cl*cl)*qS, cl};
+}
+// OpenAP / Bartel & Young max climb thrust (N, total)
+function climbThrust(m,tas,hft,roc,dT){
+  const h=hft*FT, crAlt=(m.ac.cruise?.height||11000), crM=m.eng.cruise_mach>0?m.eng.cruise_mach:m.cruiseMach;
+  const Fcr=(m.eng.cruise_thrust>0?m.eng.cruise_thrust:0.2*m.eng.max_thrust+890)*m.nEng;
+  const mach=tas2mach(tas,h,dT), vcas=tas2cas(tas,h,dT), P=pressure(h), P10=pressure(10000*FT), Pcr=pressure(crAlt);
+  const vref=tas2cas(mach2tas(crM,crAlt,dT),crAlt,dT), vr=vcas/vref; roc=Math.abs(roc);
+  let ratio;
+  if(hft>30000){ const d=-0.4204*(mach/crM)+1.0824; ratio=d*Math.log(P/Pcr)+Math.pow(mach/crM,-0.11); }
+  else{ const a=Math.pow(vr,-0.1), n=2.667e-5*roc+0.8633;
+    if(hft>10000) ratio=a*Math.pow(P/Pcr,-0.355*vr+n);
+    else{ const F10=Fcr*a*Math.pow(P10/Pcr,-0.355*vr+n), mm=-1.2043e-1*vr-8.8889e-9*roc*roc+2.4444e-5*roc+4.7379e-1;
+      ratio=mm*(P/Pcr)+(F10/Fcr-mm*(P10/Pcr)); } }
+  return Math.max(ratio,0)*Fcr;
+}
+
+const STEP_FT=250;
+function oapClimb(m,dep,crzFt,tow,wxf,total){
+  const W=m.wrap; let h=dep.alt, d=0,t=0,fuel=0,mass=tow; const pts=[{d:0,h,t:0,fuel:0}], ph={}, bands=[];
+  while(h<crzFt-1){
+    const hn=Math.min(h+STEP_FT,crzFt), hm=(h+hn)/2, agl=hm-dep.alt, w=wxf(d/total,hm);
+    const casC=W.cl_v_cas_const.opt, machC=W.cl_v_mach_const.opt;
+    let cas = agl<1500 ? W.ic_va_avg.opt : (hm<10000 ? Math.min(250*KT,casC) : casC);
+    let tas=cas2tas(cas,hm*FT,w.dT), machLtd=false;
+    if(tas2mach(tas,hm*FT,w.dT)>machC){ tas=mach2tas(machC,hm*FT,w.dT); machLtd=true; }
+    let key, vsW;
+    if(agl<1500){ key="ic"; vsW=W.ic_vs_avg.opt; }
+    else if(machLtd){ key="mach"; vsW=W.cl_vs_avg_mach_const.opt; }
+    else if(hm<10000){ key="lo"; vsW=W.cl_vs_avg_pre_cas.opt; }
+    else { key="cas"; vsW=W.cl_vs_avg_cas_const.opt; }
+    // observed (ADS-B) climb rate, corrected for weight relative to a mid-weight reference using excess thrust
+    const Tmax=climbThrust(m,tas,hm,vsW/FPM,w.dT), D=drag(m,mass,tas,hm*FT,w.dT,vsW).D;
+    const mref=(m.ac.oew+m.ac.mtow)/2, Dref=drag(m,mref,tas,hm*FT,w.dT,vsW).D;
+    const corr=Tmax>Dref ? ((Tmax-D)/mass)/((Tmax-Dref)/mref) : 1;
+    const k=Math.min(Math.max(corr,0.35),1.3), vs=Math.max(vsW*k,0.5);
+    const T=D+mass*G0*vs/tas;
+    const dt=(hn-h)*FT/vs, gs=Math.max(tas+w.tail,30), dd=gs*dt, ff=m.fuelFlow(T);
+    mass-=ff*dt; fuel+=ff*dt; t+=dt; d+=dd; h=hn; pts.push({d,h,t,fuel});
+    addPhase(ph,key,hm,hn,dt,dd,ff,tas);
+    bands.push({h:hm,vs,tas,cas:tas2cas(tas,hm*FT,w.dT),mach:tas2mach(tas,hm*FT,w.dT),gs,tail:w.tail,ff,limited:k<0.75});
+  }
+  return {d,t,fuel,mass,pts,ph,bands};
+}
+function addPhase(ph,key,hm,hn,dt,dd,ff,tas){
+  const P=ph[key]||(ph[key]={from:hm-STEP_FT/2,to:hn,t:0,d:0,fuel:0,tasSum:0,n:0});
+  P.to=hn; P.t+=dt; P.d+=dd; P.fuel+=ff*dt; P.tasSum+=tas; P.n++;
+}
+// integrates from touchdown upward (backwards in time) so TOD distance is measured from the arrival airport
+function oapDescent(m,arr,crzFt,landMass,wxf,total){
+  const W=m.wrap, gpa=rad(W.fa_agl.opt||3); let h=arr.alt,d=0,t=0,fuel=0,mass=landMass; const pts=[{d:0,h,t:0,fuel:0}], ph={}, bands=[];
+  while(h<crzFt-1){
+    const hn=Math.min(h+STEP_FT,crzFt), hm=(h+hn)/2, agl=hm-arr.alt, w=wxf(1-d/total,hm);
+    const casC=W.de_v_cas_const.opt, machC=W.de_v_mach_const.opt, vApp=W.fa_va_avg.opt;
+    let cas = agl<3000 ? vApp : agl<6000 ? vApp+(Math.min(250*KT,casC)-vApp)*(agl-3000)/3000 : (hm<10000?Math.min(250*KT,casC):casC);
+    let tas=cas2tas(cas,hm*FT,w.dT), machLtd=false;
+    if(tas2mach(tas,hm*FT,w.dT)>machC){ tas=mach2tas(machC,hm*FT,w.dT); machLtd=true; }
+    const gs=Math.max(tas+w.tail,30);
+    let key,vs;
+    if(agl<3000){ key="app"; vs=gs*Math.tan(gpa); }
+    else if(machLtd){ key="mach"; vs=-W.de_vs_avg_mach_const.opt; }
+    else if(hm*FT>W.de_h_cas_const.opt*1000){ key="cas"; vs=-W.de_vs_avg_cas_const.opt; }
+    else { key="lo"; vs=-W.de_vs_avg_after_cas.opt; }
+    const dt=(hn-h)*FT/vs, dd=gs*dt, D=drag(m,mass,tas,hm*FT,w.dT,-vs).D;
+    const ff=m.fuelFlow(Math.max(D-mass*G0*vs/tas,0));
+    mass+=ff*dt; fuel+=ff*dt; t+=dt; d+=dd; h=hn; pts.push({d,h,t,fuel});
+    addPhase(ph,key,hm,hn,dt,dd,ff,tas);
+    bands.push({h:hm,vs:-vs,tas,cas:tas2cas(tas,hm*FT,w.dT),mach:tas2mach(tas,hm*FT,w.dT),gs,tail:w.tail,ff});
+  }
+  return {d,t,fuel,pts,ph,bands};
+}
+function oapCruiseState(m,mass,hft,dT){
+  const h=hft*FT; let tas=mach2tas(m.cruiseMach,h,dT);
+  const vmo=(m.ac.vmo||340)*KT-10*KT, capCas=hft<10000?250*KT:vmo;
+  if(tas2cas(tas,h,dT)>capCas) tas=cas2tas(capCas,h,dT);
+  const {D,cl}=drag(m,mass,tas,h,dT);
+  return {tas,D,cl,ff:m.fuelFlow(D),mach:tas2mach(tas,h,dT)};
+}
+function simCruise(m,mass,crzFt,d0,d1,wxf,total){
+  let d=d0,t=0,fuel=0; const step=10*NM; let tailSum=0,tasSum=0,n=0,dTsum=0,ffSum=0;
+  while(d<d1-1){ const dd=Math.min(step,d1-d), w=wxf((d+dd/2)/total,crzFt), s=m.cruiseState(mass,crzFt,w.dT);
+    const gs=Math.max(s.tas+w.tail,20), dt=dd/gs; fuel+=s.ff*dt; mass-=s.ff*dt; t+=dt; d+=dd;
+    tailSum+=w.tail*dd; tasSum+=s.tas*dd; dTsum+=w.dT*dd; ffSum+=s.ff*dd; n+=dd; }
+  const w=wxf(0.5,crzFt), s=m.cruiseState(mass,crzFt,w.dT);
+  return {t,fuel,mass,dist:d1-d0,tail:n?tailSum/n:w.tail,tas:n?tasSum/n:s.tas,dT:n?dTsum/n:w.dT,ff:n?ffSum/n:s.ff};
+}
+function oapHoldFuel(m,mass,arr){ const h=(arr.alt+1500)*FT; const tas=cas2tas(210*KT,h,0); return m.fuelFlow(drag(m,mass,tas,h,0).D)*1800; }
+
+function oapSimulate(m,dep,arr,crzFt,zfw,extra,wxf,total){
+  let tow=Math.min(zfw+0.08*zfw+extra,m.ac.mtow*1.2), res=null;
+  for(let it=0;it<4;it++){
+    const cl=oapClimb(m,dep,crzFt,tow,wxf,total);
+    let landGuess=tow-cl.fuel-0.03*tow, ds=null, cr=null;
+    for(let j=0;j<2;j++){
+      ds=oapDescent(m,arr,crzFt,landGuess,wxf,total);
+      if(cl.d+ds.d>total) return {feasible:false,ft:crzFt,climb:cl,descent:ds};
+      cr=simCruise(m,cl.mass,crzFt,cl.d,total-ds.d,wxf,total);
+      landGuess=cr.mass-ds.fuel;
+    }
+    const trip=cl.fuel+cr.fuel+ds.fuel, land=tow-trip;
+    const reserve=0.05*trip+oapHoldFuel(m,land,arr);
+    const newTow=zfw+trip+reserve+extra;
+    res={feasible:true,ft:crzFt,tow,climb:cl,cruise:cr,descent:ds,trip,reserve,land,time:cl.t+cr.t+ds.t,block:trip+reserve+extra,
+      reserveNote:"5% trip + 30 min hold"};
+    if(Math.abs(newTow-tow)<20) break; tow=newTow;
+  }
+  return res;
+}
+// level limits at a given weight: ceiling, 1.3g buffet margin, thrust (when engine cruise data exists)
+function oapLimits(m,mass,hft,dT=0){
+  const s=oapCruiseState(m,mass,hft,dT);
+  const Tmax=climbThrust(m,s.tas,hft,300,dT), resid=(Tmax-s.D)*s.tas/(mass*G0)/FPM;
+  return {buffetOK:s.cl*BUFFET_MARGIN<=clBuffet(s.mach), thrustOK:m.eng.cruise_thrust>0?resid>0:true,
+    ceilOK:hft<=m.ceilFt+1, resid, cl:s.cl, s};
+}
+function maxLevel(m,mass,dT=0){ let best=0; for(let ft=10000;ft<=51000;ft+=1000){ const L=m.limits(mass,ft,dT); if(L.buffetOK&&L.thrustOK&&L.ceilOK) best=ft; } return best; }
+// max specific range (distance per kg) in still air, within the level limits
+function aeroOptimum(m,mass,dT=0){ let best=null; for(let ft=10000;ft<=51000;ft+=1000){ const L=m.limits(mass,ft,dT);
+    if(!(L.buffetOK&&L.thrustOK&&L.ceilOK)) continue; const sr=L.s.tas/L.s.ff; if(!best||sr>best.sr) best={ft,sr}; } return best?best.ft:null; }
+
+/* ====================== EUROCONTROL APM model (GA, turboprops, bizjets) ====================== */
+let SNAPSHOT=null;
+async function apmData(icao){
+  if(HAS_SERVER){ try{ const d=await XD.apm(icao); return {d,live:true}; }
+    catch(e){ if(/not found/i.test(e.message)) throw e; console.warn("live EUROCONTROL fetch failed",e); } }
+  if(!SNAPSHOT){ try{ SNAPSHOT=await get("apm_snapshot.json","json"); }catch(e){ SNAPSHOT={}; } }
+  if(SNAPSHOT[icao]) return {d:SNAPSHOT[icao],live:false};
+  throw new Error(HAS_SERVER?`${icao}: not available from EUROCONTROL`:`${icao}: start the app with "python server.py" to fetch EUROCONTROL data`);
+}
+// engine size from the EUROCONTROL power-plant text ("2 x 300 HP …", "1.200 SHP", "8.45 kN", "3,400 lbf")
+function parsePower(txt,kind){
+  txt=String(txt||"").replace(/(\d)\.(\d{3})(?!\d)/g,"$1$2");
+  const all=(re)=>[...txt.matchAll(re)].map(m=>parseFloat(m[1].replace(/,/g,"")));
+  // the text often lists several variants (e.g. C172: 145…195 hp) — use the median variant
+  const med=a=>{ const s=[...a].sort((x,y)=>x-y); return s[Math.floor((s.length-1)/2)]; };
+  if(kind==="J"){ const kn=[...txt.matchAll(/(\d+(?:[.,]\d+)?)\s*kN/gi)].map(m=>parseFloat(m[1].replace(",",".")));
+    if(kn.length) return {thrustN:med(kn)*1000};
+    const lb=all(/(\d[\d,]*)\s*(?:lbf|lb\s*st|lbs?\b)/gi); if(lb.length) return {thrustN:med(lb)*4.448};
+    return null; }
+  const hp=all(/(\d[\d,]*(?:\.\d+)?)\s*(?:e?shp|bhp|hp)\b/gi); if(hp.length) return {hp:med(hp)};
+  const kw=all(/(\d[\d,]*)\s*kW/gi); if(kw.length) return {hp:med(kw)*1.341};
+  return null;
+}
+
+async function loadApmModel(icao){
+  const {d,live}=await apmData(icao), P={...d.perf};
+  for(const k in P) if(P[k]===0) delete P[k];            // EUROCONTROL uses 0 for "no data" in places
+  const type=d.type||"L1P", nEng=+type[1]||1, ek=type[2]||"P";
+  const kind=ek==="J"?"jet":ek==="T"?"turboprop":"piston";
+  const mtow=P.takeOffMTOW||1200, ceilFt=(P.cruiseCeiling||(kind==="piston"?140:kind==="turboprop"?250:410))*100;
+  const fix=ENGINE_FIX[icao], pw=fix?{hp:fix.hp,thrustN:fix.kN&&fix.kN*1000}:(parsePower(d.powerplant,ek)||{});
+  let hp=pw.hp, thrustN=pw.thrustN, powerEst=false;
+  if(kind==="piston" && !(hp>=mtow*0.06/nEng && hp<=mtow*0.35/nEng)){ hp=mtow*0.15/nEng; powerEst=true; }
+  if(kind==="turboprop" && !(hp>=mtow*0.08/nEng && hp<=mtow*0.5/nEng)){ hp=mtow*0.25/nEng; powerEst=true; }
+  if(kind==="jet" && !(thrustN>=mtow*G0*0.12/nEng && thrustN<=mtow*G0*0.6/nEng)){ thrustN=mtow*G0*0.35/nEng; powerEst=true; }
+  const turbo = kind==="piston" && TURBO_PISTON.has(icao);
+  const pressurized = kind==="jet" || PRESSURIZED.has(icao);
+  const span=parseFloat(d.wingspan)||Math.sqrt(mtow/40);
+
+  // --- power / thrust lapse with altitude ---
+  const CRIT_FT=turbo?18000:0, FLAT_FT=20000;   // PT6-class engines are flat-rated well below their thermodynamic power
+  const pAvail=(hft,dT=0)=>{ const s=sigma(hft,dT);
+    if(kind==="piston"){ const sc=turbo&&hft>CRIT_FT?sigma(CRIT_FT):1; return turbo&&hft<=CRIT_FT?1:Math.max(0.02,1.132*s/sc-0.132); }
+    return Math.min(1,Math.pow(s/sigma(FLAT_FT),0.7)); };              // turboprop
+  const PC=kind==="piston"?0.65:0.80;                                  // cruise power setting
+  const pCruise=(hft,dT)=>Math.min(PC,pAvail(hft,dT)*(kind==="piston"?1:0.9));
+  const refFt = kind==="piston" ? (turbo?Math.min(ceilFt-4000,17500):Math.min(7500,ceilFt-2000))
+              : kind==="turboprop" ? (pressurized?ceilFt-4000:Math.min(10000,ceilFt-2000)) : ceilFt-4000;
+  const diesel = kind==="piston" && /diesel|jet[- ]?a|austro|centurion|SMA SR305/i.test(d.powerplant||"");
+  const SFC=diesel?{cr:0.36,cl:0.40,de:0.38}:{piston:{cr:0.43,cl:0.50,de:0.45},turboprop:{cr:0.60,cl:0.65,de:0.75}}[kind];
+
+  // jets: generic drag polar from span (AR≈8) and TSFC that improves with altitude
+  const S=span*span/8, k=1/(Math.PI*8*0.8), cd0=0.022;
+  const tsfc=(hft,dT)=>0.75*LBH/4.44822*Math.sqrt(atm(hft*FT,dT).T/216.65);   // 0.75 lb/lbf/h at the tropopause (business-jet turbofans)
+  const jetMach=P.cruiseMACH||(P.cruiseTAS?tas2mach(P.cruiseTAS*KT,refFt*FT):0.75);
+  const vCap=(Math.max(P.climb240IAS||0,P.descentIAS||0,250)+20)*KT;
+
+  const m={kind:"apm",engineKind:kind,code:icao,id:"apm:"+icao,label:GA_NAMES[icao]||`${d.manufacturer||""} ${d.name||icao}`.trim(),
+    d,P,live,nEng,mtow,ceilFt,turbo,diesel,pressurized,hp,thrustN,powerEst,refFt,
+    fuelDensity:kind==="piston"&&!diesel?2.72:3.03, fuelName:kind==="piston"&&!diesel?"avgas":"Jet A",
+    defaultLoad:Math.round(mtow*0.92/10)*10, loadLabel:"Takeoff weight (kg)", defaultRules:kind==="piston"&&!pressurized?"vfr":"ifr",
+    climbOrder:["ic","c150","c240","mach"], descOrder:["mach","des","lo","app"],
+    climbLabels:{ic:`Initial climb ${P.initialClimbIAS||"—"} kt`,c150:`Climb ${P.climb150IAS||P.initialClimbIAS||"—"} kt (to FL150)`,
+      c240:`Climb ${P.climb240IAS||P.climb150IAS||"—"} kt (to FL240)`,mach:`Mach climb ${P.machClimbMACH||""}`},
+    descLabels:{mach:`Descent M${P.initialDescentMACH||""}`,des:`Descent ${P.descentIAS} kt`,lo:`Descent ≤ FL100`,app:`Approach ${P.approachIAS} kt`},
+    appTopAgl: kind==="jet"?3000:kind==="turboprop"?2000:1500 };
+
+  m.cruiseState=(mass,hft,dT=0)=>{
+    if(kind==="jet"){ const h=hft*FT; let tas=mach2tas(jetMach,h,dT);
+      const cap=hft<10000?250*KT:vCap; if(tas2cas(tas,h,dT)>cap) tas=cas2tas(cap,h,dT);
+      const {rho}=atm(h,dT), qS=0.5*rho*tas*tas*S, cl=mass*G0/qS, D=(cd0+k*cl*cl)*qS;
+      return {tas,ff:D*tsfc(hft,dT),D,cl,mach:tas2mach(tas,h,dT),power:null}; }
+    const pc=pCruise(hft,dT), pr=pCruise(refFt,0), rr=atm(refFt*FT).rho, rh=atm(hft*FT,dT).rho;
+    // power ∝ drag·V: pure parasite drag gives V ∝ (P/ρ)^(1/3); induced drag tempers the density gain
+    let tas=P.cruiseTAS*KT*Math.cbrt(pc/pr)*Math.pow(rr/rh,0.2);
+    if(hft<10000 && tas2cas(tas,hft*FT,dT)>250*KT) tas=cas2tas(250*KT,hft*FT,dT);
+    return {tas,ff:nEng*hp*pc*SFC.cr*LBH,mach:tas2mach(tas,hft*FT,dT),power:pc};
+  };
+  m.climbState=(hft,dT,mass)=>{
+    const bands=[{top:5000,ias:P.initialClimbIAS,roc:P.initialClimbROC,key:"ic",mid:2500},
+      {top:15000,ias:P.climb150IAS,roc:P.climb150ROC,key:"c150",mid:10000},
+      {top:24000,ias:P.climb240IAS,roc:P.climb240ROC,key:"c240",mid:19500},
+      {top:1e9,mach:P.machClimbMACH,roc:P.machClimbROC,key:"mach",mid:30000}];
+    let i=bands.findIndex(b=>hft<b.top), b=bands[i];
+    let ias=b.ias, roc=b.roc, mach=b.mach, mid=b.mid;
+    for(let j=i-1;j>=0 && !(ias||mach);j--) ias=bands[j].ias;
+    if(!roc){ for(let j=i-1;j>=0;j--) if(bands[j].roc){ roc=bands[j].roc; mid=bands[j].mid; break; } }
+    roc=roc||500;
+    // normally-aspirated pistons lose climb rate with altitude: scale to ~100 fpm at the service ceiling
+    if(kind==="piston" && !turbo){ roc=Math.max(100, roc*(ceilFt-hft)/Math.max(ceilFt-mid,1000)); }
+    else if(hft>ceilFt-3000){ roc=Math.max(100, roc*(ceilFt-hft+500)/3500); }
+    const h=hft*FT; let tas=ias?cas2tas(ias*KT,h,dT):mach2tas(mach,h,dT);
+    if(mach && ias && tas2mach(tas,h,dT)>mach) tas=mach2tas(mach,h,dT);
+    if(!ias && !mach) tas=P.cruiseTAS*KT*0.8;
+    let ff;
+    if(kind==="jet") ff=thrustN*nEng*Math.pow(sigma(hft,dT),0.8)*0.9*tsfc(hft,dT)*1.08;
+    else ff=nEng*hp*Math.min(1,pAvail(hft,dT))*SFC.cl*LBH;
+    return {tas,vs:roc*FPM,ff,key:b.key};
+  };
+  m.descentState=(hft,agl,dT)=>{
+    const h=hft*FT; let key,ias,rod,mach;
+    if(agl<m.appTopAgl){ key="app"; ias=P.approachIAS||P.landingVat*1.3; rod=P.approachROD||500; }
+    else if(hft>24000 && P.initialDescentMACH){ key="mach"; mach=P.initialDescentMACH; rod=P.initialDescentROD||P.descentROD; ias=P.descentIAS; }
+    else if(hft>=10000){ key="des"; ias=P.descentIAS; rod=P.descentROD; }
+    else { key="lo"; ias=Math.min(P.descentIAS||250,250); rod=P.descentROD; }
+    rod=rod||500;
+    let tas=ias?cas2tas(ias*KT,h,dT):P.cruiseTAS*KT;
+    if(mach && tas2mach(tas,h,dT)>mach) tas=mach2tas(mach,h,dT);
+    let ff;
+    if(kind==="jet") ff=thrustN*nEng*0.07*Math.pow(sigma(hft,dT),0.8)*tsfc(hft,dT);
+    else ff=nEng*hp*0.40*SFC.de*LBH;
+    return {tas,vs:rod*FPM,ff,key};
+  };
+  m.limits=(mass,hft,dT)=>{ const s=m.cruiseState(mass,hft,dT); return {ceilOK:hft<=ceilFt+1,buffetOK:true,thrustOK:true,s,cl:s.cl}; };
+  m.simulate=(dep,arr,ft,load,extra,wxf,total,ks)=>apmSimulate(m,dep,arr,ft,load,extra,wxf,total,ks);
+  return m;
+}
+function apmClimb(m,dep,crzFt,tow,wxf,total){
+  let h=dep.alt,d=0,t=0,fuel=0,mass=tow; const pts=[{d:0,h,t:0,fuel:0}],ph={},bands=[];
+  while(h<crzFt-1){ const hn=Math.min(h+STEP_FT,crzFt), hm=(h+hn)/2, w=wxf(d/total,hm), s=m.climbState(hm,w.dT,mass);
+    const dt=(hn-h)*FT/s.vs, gs=Math.max(s.tas+w.tail,15), dd=gs*dt;
+    mass-=s.ff*dt; fuel+=s.ff*dt; t+=dt; d+=dd; h=hn; pts.push({d,h,t,fuel});
+    addPhase(ph,s.key,hm,hn,dt,dd,s.ff,s.tas);
+    bands.push({h:hm,vs:s.vs,tas:s.tas,cas:tas2cas(s.tas,hm*FT,w.dT),mach:tas2mach(s.tas,hm*FT,w.dT),gs,tail:w.tail,ff:s.ff}); }
+  return {d,t,fuel,mass,pts,ph,bands};
+}
+// k > 1 steepens the en-route descent (not the approach) when the published rate doesn't fit a short route
+const MAX_ROD_FPM={piston:1200,turboprop:2500,jet:4000};
+function apmDescent(m,arr,crzFt,wxf,total,k=1){
+  let h=arr.alt,d=0,t=0,fuel=0; const pts=[{d:0,h,t:0,fuel:0}],ph={},bands=[];
+  while(h<crzFt-1){ const hn=Math.min(h+STEP_FT,crzFt), hm=(h+hn)/2, w=wxf(1-d/total,hm), s=m.descentState(hm,hm-arr.alt,w.dT);
+    if(k>1 && s.key!=="app") s.vs=Math.max(s.vs,Math.min(s.vs*k,MAX_ROD_FPM[m.engineKind]*FPM));
+    const dt=(hn-h)*FT/s.vs, gs=Math.max(s.tas+w.tail,15), dd=gs*dt;
+    fuel+=s.ff*dt; t+=dt; d+=dd; h=hn; pts.push({d,h,t,fuel});
+    addPhase(ph,s.key,hm,hn,dt,dd,s.ff,s.tas);
+    bands.push({h:hm,vs:s.vs,tas:s.tas,cas:tas2cas(s.tas,hm*FT,w.dT),mach:tas2mach(s.tas,hm*FT,w.dT),gs,tail:w.tail,ff:s.ff}); }
+  return {d,t,fuel,pts,ph,bands};
+}
+function apmSimulate(m,dep,arr,crzFt,tow,extra,wxf,total,ks=[1,1.5,2]){
+  const cl=apmClimb(m,dep,crzFt,tow,wxf,total);
+  let ds, k;
+  for(k of ks){ ds=apmDescent(m,arr,crzFt,wxf,total,k); if(cl.d+ds.d<=total) break; }
+  if(cl.d+ds.d>total) return {feasible:false,ft:crzFt,climb:cl,descent:ds};
+  const cr=simCruise(m,cl.mass,crzFt,cl.d,total-ds.d,wxf,total);
+  const trip=cl.fuel+cr.fuel+ds.fuel, reserve=cr.ff*2700;      // 45 min at cruise fuel flow
+  return {feasible:true,ft:crzFt,tow,climb:cl,cruise:cr,descent:ds,trip,reserve,land:tow-trip,time:cl.t+cr.t+ds.t,
+    block:trip+reserve+extra,reserveNote:"45 min at cruise",steepDescent:k>1?Math.round(Math.max(...ds.bands.filter(b=>b.h-arr.alt>=m.appTopAgl).map(b=>b.vs/FPM),0)/50)*50:0};
+}
+
+/* ====================== Weather & terrain (Open-Meteo, live) ====================== */
+async function fetchWeather(points,etd){
+  const hourly=[];
+  for(const p of PLEVELS) hourly.push(`wind_speed_${p}hPa`,`wind_direction_${p}hPa`,`temperature_${p}hPa`);
+  hourly.push("temperature_2m","pressure_msl","wind_speed_10m","wind_direction_10m");
+  const hr=etd.toISOString().slice(0,13)+":00";
+  const url="https://api.open-meteo.com/v1/forecast?latitude="+points.map(p=>p.lat.toFixed(3)).join(",")+
+    "&longitude="+points.map(p=>p.lon.toFixed(3)).join(",")+"&hourly="+hourly.join(",")+
+    `&wind_speed_unit=kn&timezone=GMT&start_hour=${hr}&end_hour=${hr}`;
+  let j, last;
+  for(const wait of [0,2000,5000]){        // Open-Meteo sheds load with 429/503 — back off and retry
+    if(wait) await new Promise(r=>setTimeout(r,wait));
+    try{ j=await get(url,"json",20000); break; }catch(e){ last=e; }
+  }
+  if(!j) throw last;
+  const arr=Array.isArray(j)?j:[j];
+  return arr.map(r=>{ const H=r.hourly, v=k=>H[k]?.[0];
+    const lv=PLEVELS.map(p=>{ const ws=v(`wind_speed_${p}hPa`), wd=v(`wind_direction_${p}hPa`), T=v(`temperature_${p}hPa`);
+      if(ws==null||wd==null||T==null) return null;
+      const hm=pAlt(p*100); return {hft:hm/FT,u:-ws*Math.sin(rad(wd)),v:-ws*Math.cos(rad(wd)),dT:T+273.15-isaT(hm)}; })
+      .filter(Boolean).sort((a,b)=>a.hft-b.hft);
+    return {levels:lv,sfc:{T:v("temperature_2m"),qnh:v("pressure_msl"),ws:v("wind_speed_10m"),wd:v("wind_direction_10m")}}; });
+}
+// clearance between the simulated profile and the terrain. Near the airports the requirement tapers from the full
+// margin at 10 NM to 300 ft at 3 NM (departure/arrival area), and the last/first 3 NM are not checked.
+function terrainClearance(r,terrain,total,margin){
+  if(!terrain) return {ok:true,min:null,at:null};
+  const at=(pts,x)=>{ for(let i=1;i<pts.length;i++) if(pts[i].d>=x){ const a=pts[i-1],b=pts[i]; return a.h+(b.h-a.h)*(x-a.d)/Math.max(b.d-a.d,1e-6); } return pts[pts.length-1].h; };
+  const alt=x=>x<r.climb.d?at(r.climb.pts,x):x>total-r.descent.d?at(r.descent.pts,total-x):r.ft;
+  const req=x=>{ const e=Math.min(x,total-x)/NM; return e>=10?margin:300+(margin-300)*Math.max(e-3,0)/7; };
+  let worst=Infinity, min=null, where=null, need=margin;
+  for(const t of terrain){ const x=t.f*total; if(x<3*NM||x>total-3*NM) continue;
+    const c=alt(x)-t.ft, q=req(x); if(c-q<worst){ worst=c-q; min=c; where=x; need=q; } }
+  if(min==null) return {ok:true,min:null,at:null};
+  return {ok:worst>=0,min,at:where,need};
+}
+async function fetchTerrain(route){
+  const total=route.total, n=Math.min(100,Math.max(30,Math.ceil(nm(total)/1.5))), pts=[...Array(n)].map((_,i)=>route.pointAt(i/(n-1)));
+  let elev;
+  if(HAS_SERVER){ const j=await XD.terrain(pts); elev=j.elev; }
+  else { const j=await get("https://api.open-meteo.com/v1/elevation?latitude="+pts.map(p=>p.lat.toFixed(4)).join(",")+"&longitude="+pts.map(p=>p.lon.toFixed(4)).join(","),"json",15000); elev=j.elevation; }
+  return elev.map((e,i)=>({f:i/(n-1),ft:Math.max(0,e||0)/FT}));
+}
+function profileAt(prof,hft){ const L=prof.levels; if(!L.length) return {u:0,v:0,dT:0};
+  if(hft<=L[0].hft) return L[0]; if(hft>=L[L.length-1].hft) return L[L.length-1];
+  for(let i=1;i<L.length;i++) if(hft<=L[i].hft){ const a=L[i-1],b=L[i],f=(hft-a.hft)/(b.hft-a.hft);
+    return {u:a.u+f*(b.u-a.u),v:a.v+f*(b.v-a.v),dT:a.dT+f*(b.dT-a.dT)}; } }
+function makeWx(route,wx){
+  return (frac,hft)=>{ frac=Math.min(Math.max(frac,0),1);
+    const seg=route.segs.find(s=>frac<=s.f1)||route.segs[route.segs.length-1];
+    if(!wx) return {tail:0,xw:0,dT:0,ws:0,wd:0,trk:seg.trk};
+    const n=wx.length-1, x=frac*n, i=Math.min(Math.floor(x),n-1), f=x-i;
+    const a=profileAt(wx[i],hft), b=profileAt(wx[i+1],hft);
+    const u=a.u+f*(b.u-a.u), v=a.v+f*(b.v-a.v), dT=a.dT+f*(b.dT-a.dT), t=rad(seg.trk);
+    return {tail:(u*Math.sin(t)+v*Math.cos(t))*KT,xw:(u*Math.cos(t)-v*Math.sin(t)),dT,ws:Math.hypot(u,v),wd:(deg(Math.atan2(-u,-v))+360)%360,trk:seg.trk}; };
+}
+
+/* ====================== Cruise level candidates ====================== */
+function candidateLevels(trk,rules,minFt,maxFt){
+  const east=trk<180, out=[];
+  for(let ft=1500;ft<=51000;ft+=500){
+    if(ft<minFt||ft>maxFt) continue;
+    const th=ft/1000;
+    if(rules==="any"){ if(ft%1000===0) out.push(ft); continue; }
+    if(ft>=41000){ if(ft%1000===0 && (east?[41,45,49]:[43,47,51]).includes(th)) out.push(ft); continue; }
+    if(rules==="vfr" && ft<18000){ if(ft%1000===500 && (Math.floor(th)%2===1)===east) out.push(ft); continue; }
+    if(ft%1000===0 && (th%2===1)===east) out.push(ft);
+  }
+  return out;
+}
+
+/* ====================== UI ====================== */
+let MODEL=null, MODEL_P=null, MODEL_SEQ=0;   // MODEL_P: the latest selectModel() load, awaited by calculate()
+const kt=ms=>Math.round(ms/KT), fmtK=v=>v==null||isNaN(v)?"—":Math.round(v).toLocaleString(), nm=m=>(m/NM);
+const hhmm=s=>{const mi=Math.round(s/60);return `${Math.floor(mi/60)}:${String(mi%60).padStart(2,"0")}`;};
+const lvl=ft=>ft>=18000?"FL"+String(Math.round(ft/100)).padStart(3,"0"):Math.round(ft).toLocaleString()+" ft";
+const lvlShort=ft=>ft>=18000?"FL"+String(Math.round(ft/100)).padStart(3,"0"):(Math.round(ft/100)/10).toFixed(1).replace(/\.0$/,"")+"k ft";
+
+async function onAircraft(){
+  const v=$("ac").value; $("err").textContent="";
+  if(window.AcPicker) AcPicker.sync();      // keep the search box in step with the selection
+  const otherRow=$("otherRow"); if(otherRow) otherRow.style.display=v==="other"?"flex":"none";
+  if(v==="other"){ $("acHint").textContent="Enter any ICAO aircraft type designator listed by EUROCONTROL."; return; }
+  await selectModel(v);
+  // a type looked up from the search box gets its real EUROCONTROL name once loaded
+  const o=[...$("ac").options].find(o=>o.value===v);
+  if(o&&/EUROCONTROL lookup/.test(o.textContent)&&MODEL?.id===v){ o.textContent=`${MODEL.label} (${MODEL.code})`; AcPicker.index(); AcPicker.sync(); }
+}
+function selectModel(id){ const seq=++MODEL_SEQ; MODEL=null; return MODEL_P=loadModel(id,seq); }
+async function loadModel(id,seq){
+  $("acHint").textContent="loading performance data…";
+  let m;
+  try{ const [src,code]=id.split(":"); m = src==="oap" ? await loadOpenapModel(code) : await loadApmModel(code.toUpperCase()); }
+  catch(e){ if(seq!==MODEL_SEQ) return; $("acHint").textContent=""; $("err").textContent="Could not load performance data: "+e.message; return; }
+  if(seq!==MODEL_SEQ) return;              // a newer selection superseded this load
+  MODEL=m;
+  $("load").value=m.defaultLoad; $("loadLbl").textContent=m.loadLabel; $("rules").value=m.defaultRules;
+  $("oxyRow").style.display=m.pressurized?"none":"flex";
+  const step=m.kind==="apm"&&m.ceilFt<=25000?500:1000;
+  const flSel=$("fl"); flSel.innerHTML='<option value="auto">Auto — optimum</option>';
+  for(let ft=Math.floor(m.ceilFt/step)*step;ft>=2000;ft-=step){ const o=document.createElement("option"); o.value=ft; o.textContent=lvl(ft); flSel.appendChild(o); }
+  if(m.kind==="openap"){
+    const own=m.wrapCode===m.code, W=m.wrap, ac=m.ac, fpm=v=>Math.round(Math.abs(v)/FPM);
+    $("acHint").innerHTML=`<span class="badge ok">OpenAP</span><span class="badge ${own?"ok":"warn"}">${own?"ADS-B performance: own type":"ADS-B performance proxy: "+m.wrapCode.toUpperCase()}</span>`+
+      `<span class="badge ${m.eng.estimated?"warn":"ok"}">engine: ${m.eng.name}</span>`;
+    $("acCard").innerHTML=`<h2>Aircraft data — ${m.code.toUpperCase()}</h2><dl>
+      <dt>Type</dt><dd>${ac.aircraft}</dd>
+      <dt>MTOW / MLW</dt><dd>${fmtK(ac.mtow)} / ${fmtK(ac.mlw)} kg</dd>
+      <dt>OEW / Max fuel</dt><dd>${fmtK(ac.oew)} / ${fmtK(ac.mfc)} kg</dd>
+      <dt>Ceiling</dt><dd>${lvl(m.ceilFt)}</dd>
+      <dt>MMO / VMO</dt><dd>M${ac.mmo} / ${ac.vmo??"—"} kt</dd>
+      <dt>Wing area / sweep</dt><dd>${ac.wing.area} m² / ${ac.wing.sweep}°</dd>
+      <dt>Engines</dt><dd>${m.nEng} × ${Math.round(m.eng.max_thrust/1000)} kN</dd>
+      <dt>Typ. cruise (ADS-B)</dt><dd>M${W.cr_v_mach_mean.opt} · FL${Math.round(W.cr_h_mean.opt*1000/FT/100)}</dd>
+      <dt>Climb schedule</dt><dd>${kt(W.cl_v_cas_const.opt)} kt / M${W.cl_v_mach_const.opt}</dd>
+      <dt>Climb rates</dt><dd>${fpm(W.cl_vs_avg_pre_cas.opt)} / ${fpm(W.cl_vs_avg_cas_const.opt)} / ${fpm(W.cl_vs_avg_mach_const.opt)} fpm</dd>
+      <dt>Descent schedule</dt><dd>M${W.de_v_mach_const.opt} / ${kt(W.de_v_cas_const.opt)} kt</dd>
+      <dt>Descent rates</dt><dd>${fpm(W.de_vs_avg_mach_const.opt)} / ${fpm(W.de_vs_avg_cas_const.opt)} / ${fpm(W.de_vs_avg_after_cas.opt)} fpm</dd>
+      <dt>Approach</dt><dd>${kt(W.fa_va_avg.opt)} kt · ${W.fa_agl.opt}°</dd></dl>`;
+  } else {
+    const P=m.P, d=m.d, nd=v=>v??"—";
+    const eng=m.engineKind==="jet"?`${m.nEng} × ${(m.thrustN/1000).toFixed(1)} kN`:`${m.nEng} × ${Math.round(m.hp)} ${m.engineKind==="turboprop"?"shp":"hp"}`;
+    $("acHint").innerHTML=`<span class="badge ok">EUROCONTROL APM</span><span class="badge ${m.live?"ok":"warn"}">${m.live?"live":"offline snapshot"}</span>`+
+      `<span class="badge">${m.engineKind}${m.diesel?" · diesel":""}${m.turbo?" · turbo":""}${m.pressurized?" · pressurized":""}</span>`+(m.powerEst?`<span class="badge warn">engine power estimated</span>`:"");
+    $("acCard").innerHTML=`<h2>Aircraft data — ${m.code}</h2><dl>
+      <dt>Type</dt><dd>${m.label}</dd>
+      <dt>Manufacturer</dt><dd>${d.manufacturer||"—"}</dd>
+      <dt>Engines</dt><dd>${eng}</dd>
+      <dt>MTOW</dt><dd>${fmtK(m.mtow)} kg</dd>
+      <dt>Ceiling</dt><dd>${lvl(m.ceilFt)}</dd>
+      <dt>Cruise</dt><dd>${nd(P.cruiseTAS)} kt TAS${P.cruiseMACH?" · M"+P.cruiseMACH:""}</dd>
+      <dt>Range</dt><dd>${fmtK(P.cruiseRange)} NM</dd>
+      <dt>Initial climb</dt><dd>${nd(P.initialClimbIAS)} kt · ${fmtK(P.initialClimbROC)} fpm</dd>
+      <dt>Climb to FL150</dt><dd>${nd(P.climb150IAS)} kt · ${fmtK(P.climb150ROC)} fpm</dd>
+      <dt>Climb to FL240</dt><dd>${nd(P.climb240IAS)} kt · ${fmtK(P.climb240ROC)} fpm</dd>
+      ${P.machClimbMACH?`<dt>Mach climb</dt><dd>M${P.machClimbMACH} · ${fmtK(P.machClimbROC)} fpm</dd>`:""}
+      <dt>Descent</dt><dd>${nd(P.descentIAS)} kt · ${fmtK(P.descentROD)} fpm</dd>
+      <dt>Approach</dt><dd>${nd(P.approachIAS)} kt · ${fmtK(P.approachROD)} fpm</dd>
+      <dt>V2 / Vat</dt><dd>${nd(P.takeOffV2)} / ${nd(P.landingVat)} kt</dd>
+      <dt>TO / LDG distance</dt><dd>${fmtK(P.takeOffDistance)} / ${fmtK(P.landingDistance)} m</dd>
+      </dl><p class="note" style="margin-top:10px">${(d.powerplant||"").slice(0,220)}</p>
+      <p class="note"><a href="${d.source}" target="_blank">EUROCONTROL source page</a> · fetched ${d.fetched||""}</p>`;
+  }
+}
+
+function aptSearch(e){
+  const q=e.target.value.trim().toUpperCase(); if(q.length<2) return;
+  const res=[], exact=DB.aptIndex[q]; if(exact) res.push(exact);
+  for(const a of DB.airports){ if(a===exact) continue;
+    if(a.icao.toUpperCase().startsWith(q)||(a.iata&&a.iata===q)||a.name.toUpperCase().includes(q)||(a.loc||"").toUpperCase().includes(q)){ res.push(a); if(res.length>=30) break; } }
+  $("aptList").innerHTML=res.map(a=>`<option value="${a.icao}">${a.name} — ${a.loc||""}, ${a.country}${a.iata?" ("+a.iata+")":""}</option>`).join("");
+}
+function resolveApt(id){ const v=$(id).value.trim().toUpperCase().split(/\s/)[0]; return DB.aptIndex[v]; }
+
+function defaultRouteAlt(m){
+  if(m.kind==="apm"){
+    if(m.engineKind==="piston") return Math.min(m.ceilFt-1000, m.turbo||m.pressurized?14000:8000);
+    if(m.engineKind==="turboprop") return Math.min(m.ceilFt-3000, m.pressurized?22000:10000);
+  }
+  return Math.min(m.ceilFt-4000,35000);
+}
+function aptPoint(a){ return {kind:"apt",apt:a,lat:a.lat,lon:a.lon,label:a.icao}; }
+
+async function calculate(){
+  $("err").textContent="";
+  const dep=resolveApt("dep"), arr=resolveApt("arr"), altTxt=$("alt").value.trim(), alt=altTxt?resolveApt("alt"):null;
+  if(!dep||!arr){ $("err").textContent="Enter valid airport codes (ICAO, IATA or local identifier) for departure and arrival."; return; }
+  if(dep===arr){ $("err").textContent="Departure and arrival are the same."; return; }
+  if(altTxt&&!alt){ $("err").textContent=`Alternate "${altTxt}" not found.`; return; }
+  $("go").disabled=true;
+  try{
+    if(MODEL_P){ status("loading performance data…"); await MODEL_P; }
+    const acVal=$("ac").value;
+    if(!MODEL){ status(""); if(!$("err").textContent) $("err").textContent="Select an aircraft first."; return; }   // keep a load error if there was one
+    if(acVal!=="other"&&MODEL.id!==acVal){ status(""); $("err").textContent="Aircraft performance data is still loading — try again."; return; }
+    const m=MODEL, navMode=$("nav").value;
+    let mode=navMode, navNote=null;
+    if(mode!=="direct"){
+      if(!HAS_SERVER) throw new Error('VOR/NDB/airway routing needs the navaid database — start the app with "python server.py".');
+      status("loading navaid database…"); await window.NAV_READY;
+      if(!NAV.loaded) throw new Error("Navaid database unavailable"+(NAV.error?": "+NAV.error:"")+".");
+    }
+    // published routes: FAA preferred / TEC / coded departure routes for this city pair
+    let pub=null;
+    if(mode==="pub"){
+      if(!isUSApt(dep)||!isUSApt(arr)){ mode="awy"; navNote="Published routes are FAA data (US airports only) — planned on airways instead."; }
+      else { status("loading FAA preferred and coded routes…");
+        try{ const routes=await fetchPublishedRoutes(dep,arr); if(routes.length) pub=choosePublished(routes,m,dep,arr); }catch(e){ navNote=`Published route data unavailable (${e.message}).`; }
+        if(!pub){ mode="awy"; navNote=navNote||`No FAA preferred or coded routes between ${dep.icao} and ${arr.icao} — planned on airways instead.`; } }
+    }
+    if(mode==="awy"||mode==="pub"){ status("loading FAA airway database…"); try{ await loadAirways(); }catch(_){} }
+    if(mode==="awy"){
+      if(!isUSApt(dep)&&!isUSApt(arr)){ mode="vor"; navNote="Airway data is only available for the US (FAA NASR) — both airports are outside the US, so the route is planned VOR to VOR."; }
+      else { status("loading FAA airway database…");
+        try{ await loadAirways(); }catch(e){ mode="vor"; navNote=`FAA airway data unavailable (${e.message}) — planned VOR to VOR instead.`; } }
+    }
+    const etdStr=$("etd").value; const etd=etdStr?new Date(etdStr+"Z"):new Date();
+    const infoP=Promise.all([dep,arr,alt].map(a=>a?fetchAirportInfo(a):null));     // runways, ILS, charts, METAR/TAF in parallel
+    const manualFt=$("fl").value!=="auto"?+$("fl").value:null;
+    let routeAlt=manualFt||defaultRouteAlt(m), X=null;
+    // reception ranges depend on altitude: plan the route at a reference altitude, then re-plan at the chosen level
+    for(let pass=0;pass<2;pass++){
+      let route;
+      let lim={};
+      if(mode==="pub"){ const plan=planFromPublished(dep,arr,pub.sel,m); route=buildRoute(plan.points,plan); lim=plan.lim;
+        if(!pub.sel.ok) navNote=`The selected published route isn't meant for this aircraft (${pub.sel.why||"restricted"}) — check the route picker.`;
+        if(pub.sel.r.unresolved?.length) navNote=(navNote?navNote+" ":"")+`Some route points could not be located (${pub.sel.r.unresolved.join(", ")}) and were skipped.`; }
+      if(mode==="awy"){
+        status(`planning ${routeAlt>=18000?"Jet":"Victor"} airway route…`);
+        const intl=!isUSApt(dep)||!isUSApt(arr);
+        const plan=intl?planHybridRoute(dep,arr,routeAlt):planAirwayRoute(dep,arr,routeAlt);
+        if(plan){ route=buildRoute(plan.points,plan); lim={minFt:plan.maxMea,maxFt:plan.high?45000:17500};
+          if(intl) navNote=`Airways are FAA (US) data only: the ${!isUSApt(dep)?`segment from ${dep.icao}`:""}${!isUSApt(dep)&&!isUSApt(arr)?" and ":""}${!isUSApt(arr)?`segment into ${arr.icao}`:""} outside the US is planned VOR to VOR, joining the US ${plan.high?"Jet":"Victor"} airways.`; }
+        else { mode="vor"; navNote=`No connected ${routeAlt>=18000?"Jet":"Victor"} airway route found — planned VOR to VOR instead.`; }
+      }
+      if(!route){
+        if(mode==="direct") route=buildRoute([aptPoint(dep),aptPoint(arr)]);
+        else { status(`planning ${mode==="vor"?"VOR":"VOR/NDB"} route at ${lvl(routeAlt)}…`); const plan=planNavRoute(dep,arr,routeAlt,mode); route=buildRoute(plan.points,plan); }
+      }
+      X=await planProfile(m,dep,arr,route,etd,lim);
+      if(mode==="direct"||mode==="awy"||mode==="pub"||manualFt||Math.abs(X.sel.ft-routeAlt)<=2000) break;
+      routeAlt=X.sel.ft;
+    }
+    status("loading airport data (runways, ILS, charts, weather)…");
+    const [di,ai,li]=await infoP; X.info={dep:di,arr:ai,alt:li}; X.altApt=alt; X.navMode=mode; X.navNote=navNote; X.pub=pub;
+    render(X);
+    status(`done · ${X.wx?"live winds "+etd.toISOString().slice(0,13)+"Z":"no wind data (ISA, calm)"}${X.terrain?" · terrain ✓":""}${NAV.loaded?" · navaids ✓":""}`);
+  }catch(e){ $("err").textContent=e.message; status("error"); console.error(e); }
+  finally{ $("go").disabled=false; }
+}
+
+async function planProfile(m,dep,arr,route,etd,lim={}){
+  {
+    const total=route.total, nSeg=Math.min(14,Math.max(2,Math.ceil(nm(total)/(m.kind==="apm"?120:250))));
+    const pts=[...Array(nSeg+1)].map((_,i)=>route.pointAt(i/nSeg));
+    status("fetching live winds aloft & terrain (Open-Meteo)…");
+    const [wxR,terR]=await Promise.allSettled([fetchWeather(pts,etd),fetchTerrain(route)]);
+    const wx=wxR.status==="fulfilled"?wxR.value:null, wxErr=wxR.status==="rejected"?wxR.reason.message:null;
+    const terrain=terR.status==="fulfilled"?terR.value:null;
+    const wxf=makeWx(route,wx);
+    const load=+$("load").value||0, extra=+$("extra").value||0, rules=$("rules").value, optBy=$("opt").value;
+    const maxTerrain=terrain?Math.max(...terrain.map(t=>t.ft)):null;
+    // VFR: 1,000 ft above obstacles; IFR: 1,000 ft, or 2,000 ft over mountainous terrain (MOCA-style)
+    const margin=rules==="vfr"?1000:(maxTerrain>3000?2000:1000);
+    const oxyMax=(!m.pressurized && $("oxy").checked)?12500:1e9;
+    // airways: stay at or above the highest MEA and within the airway's altitude band
+    const baseFloor=Math.max(dep.alt+1000,arr.alt+1000);
+    const floorFt=Math.max(baseFloor,lim.minFt||0), topFt=Math.min(m.ceilFt,lim.maxFt||1e9);
+    status("computing profiles…");
+    const results=[];
+    // candidate levels; if the route's limits or the level rules leave none, relax step by step and say so
+    let levels=lim.exactFt&&lim.exactFt<=m.ceilFt?[lim.exactFt]:candidateLevels(route.trk,rules,floorFt,topFt), levelNote=null;
+    if(!levels.length&&floorFt<=topFt){ levels=candidateLevels(route.trk,"any",floorFt,topFt);
+      if(levels.length) levelNote=`No ${rules==="vfr"?"VFR":"IFR"} cruising level fits between ${lvl(floorFt)} and ${lvl(topFt)} for this direction, so any level in that band was allowed.`; }
+    if(!levels.length&&(lim.minFt||lim.maxFt)){ levels=candidateLevels(route.trk,rules,baseFloor,m.ceilFt);
+      if(levels.length) levelNote=`The route's altitude limits (${lim.minFt?"at least "+lvl(lim.minFt):""}${lim.minFt&&lim.maxFt?", ":""}${lim.maxFt?"at most "+lvl(lim.maxFt):""}) don't fit this aircraft (ceiling ${lvl(m.ceilFt)}), so they were ignored — check the route choice.`; }
+    for(const ft of levels){
+      const r=m.simulate(dep,arr,ft,load,extra,wxf,total);
+      if(!r||!r.feasible) continue;
+      r.limits=m.limits(r.climb.mass,ft,wxf(r.climb.d/total,ft).dT);
+      r.terrain=terrainClearance(r,terrain,total,margin); r.meaChk=meaClearance(r,route,total);
+      // descent clips terrain or an airway MEA: stay high longer and descend later/steeper, as a pilot would
+      const inDescent=c=>!c.ok&&c.at>total-r.descent.d;
+      if(m.kind==="apm" && (inDescent(r.terrain)||inDescent(r.meaChk)) && !(!r.terrain.ok&&!inDescent(r.terrain))){
+        for(const k of [1.5,2,2.5]){ const r2=m.simulate(dep,arr,ft,load,extra,wxf,total,[k]); if(!r2.feasible) continue;
+          const t2=terrainClearance(r2,terrain,total,margin), m2=meaClearance(r2,route,total);
+          if(t2.ok&&m2.ok){ r2.limits=r.limits; Object.assign(r,r2,{terrain:t2,meaChk:m2}); break; } } }
+      r.belowTerrain=!r.terrain.ok; r.belowMEA=!r.meaChk.ok; r.aboveOxy=ft>oxyMax;
+      r.allowed=r.limits.buffetOK&&r.limits.thrustOK&&r.limits.ceilOK&&!r.belowTerrain&&!r.belowMEA&&!r.aboveOxy;
+      results.push(r);
+    }
+    const minCruise=Math.min(0.1*total,30*NM);  // need a meaningful level segment, not a "touch and go" at TOC
+    results.forEach(r=>r.shortCruise=r.cruise.dist<minCruise);
+    const metric=r=>optBy==="time"?r.time:r.trip;
+    if(!results.length){
+      if(!levels.length) throw new Error(`No cruise level is possible: the allowed band (${lvl(floorFt)} to ${lvl(topFt)}) is empty for this aircraft and route. Try another navigation mode or route.`);
+      throw new Error(`No feasible cruise level: at ${lvl(levels[0])}–${lvl(levels[levels.length-1])} the climb and descent need more than the ${Math.round(nm(total))} NM route. Pick a lower manual level or a longer route.`); }
+    // prefer normal descents and a real cruise segment; relax in steps
+    const allowed=results.filter(r=>r.allowed);
+    let pool=[r=>!r.shortCruise&&!r.steepDescent, r=>!r.steepDescent, ()=>true].map(f=>allowed.filter(f)).find(p=>p.length)||[];
+    let compromise=false;
+    if(!pool.length){ // nothing meets every limit: show the level with the best terrain clearance and explain why
+      compromise=true; const cands=results.filter(r=>!r.aboveOxy&&r.limits.ceilOK); const base=cands.length?cands:results;
+      pool=[base.reduce((a,b)=>(b.terrain.min??0)>(a.terrain.min??0)?b:a)]; }
+    const best=pool.reduce((a,b)=>metric(b)<metric(a)?b:a);
+    const minFuel=pool.reduce((a,b)=>b.trip<a.trip?b:a), minTime=pool.reduce((a,b)=>b.time<a.time?b:a);
+    let sel=best;
+    if($("fl").value!=="auto"){ const ft=+$("fl").value; sel=results.find(r=>r.ft===ft);
+      if(!sel){ sel=m.simulate(dep,arr,ft,load,extra,wxf,total);
+        if(!sel.feasible) throw new Error(`${lvl(ft)} is not reachable on this route (climb + descent longer than the route).`);
+        sel.limits=m.limits(sel.climb.mass,ft); sel.terrain=terrainClearance(sel,terrain,total,margin); sel.belowTerrain=!sel.terrain.ok; sel.aboveOxy=ft>oxyMax;
+        sel.meaChk=meaClearance(sel,route,total); sel.belowMEA=!sel.meaChk.ok;
+        sel.allowed=sel.limits.ceilOK&&sel.limits.buffetOK&&!sel.belowTerrain&&!sel.belowMEA&&!sel.aboveOxy; } }
+    const X={m,dep,arr,total,route,wxf,wx,wxErr,levelNote,terrain,maxTerrain,margin,compromise,oxyMax,etd,results,best,minFuel,minTime,sel,optBy,load,extra};
+    if(m.kind==="openap"){ const dTc=sel.cruise.dT||0;
+      X.maxTOC=maxLevel(m,sel.climb.mass,dTc); X.maxTOD=maxLevel(m,sel.cruise.mass,dTc);
+      X.aeroOpt=aeroOptimum(m,sel.climb.mass,dTc); X.aeroOptEnd=aeroOptimum(m,sel.cruise.mass,dTc); }
+    return X;
+  }
+}
+
+function phaseRows(ph,order,labels){
+  return order.filter(k=>ph[k]).map(k=>{ const P=ph[k];
+    return `<tr><td>${labels[k]}</td><td>${fmtK(Math.min(P.from,P.to))}–${fmtK(Math.max(P.from,P.to))}</td><td>${fmtK(Math.round(Math.abs(P.to-P.from+STEP_FT)/(P.t/60)/10)*10)}</td><td>${Math.round(P.tasSum/P.n/KT)}</td><td>${hhmm(P.t)}</td><td>${nm(P.d).toFixed(1)}</td><td>${fmtK(P.fuel)}</td></tr>`; }).join("");
+}
+function bandRows(bands,step,desc=false){
+  if(!bands.length) return "";
+  const out=[]; let next=Math.ceil(bands[0].h/step)*step;
+  for(const b of bands){ if(b.h>=next){ out.push(b); next+=step; } }
+  if(desc) out.reverse();
+  return out.map(b=>`<tr><td>${b.h>=18000?lvl(b.h):fmtK(Math.round(b.h/100)*100)+" ft"}</td><td>${fmtK(Math.round(b.vs/FPM/10)*10)}${b.limited?" ⚠":""}</td><td>${Math.round(b.cas/KT)}</td><td>${b.mach.toFixed(2)}</td><td>${Math.round(b.tas/KT)}</td><td>${Math.round(b.gs/KT)}</td><td>${b.tail>=0?"+":""}${Math.round(b.tail/KT)}</td></tr>`).join("");
+}
+function statusOf(r,X){
+  if(r.belowTerrain) return [`terrain clearance ${fmtK(r.terrain.min)} ft < ${fmtK(r.terrain.need)}`,true];
+  if(r.belowMEA) return [`below ${r.meaChk.awy} MEA ${fmtK(r.meaChk.mea)} ft`,true];
+  if(r.aboveOxy) return ["needs oxygen",true];
+  if(!r.limits.ceilOK) return ["above ceiling",true];
+  if(!r.limits.buffetOK) return ["too heavy (buffet)",true];
+  if(!r.limits.thrustOK) return ["thrust limit",true];
+  if(r===X.best) return [r.steepDescent?"optimum · steep descent":"optimum",false];
+  if(r.steepDescent) return [`steep descent ${fmtK(r.steepDescent)} fpm`,false];
+  if(r.shortCruise) return ["short cruise",false];
+  return ["ok",false];
+}
+
+const TABS=[["setup","FS2024 setup"],["route","Route"],["airports","Airports"],["profile","Profile"],["fuel","Fuel & levels"]];
+function currentTab(){ try{ const t=localStorage.getItem("xperf.tab"); return TABS.some(x=>x[0]===t)?t:"setup"; }catch(_){ return "setup"; } }
+function tabBar(X){
+  const sub={setup:"world map · cockpit · legs",route:`${X.route.points.length-2} waypoints · map · nav log`,airports:`${X.dep.icao} · ${X.arr.icao}${X.altApt?" · "+X.altApt.icao:""}`,
+    profile:"winds · climb · descent",fuel:`${X.results.length} levels compared`};
+  return `<div class="tabs" role="tablist">${TABS.map(([k,l])=>`<button class="tab" role="tab" data-tab="${k}" aria-controls="tp-${k}"><span>${l}</span><small>${sub[k]}</small></button>`).join("")}</div>`;
+}
+function showTab(name){
+  document.querySelectorAll(".tabs .tab").forEach(b=>{ const on=b.dataset.tab===name; b.classList.toggle("on",on); b.setAttribute("aria-selected",on); });
+  document.querySelectorAll(".tabpanel").forEach(p=>p.hidden=p.dataset.tab!==name);
+  try{ localStorage.setItem("xperf.tab",name); }catch(_){}
+  // Leaflet needs a visible container: draw the map the first time the Route tab is shown, then just resize it
+  if(name==="route"&&window.LAST_X){ try{ if(!LAST_X._mapDrawn){ drawMap(LAST_X); LAST_X._mapDrawn=true; } else if(MAP){ MAP.invalidateSize(); } }catch(e){ console.warn("map",e); } }
+}
+document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest(".tabs .tab"); if(!b) return;
+  showTab(b.dataset.tab); const t=document.querySelector(".tabs"); if(t&&t.getBoundingClientRect().top<0) t.scrollIntoView({block:"start"}); });
+
+function render(X){
+  window.LAST_X=X;          // kept for approach changes and the plate viewer
+  const {m,dep,arr,total,sel,best}=X, c=sel.climb, d=sel.descent, cr=sel.cruise, crzFt=sel.ft, apm=m.kind==="apm";
+  const fpm=v=>Math.round(v/FPM), gal=kg=>kg/m.fuelDensity;
+  const fuelTxt=kg=>apm?`${fmtK(kg)} kg · ${fmtK(gal(kg))} gal`:`${fmtK(kg)} kg`;
+  const warn=[];
+  if(X.wxErr) warn.push(`Winds aloft unavailable (Open-Meteo: ${X.wxErr}) — computed in ISA, calm wind. Try again in a minute.`);
+  if(!X.terrain) warn.push("Terrain data unavailable — no terrain clearance check.");
+  if(X.navNote) warn.push(X.navNote);
+  if(X.levelNote) warn.push(X.levelNote);
+  // planning VFR into weather below VFR minimums
+  if($("rules").value==="vfr"){ const ends=[[dep,{met:decodeMetar(X.info?.dep?.wx?.metar)}],[arr,{met:decodeMetar(X.info?.arr?.wx?.metar)}]];
+    const bad=ends.filter(([,B])=>B.met&&(B.met.cat==="IFR"||B.met.cat==="LIFR")), marg=ends.filter(([,B])=>B.met?.cat==="MVFR");
+    if(bad.length) warn.push(`Planning VFR, but the current weather is ${bad.map(([a,B])=>`${B.met.cat} at ${a.icao}`).join(" and ")} — below VFR minimums. Switch Level rules to IFR, or wait for the weather to improve.`);
+    else if(marg.length) warn.push(`Marginal VFR right now at ${marg.map(([a])=>a.icao).join(" and ")} — check the TAF timeline before departure.`); }
+  if(X.route.plan?.gaps.length) warn.push(`Radio coverage gap: ${X.route.plan.gaps.map(g=>`${Math.round(g.gap)} NM on the leg to ${X.route.points[g.i+1].label}`).join(", ")} is outside published reception at ${lvl(X.route.plan.altFt)} — fly a higher level, add NDBs, or plan dead reckoning.`);
+  if(!apm){
+    if(sel.tow>m.ac.mtow) warn.push(`Takeoff weight ${fmtK(sel.tow)} kg exceeds MTOW ${fmtK(m.ac.mtow)} kg — reduce payload.`);
+    if(sel.land>m.ac.mlw) warn.push(`Landing weight ${fmtK(sel.land)} kg exceeds MLW ${fmtK(m.ac.mlw)} kg.`);
+    if(sel.block>m.ac.mfc) warn.push(`Fuel required ${fmtK(sel.block)} kg exceeds fuel capacity ${fmtK(m.ac.mfc)} kg — route beyond range.`);
+    if(m.wrapCode!==m.code) warn.push(`No ADS-B performance statistics for ${m.code.toUpperCase()} in OpenAP — climb/descent schedule uses ${m.wrapCode.toUpperCase()} as a proxy.`);
+    if(c.bands.some(b=>b.limited)) warn.push("Climb rate reduced >25% at some altitudes (⚠) — aircraft is heavier than a typical observed flight.");
+  } else {
+    if(m.P.cruiseRange && nm(total)+nm(cr.tas*2700)>m.P.cruiseRange) warn.push(`Distance plus 45-min reserve (${Math.round(nm(total)+nm(cr.tas*2700))} NM) exceeds the published range of ${fmtK(m.P.cruiseRange)} NM — plan a fuel stop.`);
+    if(sel.tow>m.mtow) warn.push(`Takeoff weight ${fmtK(sel.tow)} kg exceeds MTOW ${fmtK(m.mtow)} kg.`);
+  }
+  if(X.compromise){ const t=sel.terrain, inDesc=t?.at!=null&&t.at>total-d.d, inClimb=t?.at!=null&&t.at<c.d;
+    warn.push(`No level meets every limit on this route. Showing ${lvl(crzFt)}, the best compromise: ${statusOf(sel,X)[0]}`+
+      (t?.at!=null?` at ${inDesc?nm(total-t.at).toFixed(1)+" NM before "+arr.icao+" (during descent)":inClimb?nm(t.at).toFixed(1)+" NM after "+dep.icao+" (during climb)":nm(t.at).toFixed(1)+" NM from "+dep.icao}.`:".")+
+      (inDesc?` Even at the steepest normal descent the straight-in path clips terrain — in practice you'd cross the high ground at a safe altitude and lose height in a descending circle over the airport, or route via a valley.`
+       :inClimb?` The aircraft can't out-climb the terrain on the direct line — in practice you'd climb in circles near ${dep.icao} before setting course, or route around it.`
+       :` Consider routing around the high ground, IFR rules, or a manual level.`)); }
+  else if(!sel.allowed) warn.push(`${lvl(crzFt)} is outside the limits: ${statusOf(sel,X)[0]}.`);
+  if(sel.steepDescent) warn.push(`Route is short for this level: the descent needs about ${fmtK(sel.steepDescent)} fpm (faster than the typical ${fmtK(m.P.descentROD)} fpm).`);
+
+  const avgTail=Math.round(cr.tail/KT), rule3=Math.round((crzFt-arr.alt)/1000*3);
+  const todGs=d.bands.length?d.bands[d.bands.length-1].gs:cr.tas;
+  X.legs=navLegs(X);
+  X.briefs={dep:airportBrief("Departure",dep,X.info?.dep,X,sel.tow),arr:airportBrief("Arrival",arr,X.info?.arr,X,sel.land),
+    alt:X.altApt?airportBrief(`Alternate (${Math.round(nm(gcDist(arr,X.altApt)))} NM from ${arr.icao})`,X.altApt,X.info?.alt,X,sel.land):null};
+  const climbFpm=Math.round(fpm((crzFt-dep.alt)*FT/c.t)/10)*10, descFpm=Math.round(fpm((crzFt-arr.alt)*FT/d.t)/10)*10;
+  const html=`
+  ${warn.length?`<div class="warnbox">${warn.map(w=>"⚠ "+w).join("<br>")}</div>`:""}
+  <div class="kpis">
+    <div class="kpi hl"><div class="k">${$("fl").value==="auto"?"Optimum cruise":"Cruise level"}</div><div class="v">${lvl(crzFt)}</div><div class="s">lowest fuel ${lvl(X.minFuel.ft)} · fastest ${lvl(X.minTime.ft)}</div></div>
+    <div class="kpi"><div class="k">Distance</div><div class="v">${Math.round(nm(total))} NM</div><div class="s">${X.route.plan?.mode==="pub"?`via published route · direct ${Math.round(nm(gcDist(dep,arr)))} NM`:X.route.plan?.mode==="awy"?`via airways · direct ${Math.round(nm(gcDist(dep,arr)))} NM`:X.route.nav?`via ${X.route.points.length-2} station${X.route.points.length===3?"":"s"} · direct ${Math.round(nm(gcDist(dep,arr)))} NM`:"great circle · TC "+String(Math.round(X.route.trk)).padStart(3,"0")+"°T"}</div></div>
+    <div class="kpi"><div class="k">Top of climb</div><div class="v">${nm(c.d)<20?nm(c.d).toFixed(1):Math.round(nm(c.d))} NM</div><div class="s">from ${dep.icao} · ${hhmm(c.t)} after T/O</div></div>
+    <div class="kpi"><div class="k">Top of descent</div><div class="v">${nm(d.d)<20?nm(d.d).toFixed(1):Math.round(nm(d.d))} NM</div><div class="s">before ${arr.icao} · ${hhmm(d.t)} to land · 3:1 rule ${rule3} NM</div></div>
+    <div class="kpi"><div class="k">Flight time</div><div class="v">${hhmm(sel.time)}</div><div class="s">air time · ${X.route.nav?msfsRouteType(X).toLowerCase():"direct route"}</div></div>
+    <div class="kpi"><div class="k">Trip fuel</div><div class="v">${apm?fmtK(gal(sel.trip))+" gal":fmtK(sel.trip)}</div><div class="s">${apm?fmtK(sel.trip)+" kg "+m.fuelName+" (est.)":"kg"} · block ${apm?fmtK(gal(sel.block))+" gal":fmtK(sel.block)+" kg"}</div></div>
+    <div class="kpi"><div class="k">Cruise wind</div><div class="v" style="color:${avgTail>=0?"var(--green)":"var(--amber)"}">${avgTail>=0?"+":""}${avgTail} kt</div><div class="s">${avgTail>=0?"tailwind":"headwind"} · ISA ${cr.dT>=0?"+":""}${Math.round(cr.dT)}°C</div></div>
+    <div class="kpi"><div class="k">Climb / descent</div><div class="v">+${fmtK(climbFpm)} / −${fmtK(descFpm)}</div><div class="s">fpm average</div></div>
+  </div>
+  ${tabBar(X)}
+  <div class="tabpanel" data-tab="setup">${setupCard(X)}</div>
+  <div class="tabpanel" data-tab="route">
+  <div class="card"><h2>Route${X.route.nav?` — ${X.navMode==="pub"?"FAA published route":X.navMode==="awy"?(X.route.plan.hybrid?"VOR to VOR + ":"")+(X.route.plan.high?"Jet airways":"Victor airways"):X.navMode==="vor"?"VOR to VOR":"VOR / NDB"}`:" — direct"}</h2>
+    <div class="routestr">${X.route.plan?.routeString?`<b>${X.route.plan.routeString}</b>`:X.route.points.map(P=>P.kind==="apt"?`<b>${P.apt.icao}</b>`:`<b>${P.nav.ident}</b><span class="note"> ${fmtFreq(P.nav)}</span>`).join(" → ")}</div>
+    ${publishedPicker(X)}
+    <div class="plnbar"><button class="sm" data-pln>⬇ Download .PLN for FS2024</button><span class="note plnNote"></span></div>
+    <div id="map"></div>
+    <div class="maplegend"><span><i style="background:#38d39f"></i>airport</span><span><i class="ring" style="border-color:#3fb8ff"></i>VOR + reception</span><span><i class="ring" style="border-color:#ffb547"></i>NDB</span><span><i style="background:#8b9bab"></i>intersection</span><span><i style="background:#38d39f;outline:2px solid #0b1118"></i>TOC</span><span><i style="background:#e07bff"></i>TOD</span><span class="note">hover a dot for details</span></div>
+    <details class="sub" id="detlog"><summary>Detailed nav log — courses, wind correction, guidance, ETA, ${X.route.plan?.mode==="awy"?"MEA":"MSA"}</summary>${navLog(X)}</details></div>
+
+  </div>
+  <div class="tabpanel" data-tab="airports">
+  ${airportCard(X.briefs.dep,X,{eta:X.etd,label:"ETD"})}
+  ${airportCard(X.briefs.arr,X,{eta:new Date(X.etd.getTime()+sel.time*1000),label:"ETA"})}
+  ${X.briefs.alt?airportCard(X.briefs.alt,X,{collapsed:true,eta:new Date(X.etd.getTime()+(sel.time+gcDist(arr,X.altApt)/cr.tas+900)*1000),label:"ETA"}):""}
+
+  </div>
+  <div class="tabpanel" data-tab="profile">
+  <div class="card ${X.wx&&localStorage.getItem("xperf.winds")!=="0"?"":"nowinds"}" id="profcard"><div class="cardhead"><h2>Vertical profile${X.terrain?" & terrain":""}${X.wx?" · winds aloft":""}</h2>
+    ${X.wx?`<label class="chk" style="margin:0"><input type="checkbox" id="windTgl" ${localStorage.getItem("xperf.winds")!=="0"?"checked":""}> Show winds aloft</label>`:""}</div>${profileSVG(X)}${X.wx?windLegend():""}
+    ${X.maxTerrain!=null?`<p class="note">Highest terrain on the direct track: <b>${fmtK(X.maxTerrain)} ft</b>. Required clearance ${fmtK(X.margin)} ft (${$("rules").value==="vfr"?"VFR":"IFR"}), checked along the whole profile, tapering to 300 ft within 10 NM of each airport.
+      ${sel.terrain?.min!=null?`Lowest clearance at ${lvl(crzFt)}: <b style="color:${sel.terrain.ok?"var(--green)":"var(--red)"}">${fmtK(sel.terrain.min)} ft</b>, ${nm(sel.terrain.at).toFixed(1)} NM from ${dep.icao}.`:""}
+      Sampled along the centreline only — always check charted MEA/MOCA/grid MORA.</p>`:""}</div>
+
+  <div class="grid2">
+    <div class="card"><h2>Climb — ${dep.icao} → TOC ${lvl(crzFt)}</h2>
+      <div class="tblwrap"><table><tr><th>Phase</th><th>Alt (ft)</th><th>Avg fpm</th><th>TAS</th><th>Time</th><th>NM</th><th>Fuel kg</th></tr>
+      ${phaseRows(c.ph,m.climbOrder,m.climbLabels)}</table></div>
+      <div class="tblwrap" style="margin-top:12px"><table><tr><th>Altitude</th><th>V/S fpm</th><th>IAS</th><th>Mach</th><th>TAS</th><th>GS</th><th>Wind</th></tr>${bandRows(c.bands,crzFt>15000?5000:1000)}</table></div>
+    </div>
+    <div class="card"><h2>Descent — TOD ${lvl(crzFt)} → ${arr.icao}</h2>
+      <div class="tblwrap"><table><tr><th>Phase</th><th>Alt (ft)</th><th>Avg fpm</th><th>TAS</th><th>Time</th><th>NM</th><th>Fuel kg</th></tr>
+      ${phaseRows(d.ph,m.descOrder,m.descLabels)}</table></div>
+      <div class="tblwrap" style="margin-top:12px"><table><tr><th>Altitude</th><th>V/S fpm</th><th>IAS</th><th>Mach</th><th>TAS</th><th>GS</th><th>Wind</th></tr>${bandRows(d.bands,crzFt>15000?5000:1000,true)}</table></div>
+      <p class="note">TOD is <b>${nm(d.d).toFixed(1)} NM</b> from ${arr.icao} (${Math.round(nm(total-d.d))} NM after departure). For a 3° path at the TOD ground speed (${Math.round(todGs/KT)} kt) the required rate is ≈ <b>${fmtK(Math.round(todGs/KT*5/10)*10)} fpm</b>.</p>
+    </div>
+  </div>
+
+  </div>
+  <div class="tabpanel" data-tab="fuel">
+  <div>
+    <div class="card"><h2>Fuel along the route${apm?"":" & weights"}</h2>${fuelChart(X)}<dl style="max-width:560px;margin-top:10px">
+      <dt>Cruise level</dt><dd>${lvl(crzFt)}</dd>
+      <dt>Cruise TAS${apm?"":" / Mach"}</dt><dd>${Math.round(cr.tas/KT)} kt${apm&&m.engineKind!=="jet"?"":" / M"+(cr.tas/atm(crzFt*FT,cr.dT).a).toFixed(2)}</dd>
+      <dt>Avg ground speed</dt><dd>${Math.round((cr.tas+cr.tail)/KT)} kt</dd>
+      <dt>Cruise distance / time</dt><dd>${Math.round(nm(cr.dist))} NM / ${hhmm(cr.t)}</dd>
+      <dt>Avg cruise fuel flow</dt><dd>${fmtK(cr.ff*3600)} kg/h${apm?" · "+(gal(cr.ff*3600)).toFixed(1)+" gal/h":""}</dd>
+      ${apm&&m.engineKind!=="jet"?`<dt>Power setting</dt><dd>${Math.round(m.cruiseState(sel.tow,crzFt,cr.dT).power*100)}%</dd>`:""}
+      ${!apm?`<dt>Max level at TOC weight</dt><dd>${lvl(X.maxTOC)}</dd><dt>Max level at TOD weight</dt><dd>${lvl(X.maxTOD)}</dd>
+      <dt>Aero optimum (no wind) TOC → TOD</dt><dd>${lvl(X.aeroOpt)} → ${lvl(X.aeroOptEnd)}</dd>
+      <dt>C<sub>L</sub> at TOC (1.3 g limit)</dt><dd>${sel.limits.cl.toFixed(3)} (${(clBuffet(sel.limits.s.mach)/BUFFET_MARGIN).toFixed(3)})</dd>
+      <dt>ZFW</dt><dd>${fmtK(m.ac.oew+X.load)} kg</dd>`:`<dt>Service ceiling</dt><dd>${lvl(m.ceilFt)}</dd>`}
+      <dt>Takeoff weight</dt><dd>${fmtK(sel.tow)} kg</dd>
+      <dt>Landing weight</dt><dd>${fmtK(sel.land)} kg</dd>
+      <dt>Trip fuel</dt><dd>${fuelTxt(sel.trip)}</dd>
+      <dt>Reserve (${sel.reserveNote})</dt><dd>${fuelTxt(sel.reserve)}</dd>
+      <dt>Extra</dt><dd>${fuelTxt(X.extra)}</dd>
+      <dt>Minimum block fuel</dt><dd>${fuelTxt(sel.block)}</dd>
+    </dl>
+    ${!apm&&X.aeroOptEnd>X.aeroOpt+1000?`<p class="note">Optimum rises ~${fmtK(X.aeroOptEnd-X.aeroOpt)} ft as fuel burns off — a step climb may save fuel on longer sectors.</p>`:""}
+    ${apm?`<p class="note">Fuel is an estimate from engine power (${m.engineKind==="jet"?"thrust × generic TSFC":"power setting × typical specific fuel consumption"}); EUROCONTROL publishes no fuel-flow data. Use your POH/AFM fuel tables for planning.</p>`:""}
+    </div>
+  </div>
+
+
+  <div class="card"><h2>Cruise level comparison</h2>
+    ${levelChart(X)}
+    <div class="tblwrap"><table><tr><th>Level</th><th>Trip fuel kg</th><th>Δ fuel</th><th>Time</th><th>Δ time</th><th>Wind kt</th><th>ISA dev</th><th>TOC NM</th><th>TOD NM</th><th>Cruise NM</th><th>Status</th></tr>
+    ${X.results.slice().reverse().map(r=>{ const [st,bad]=statusOf(r,X);
+      return `<tr class="${r===best?"best":""} ${r.ft===sel.ft?"sel":""} ${bad?"dim":""}"><td>${lvl(r.ft)}</td><td>${fmtK(r.trip)}</td><td>${r===X.minFuel?"—":(r.trip>=X.minFuel.trip?"+":"−")+fmtK(Math.abs(r.trip-X.minFuel.trip))}</td><td>${hhmm(r.time)}</td><td>${r===X.minTime?"—":(r.time>=X.minTime.time?"+":"−")+Math.round(Math.abs(r.time-X.minTime.time)/60)+" min"}</td><td>${r.cruise.tail>=0?"+":""}${Math.round(r.cruise.tail/KT)}</td><td>${r.cruise.dT>=0?"+":""}${Math.round(r.cruise.dT)}</td><td>${Math.round(nm(r.climb.d))}</td><td>${Math.round(nm(r.descent.d))}</td><td>${Math.round(nm(r.cruise.dist))}</td><td style="color:${bad?"var(--red)":"inherit"}">${st}</td></tr>`; }).join("")}
+    </table></div>
+  </div>
+
+  </div>
+  <details class="card note srcnote"><summary>Data sources and model assumptions</summary>
+    <b>Data sources (fetched live):</b>
+    ${apm?`performance from the <a href="https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/" target="_blank">EUROCONTROL Aircraft Performance Database</a> (${m.live?"live":"offline snapshot"});`
+      :`specs, drag polar, engine & fuel-flow models and climb/descent statistics from <a href="https://github.com/TUDelft-CNS-ATM/openap" target="_blank">OpenAP</a> (TU Delft; WRAP parameters derived from real ADS-B flight data);`}
+    airports from ${DB.aptSource==="OurAirports"?'<a href="https://ourairports.com" target="_blank">OurAirports</a>':"OpenAP nav data"};
+    navaids, runways & frequencies from OurAirports; ILS from FAA NASR (US, current) or X-Plane GPL data (elsewhere, 2013); US approach plates from FAA d-TPP; METAR/TAF from <a href="https://aviationweather.gov" target="_blank">aviationweather.gov</a>;
+    winds/temperatures aloft from the <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> forecast at ${X.wx?X.wx.length:0} points; terrain from Open-Meteo elevation (Copernicus DEM).
+    <br><b>Model assumptions:</b> great-circle routing (no SID/STAR/airways), optimum = minimum ${X.optBy==="time"?"time":"trip fuel"} among allowed levels,
+    ${apm?`piston/turboprop cruise at ${m.engineKind==="piston"?"65%":"~80% max cruise"} power with altitude power lapse${m.turbo?" (turbocharged to 18,000 ft)":""}, climb/descent rates from EUROCONTROL averages${m.engineKind==="piston"&&!m.turbo?" reduced with altitude toward the service ceiling":""}, reserve 45 min at cruise.`
+      :`1.3 g buffet margin (generic Mach-dependent buffet C<sub>L</sub>), climb rates = observed ADS-B averages corrected for weight, reserve = 5% trip + 30 min hold.`}
+    <br><b style="color:var(--amber)">For flight simulation, planning practice and education only — not certified for operational use. Always use your aircraft's POH/AFM and approved flight planning.</b>
+  </details>`;
+  $("results").innerHTML=html;
+  try{ if(localStorage.getItem("xperf.detlog")==="1") $("detlog").open=true; }catch(_){}
+  X._mapDrawn=false;
+  showTab(currentTab());
+}
+
+function profileSVG(X){
+  const {total,sel,dep,arr}=X, W=1000,H=300,pl=64,pr=20,pt=20,pb=36;
+  const c=sel.climb, d=sel.descent, crzFt=sel.ft, top=Math.ceil(Math.max(crzFt*1.12,(X.maxTerrain||0)*1.1)/1000)*1000;
+  const x=dist=>pl+(dist/total)*(W-pl-pr), y=h=>H-pb-(h/top)*(H-pt-pb);
+  const pts=[...c.pts.map(p=>[p.d,p.h]), ...[...d.pts].reverse().map(p=>[total-p.d,p.h])];
+  const line=pts.map(([a,b])=>`${x(a).toFixed(1)},${y(b).toFixed(1)}`).join(" ");
+  let grid="";
+  const gstep=[1000,2000,5000,10000].find(s=>top/s<=8)||10000;
+  for(let h=0;h<=top;h+=gstep) grid+=`<line x1="${pl}" x2="${W-pr}" y1="${y(h)}" y2="${y(h)}" stroke="#1d2a36"/><text x="${pl-8}" y="${y(h)+4}" fill="#8b9bab" font-size="11" text-anchor="end">${h>=18000?"FL"+h/100:fmtK(h)}</text>`;
+  const nmTot=nm(total), tick=[5,10,25,50,100,200,500,1000].find(s=>nmTot/s<=10)||1000;
+  for(let n=0;n<=nmTot;n+=tick) grid+=`<text x="${x(n*NM)}" y="${H-pb+18}" fill="#8b9bab" font-size="11" text-anchor="middle">${n}</text>`;
+  const terr=X.terrain?`<polygon points="${x(0)},${y(0)} ${X.terrain.map(t=>`${x(t.f*total).toFixed(1)},${y(t.ft).toFixed(1)}`).join(" ")} ${x(total)},${y(0)}" fill="#6b4f2a" fill-opacity=".85" stroke="#a07a45" stroke-width="1"/>`:"";
+  const toc=[x(c.d),y(crzFt)], tod=[x(total-d.d),y(crzFt)], close=tod[0]-toc[0]<330;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Vertical flight profile">
+    <defs><linearGradient id="fillg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3fb8ff" stop-opacity=".30"/><stop offset="1" stop-color="#3fb8ff" stop-opacity="0"/></linearGradient></defs>
+    ${grid}
+    ${windLayer(X,x,y,top)}
+    <polygon points="${x(0)},${y(0)} ${line} ${x(total)},${y(0)}" fill="url(#fillg)"/>
+    ${terr}
+    <polyline points="${line}" fill="none" stroke="#3fb8ff" stroke-width="2.2"/>
+    <circle cx="${toc[0]}" cy="${toc[1]}" r="5" fill="#38d39f"/><text x="${close?toc[0]-8:toc[0]+8}" y="${toc[1]-8}" fill="#38d39f" font-size="12" text-anchor="${close?"end":"start"}">TOC ${nm(c.d).toFixed(nm(c.d)<20?1:0)} NM</text>
+    <circle cx="${tod[0]}" cy="${tod[1]}" r="5" fill="#e07bff"/><text x="${close?tod[0]+8:tod[0]-8}" y="${tod[1]-8}" fill="#e07bff" font-size="12" text-anchor="${close?"start":"end"}">TOD ${nm(d.d).toFixed(nm(d.d)<20?1:0)} NM to go</text>
+    <text x="${(toc[0]+tod[0])/2}" y="${toc[1]+18}" fill="#e6edf3" font-size="12" text-anchor="middle">${lvl(crzFt)}</text>
+    <text x="${x(0)}" y="${H-4}" fill="#e6edf3" font-size="12">${dep.icao}</text>
+    <text x="${x(total)}" y="${H-4}" fill="#e6edf3" font-size="12" text-anchor="end">${arr.icao}</text>
+    <text x="${(W+pl)/2}" y="${H-4}" fill="#8b9bab" font-size="11" text-anchor="middle">distance (NM)</text>
+    <text x="12" y="${pt+4}" fill="#8b9bab" font-size="11">ft</text>
+  </svg>`;
+}
+
+$("ac").addEventListener("change",onAircraft);
+$("otherGo").addEventListener("click",()=>{ const c=$("otherCode").value.trim().toUpperCase(); if(/^[A-Z0-9]{2,4}$/.test(c)){ $("err").textContent=""; selectModel("apm:"+c); } else $("err").textContent="Enter a 2–4 character ICAO type designator."; });
+$("dep").addEventListener("input",aptSearch); $("arr").addEventListener("input",aptSearch); $("alt").addEventListener("input",aptSearch);
+$("go").addEventListener("click",calculate);
+document.addEventListener("change",e=>{ if(e.target?.id==="windTgl"){ $("profcard").classList.toggle("nowinds",!e.target.checked); try{ localStorage.setItem("xperf.winds",e.target.checked?"1":"0"); }catch(_){} } });
+{ const n=new Date(); n.setUTCMinutes(0,0,0); $("etd").value=n.toISOString().slice(0,16); }
+init();
+</script>
+</body>
+</html>
