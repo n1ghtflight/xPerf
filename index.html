@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.17b">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.17h">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.17i">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
@@ -134,13 +134,13 @@
 </div>
 </div>
 
-<script src="shell.js?v=2026.10.17d"></script>
+<script src="shell.js?v=2026.10.17e"></script>
 <script src="data.js?v=2026.10.16a"></script>
 <script src="nav.js?v=2026.10.17a"></script>
 <script src="acpicker.js?v=2026.10.16b"></script>
 <script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.16c"></script>
-<script src="chips.js?v=2026.10.17a"></script>
+<script src="chips.js?v=2026.10.17b"></script>
 <script src="overview.js?v=2026.10.17a"></script>
 <script src="palette.js?v=2026.10.17a"></script>
 <script>
@@ -996,7 +996,7 @@ function render(X){
     ${publishedPicker(X)}
     <div class="plnbar"><button class="sm" data-pln>⬇ Download .PLN for FS2024</button><span class="note plnNote"></span></div>
     <div id="map"></div>
-    <div class="maplegend"><span><i style="background:#38d39f"></i>airport</span><span><i class="ring" style="border-color:#3fb8ff"></i>VOR + reception</span><span><i class="ring" style="border-color:#ffb547"></i>NDB</span><span><i style="background:#8b9bab"></i>intersection</span><span><i style="background:#38d39f;outline:2px solid #0b1118"></i>TOC</span><span><i style="background:#e07bff"></i>TOD</span><span class="note">hover a dot for details</span></div>
+    <div class="maplegend"><span><i style="background:var(--good)"></i>airport</span><span><i class="ring" style="border-color:var(--accent)"></i>VOR + reception</span><span><i class="ring" style="border-color:var(--warn)"></i>NDB</span><span><i style="background:var(--text-3)"></i>intersection</span><span><i style="background:var(--good);outline:2px solid var(--panel)"></i>TOC</span><span><i style="background:var(--violet)"></i>TOD</span><span class="note">hover a dot for details</span></div>
     <details class="sub" id="detlog"><summary>Detailed nav log — courses, wind correction, guidance, ETA, ${X.route.plan?.mode==="awy"?"MEA":"MSA"}</summary>${navLog(X)}</details></div>
 
   </div>

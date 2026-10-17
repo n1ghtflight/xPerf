@@ -71,6 +71,14 @@ export async function launch({ width = 1440, height = 900, mobile = false, schem
       const ok = await page.eval(`(()=>{const e=document.querySelector(${JSON.stringify(selector)}); if(!e) return false; e.scrollIntoView({block:"center"}); e.click(); return true;})()`);
       if (!ok) throw new Error("click: no element " + selector);
     },
+    // touch tap at the centre of the first matching element (or at x,y when given numbers)
+    async tap(selector, y) {
+      const p = typeof selector === "number" ? { x: selector, y } : await page.eval(`(()=>{const e=document.querySelector(${JSON.stringify(selector)}); if(!e) return null; e.scrollIntoView({block:"center"}); const r=e.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2};})()`);
+      if (!p) throw new Error("tap: no element " + selector);
+      await send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: p.x, y: p.y }] });
+      await send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await sleep(120);
+    },
     async type(selector, text) {
       await page.eval(`document.querySelector(${JSON.stringify(selector)}).focus()`);
       for (const ch of text) await page.key(ch);

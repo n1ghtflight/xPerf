@@ -48,6 +48,7 @@ const Chips=(()=>{
       $("errSlot").appendChild($("err"));
     }
     const bar=$("chipbar"); bar.hidden=false; bar.innerHTML=render(X);
+    Shell.touchCopy($("results"));
     syncForm();
   }
 

@@ -311,6 +311,37 @@ check("keys-in-inputs", async () => {
   } finally { await page.close(); }
 });
 
+check("touch-tooltips", async () => {
+  const page = await open("c172", { plan: true, width: 390, height: 844, mobile: true });
+  try {
+    await page.eval(`Shell.showView("fuel")`); await settle(page);
+    const target = `[data-tab="fuel"] svg circle`;
+    expect(await page.eval(`!!document.querySelector('${target}')?.querySelector('title')`), "level chart dot has no <title>");
+    await page.tap(target); await settle(page);
+    const tip = await page.eval(`(()=>{const t=document.querySelector('.tip.sticky'); return t&&!t.hidden&&t.getClientRects().length?t.textContent:null;})()`);
+    expect(tip && /ft|FL/.test(tip), "no sticky tooltip after tapping a level dot (got " + tip + ")");
+    await page.tap(20, 200); await settle(page);
+    expect(await page.eval(`!document.querySelector('.tip.sticky:not([hidden])')`), "tooltip did not close on tapping elsewhere");
+    expect(await page.eval(`!/\\bhover\\b/i.test(document.querySelector('#results').innerText)`), "touch copy still says 'hover'");
+  } finally { await page.close(); }
+});
+
+check("overflow", async () => {
+  const sizes = [[1440, 900, false], [1024, 768, false], [768, 1024, true], [390, 844, true]];
+  const bad = [];
+  for (const scheme of ["dark", "light"]) for (const [w, h, mob] of sizes) {
+    const page = await open("b789", { plan: true, width: w, height: h, mobile: mob, scheme });
+    try {
+      for (const v of ["overview", "route", "airports", "profile", "fuel", "setup", "settings"]) {
+        await page.eval(`Shell.showView(${JSON.stringify(v)})`); await settle(page);
+        const o = await page.eval(`({doc:document.documentElement.scrollWidth-innerWidth, surf:(s=>s.scrollWidth-s.clientWidth)(document.getElementById('surface'))})`);
+        if (o.doc > 1 || o.surf > 1) bad.push(`${w}x${h} ${scheme} ${v}: page +${o.doc}px, surface +${o.surf}px`);
+      }
+    } finally { await page.close(); }
+  }
+  expect(!bad.length, "horizontal overflow:\n    " + bad.join("\n    "));
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {

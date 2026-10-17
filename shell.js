@@ -75,7 +75,31 @@ const Shell=(()=>{
     else if(k==="["){ e.preventDefault(); toggleSidebar(); }
   });
 
-  return { VIEWS, PHONE_TABS, setTheme, theme:()=>theme, showView, current:()=>current, setCrumb, setData, toggleSidebar, store };
+  /* ---------- touch: hover-only details work by tap, and the copy says "tap" */
+  const coarse=()=>matchMedia("(pointer: coarse)").matches;
+  function touchCopy(rootEl){
+    if(!rootEl||!coarse()) return;
+    const w=document.createTreeWalker(rootEl,NodeFilter.SHOW_TEXT,{acceptNode:n=>/\bhover\b/i.test(n.nodeValue)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT});
+    const nodes=[]; while(w.nextNode()) nodes.push(w.currentNode);
+    nodes.forEach(n=>n.nodeValue=n.nodeValue.replace(/\bhover\b/gi,m=>m[0]==="H"?"Tap":"tap"));
+  }
+  const sticky=document.createElement("div"); sticky.className="tip sticky"; sticky.hidden=true; sticky.setAttribute("role","status");
+  document.body.appendChild(sticky);
+  let lastPointer="mouse";
+  document.addEventListener("pointerdown",e=>{ lastPointer=e.pointerType; },true);
+  document.addEventListener("click",e=>{
+    if(lastPointer==="mouse") return;
+    // SVG chart parts carry their details in a <title> child (shown on hover by the browser, never on touch)
+    let el=e.target.closest&&e.target.closest("svg *"), title=null;
+    while(el&&el.tagName.toLowerCase()!=="svg"&&!title){ title=[...el.children].find(c=>c.tagName.toLowerCase()==="title"); if(!title) el=el.parentElement; }
+    if(!title){ sticky.hidden=true; return; }
+    sticky.textContent=title.textContent; sticky.hidden=false;
+    const x=e.clientX, y=e.clientY;
+    sticky.style.left=Math.max(8,Math.min(innerWidth-sticky.offsetWidth-8,x-sticky.offsetWidth/2))+"px";
+    sticky.style.top=Math.max(8,y-sticky.offsetHeight-12)+"px";
+  });
+
+  return { VIEWS, PHONE_TABS, setTheme, theme:()=>theme, showView, current:()=>current, setCrumb, setData, toggleSidebar, touchCopy, store };
 })();
 
 /* =====================================================================

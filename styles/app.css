@@ -459,3 +459,11 @@ button.aptback{display:none;margin:0 0 10px;width:auto;padding:0 10px;height:var
 .tip{position:fixed;z-index:3000;display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:var(--r-sm);background:var(--tile);
   box-shadow:var(--shadow-pop);color:var(--text-2);font-size:var(--fs-mini);pointer-events:none;white-space:nowrap}
 .tip[hidden]{display:none}
+
+/* ================= Touch & narrow screens ================= */
+.tip.sticky{pointer-events:auto;max-width:min(320px,calc(100vw - 16px));white-space:normal;color:var(--text);font-size:var(--fs-small)}
+.drawer-body{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+@media (max-width:767px){
+  .card table:not(.legs){display:block;max-width:100%;overflow-x:auto}
+  .card{padding:12px}
+}
