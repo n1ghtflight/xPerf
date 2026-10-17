@@ -5,18 +5,53 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.17a">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.17a">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.17b">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
-<header>
-  <h1>✈ Flight Performance Calculator</h1>
-  <span class="sub">Optimum cruise level · climb / descent rates · TOC / TOD · live winds aloft · terrain</span>
-  <span id="status">loading data…</span>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sidebar" viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="2"/><path d="M6 2.5v11"/></symbol>
+  <symbol id="i-back" viewBox="0 0 16 16"><path d="M10 3.5 5.5 8l4.5 4.5"/></symbol>
+  <symbol id="i-fwd" viewBox="0 0 16 16"><path d="M6 3.5 10.5 8 6 12.5"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"/></symbol>
+  <symbol id="i-overview" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1"/><rect x="9" y="2.5" width="4.5" height="4.5" rx="1"/><rect x="2.5" y="9" width="4.5" height="4.5" rx="1"/><rect x="9" y="9" width="4.5" height="4.5" rx="1"/></symbol>
+  <symbol id="i-route" viewBox="0 0 16 16"><circle cx="3.5" cy="12.5" r="1.5"/><circle cx="12.5" cy="3.5" r="1.5"/><path d="M5 12.5h4.5a2 2 0 0 0 0-4h-3a2 2 0 0 1 0-4H11"/></symbol>
+  <symbol id="i-airports" viewBox="0 0 16 16"><path d="M8 14s4.5-4 4.5-7.5a4.5 4.5 0 0 0-9 0C3.5 10 8 14 8 14z"/><circle cx="8" cy="6.5" r="1.5"/></symbol>
+  <symbol id="i-profile" viewBox="0 0 16 16"><path d="M1.5 13.5h13M2.5 12l3.5-6h4l3.5 6"/></symbol>
+  <symbol id="i-fuel" viewBox="0 0 16 16"><path d="M8 2.5s-4 4.6-4 7.5a4 4 0 0 0 8 0c0-2.9-4-7.5-4-7.5z"/></symbol>
+  <symbol id="i-setup" viewBox="0 0 16 16"><path d="M8 2v4.5L2 9.5V11l6-1.5v3l-1.5 1V15L8 14.5l1.5.5v-1.5l-1.5-1v-3L14 11V9.5L8 6.5V2"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 16 16"><path d="M3 4.5h6M12 4.5h1M3 11.5h1M7 11.5h6"/><circle cx="10.5" cy="4.5" r="1.5"/><circle cx="5.5" cy="11.5" r="1.5"/></symbol>
+  <symbol id="i-more" viewBox="0 0 16 16"><path d="M3.5 8h.01M8 8h.01M12.5 8h.01" stroke-width="2.2"/></symbol>
+</svg>
+<div class="app" id="app">
+<header class="titlebar">
+  <div class="tb-left">
+    <button class="icon-btn" id="sbBtn" data-tip="Toggle sidebar" data-kbd="[" aria-label="Toggle sidebar"><svg class="i"><use href="#i-sidebar"/></svg></button>
+    <span class="spacer"></span>
+    <button class="icon-btn" id="navBack" data-tip="Back" aria-label="Previous view"><svg class="i"><use href="#i-back"/></svg></button>
+    <button class="icon-btn" id="navFwd" data-tip="Forward" aria-label="Next view"><svg class="i"><use href="#i-fwd"/></svg></button>
+  </div>
+  <span class="crumb" id="crumb">New flight</span>
+  <span class="spacer"></span>
+  <span class="chip" id="dataChip" hidden></span>
+  <button class="icon-btn" id="themeBtn" data-tip="Theme: system" aria-label="Switch theme"><svg class="i"><use href="#i-sun"/></svg></button>
 </header>
-<main>
-  <section>
+<nav class="sidebar" aria-label="Views">
+  <div class="sb-head"><span class="brand"><span class="logo" aria-hidden="true">✈</span><b class="lbl">XPerf</b></span></div>
+    <a class="nav" href="#overview" data-view="overview" data-tip="Overview" data-kbd="G O"><svg class="i"><use href="#i-overview"/></svg><span class="lbl">Overview</span></a>
+    <a class="nav" href="#route" data-view="route" data-tip="Route &amp; nav log" data-kbd="G R"><svg class="i"><use href="#i-route"/></svg><span class="lbl">Route &amp; nav log</span></a>
+    <a class="nav" href="#airports" data-view="airports" data-tip="Airports &amp; weather" data-kbd="G A"><svg class="i"><use href="#i-airports"/></svg><span class="lbl">Airports &amp; weather</span></a>
+    <a class="nav" href="#profile" data-view="profile" data-tip="Profile" data-kbd="G P"><svg class="i"><use href="#i-profile"/></svg><span class="lbl">Profile</span></a>
+    <a class="nav" href="#fuel" data-view="fuel" data-tip="Fuel &amp; levels" data-kbd="G F"><svg class="i"><use href="#i-fuel"/></svg><span class="lbl">Fuel &amp; levels</span></a>
+    <a class="nav" href="#setup" data-view="setup" data-tip="FS2024 setup" data-kbd="G S"><svg class="i"><use href="#i-setup"/></svg><span class="lbl">FS2024 setup</span></a>
+  <div class="sb-foot">
+    <a class="nav" href="#settings" data-view="settings" data-tip="Settings" data-kbd=","><svg class="i"><use href="#i-settings"/></svg><span class="lbl">Settings</span></a>
+  </div>
+</nav>
+<main class="surface" id="surface">
+  <div class="work">
+  <section class="formcol">
     <div class="card">
       <h2>Flight</h2>
       <label for="ac">Aircraft</label>
@@ -63,9 +98,29 @@
     <div class="card empty">Pick an aircraft, departure and arrival, then press <b>Calculate</b>.<br><br>
       <span class="note">Examples: Cessna 172 · KPAO → KTRK &nbsp;·&nbsp; SR22 · EGTF → LFPN &nbsp;·&nbsp; A320 · EGLL → LFPG &nbsp;·&nbsp; B789 · KJFK → EGLL</span></div>
   </section>
+  </div>
+  <section class="tabpanel settingspanel" data-tab="settings" hidden>
+    <h2 class="viewtitle">Settings</h2>
+    <div class="card"><label for="themeSel">Theme</label>
+      <select id="themeSel"><option value="system">Follow the device</option><option value="dark">Dark</option><option value="light">Light</option></select></div>
+  </section>
 </main>
+<footer class="statusbar"><span id="status">loading data…</span><span class="spacer"></span><span class="kbdhint"><kbd>G</kbd> then a letter switches views</span></footer>
+<nav class="tabbar" aria-label="Views">
+  <button data-view="overview"><svg class="i"><use href="#i-overview"/></svg><span>Overview</span></button>
+  <button data-view="route"><svg class="i"><use href="#i-route"/></svg><span>Route</span></button>
+  <button data-view="airports"><svg class="i"><use href="#i-airports"/></svg><span>Airports</span></button>
+  <button data-view="profile"><svg class="i"><use href="#i-profile"/></svg><span>Profile</span></button>
+  <button data-view="more"><svg class="i"><use href="#i-more"/></svg><span>More</span></button>
+</nav>
+<div class="moresheet" id="moreSheet" hidden>
+  <button data-view="fuel"><svg class="i"><use href="#i-fuel"/></svg><span>Fuel &amp; levels</span></button>
+  <button data-view="setup"><svg class="i"><use href="#i-setup"/></svg><span>FS2024 setup</span></button>
+  <button data-view="settings"><svg class="i"><use href="#i-settings"/></svg><span>Settings</span></button>
+</div>
+</div>
 
-<script src="shell.js?v=2026.10.17a"></script>
+<script src="shell.js?v=2026.10.17b"></script>
 <script src="data.js?v=2026.10.16a"></script>
 <script src="nav.js?v=2026.10.16s"></script>
 <script src="acpicker.js?v=2026.10.16b"></script>
@@ -209,6 +264,7 @@ async function init(){
     sel.value="apm:C172";
     AcPicker.init();          // searchable picker over the list (restores the last aircraft used)
     status(`${Object.keys(GA_NAMES).length+Object.keys(AC_NAMES).length} aircraft types · ${DB.airports.length.toLocaleString()} airports (${DB.aptSource})${XD.mode==="packs"?" · "+await XD.label().catch(()=>"offline packs unavailable"):""}`);
+    Shell.setData(XD.mode==="packs"?"● Offline packs":"● Live data");
     $("go").disabled=false; onAircraft();
     window.NAV_READY=loadNavaids();
   }catch(e){ status("data load failed"); $("err").textContent="Could not load data: "+e.message; }
@@ -855,22 +911,12 @@ function statusOf(r,X){
   return ["ok",false];
 }
 
-const TABS=[["setup","FS2024 setup"],["route","Route"],["airports","Airports"],["profile","Profile"],["fuel","Fuel & levels"]];
-function currentTab(){ try{ const t=localStorage.getItem("xperf.tab"); return TABS.some(x=>x[0]===t)?t:"setup"; }catch(_){ return "setup"; } }
-function tabBar(X){
-  const sub={setup:"world map · cockpit · legs",route:`${X.route.points.length-2} waypoints · map · nav log`,airports:`${X.dep.icao} · ${X.arr.icao}${X.altApt?" · "+X.altApt.icao:""}`,
-    profile:"winds · climb · descent",fuel:`${X.results.length} levels compared`};
-  return `<div class="tabs" role="tablist">${TABS.map(([k,l])=>`<button class="tab" role="tab" data-tab="${k}" aria-controls="tp-${k}"><span>${l}</span><small>${sub[k]}</small></button>`).join("")}</div>`;
-}
-function showTab(name){
-  document.querySelectorAll(".tabs .tab").forEach(b=>{ const on=b.dataset.tab===name; b.classList.toggle("on",on); b.setAttribute("aria-selected",on); });
-  document.querySelectorAll(".tabpanel").forEach(p=>p.hidden=p.dataset.tab!==name);
-  try{ localStorage.setItem("xperf.tab",name); }catch(_){}
-  // Leaflet needs a visible container: draw the map the first time the Route tab is shown, then just resize it
-  if(name==="route"&&window.LAST_X){ try{ if(!LAST_X._mapDrawn){ drawMap(LAST_X); LAST_X._mapDrawn=true; } else if(MAP){ MAP.invalidateSize(); } }catch(e){ console.warn("map",e); } }
-}
-document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest(".tabs .tab"); if(!b) return;
-  showTab(b.dataset.tab); const t=document.querySelector(".tabs"); if(t&&t.getBoundingClientRect().top<0) t.scrollIntoView({block:"start"}); });
+// Views live in shell.js (sidebar, phone tab bar, keys); render() emits one .tabpanel per view.
+function currentTab(){ const t=Shell.store.get("xperf.tab"); return Shell.VIEWS.some(v=>v[0]===t)?t:"overview"; }
+function showTab(name){ Shell.showView(name); }
+// Leaflet needs a visible container: draw the map the first time the Route view is shown, then just resize it
+document.addEventListener("xperf:view",e=>{ if(e.detail!=="route"||!window.LAST_X) return;
+  try{ if(!LAST_X._mapDrawn){ drawMap(LAST_X); LAST_X._mapDrawn=true; } else if(MAP){ MAP.invalidateSize(); } }catch(err){ console.warn("map",err); } });
 
 function planWarnings(X){
   const {m,dep,arr,total,sel}=X, c=sel.climb, d=sel.descent, cr=sel.cruise, crzFt=sel.ft, apm=m.kind==="apm";
@@ -908,6 +954,7 @@ function planWarnings(X){
 
 function render(X){
   window.LAST_X=X;          // kept for approach changes and the plate viewer
+  Shell.setCrumb(`${X.dep.icao} → ${X.arr.icao} · ${String(X.m.code).toUpperCase()}`);
   const {m,dep,arr,total,sel,best}=X, c=sel.climb, d=sel.descent, cr=sel.cruise, crzFt=sel.ft, apm=m.kind==="apm";
   const fpm=v=>Math.round(v/FPM), gal=kg=>kg/m.fuelDensity;
   const fuelTxt=kg=>apm?`${fmtK(kg)} kg · ${fmtK(gal(kg))} gal`:`${fmtK(kg)} kg`;
@@ -920,6 +967,7 @@ function render(X){
     alt:X.altApt?airportBrief(`Alternate (${Math.round(nm(gcDist(arr,X.altApt)))} NM from ${arr.icao})`,X.altApt,X.info?.alt,X,sel.land):null};
   const climbFpm=Math.round(fpm((crzFt-dep.alt)*FT/c.t)/10)*10, descFpm=Math.round(fpm((crzFt-arr.alt)*FT/d.t)/10)*10;
   const html=`
+  <div class="tabpanel" data-tab="overview">
   ${warn.length?`<div class="warnbox">${warn.map(w=>"⚠ "+w).join("<br>")}</div>`:""}
   <div class="kpis">
     <div class="kpi hl"><div class="k">${$("fl").value==="auto"?"Optimum cruise":"Cruise level"}</div><div class="v">${lvl(crzFt)}</div><div class="s">lowest fuel ${lvl(X.minFuel.ft)} · fastest ${lvl(X.minTime.ft)}</div></div>
@@ -931,7 +979,7 @@ function render(X){
     <div class="kpi"><div class="k">Cruise wind</div><div class="v" style="color:${avgTail>=0?"var(--green)":"var(--amber)"}">${avgTail>=0?"+":""}${avgTail} kt</div><div class="s">${avgTail>=0?"tailwind":"headwind"} · ISA ${cr.dT>=0?"+":""}${Math.round(cr.dT)}°C</div></div>
     <div class="kpi"><div class="k">Climb / descent</div><div class="v">+${fmtK(climbFpm)} / −${fmtK(descFpm)}</div><div class="s">fpm average</div></div>
   </div>
-  ${tabBar(X)}
+  </div>
   <div class="tabpanel" data-tab="setup">${setupCard(X)}</div>
   <div class="tabpanel" data-tab="route">
   <div class="card"><h2>Route${X.route.nav?` — ${X.navMode==="pub"?"FAA published route":X.navMode==="awy"?(X.route.plan.hybrid?"VOR to VOR + ":"")+(X.route.plan.high?"Jet airways":"Victor airways"):X.navMode==="vor"?"VOR to VOR":"VOR / NDB"}`:" — direct"}</h2>

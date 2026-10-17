@@ -52,6 +52,68 @@ check("theme", async () => {
   } finally { await page.close(); }
 });
 
+const VISIBLE_VIEWS = `[...document.querySelectorAll('.tabpanel')].filter(p=>!p.hidden&&p.getClientRects().length).map(p=>p.dataset.tab)`;
+const settle = page => page.eval(`new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))`);
+
+check("views", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    const views = await page.eval(`Shell.VIEWS.map(v=>v[0])`);
+    expect(JSON.stringify(views) === JSON.stringify(["overview", "route", "airports", "profile", "fuel", "setup", "settings"]), "Shell.VIEWS ids: " + views);
+    for (const id of views) {
+      await page.click(`.sidebar [data-view="${id}"]`); await settle(page);
+      const vis = await page.eval(VISIBLE_VIEWS);
+      expect(vis.length === 1 && vis[0] === id, `sidebar ${id}: visible panels ${JSON.stringify(vis)}`);
+    }
+    const chords = { o: "overview", r: "route", a: "airports", p: "profile", f: "fuel", s: "setup", ",": "settings" };
+    for (const [k, id] of Object.entries(chords)) {
+      await page.eval(`document.activeElement?.blur()`);
+      if (k !== ",") await page.key("g");
+      await page.key(k); await settle(page);
+      const vis = await page.eval(VISIBLE_VIEWS);
+      expect(vis.length === 1 && vis[0] === id, `keys ${k === "," ? "," : "G " + k.toUpperCase()}: visible ${JSON.stringify(vis)}`);
+    }
+  } finally { await page.close(); }
+});
+
+check("view-memory", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.click(`.sidebar [data-view="profile"]`);
+    await page.goto("/");
+    await page.eval(`(async()=>{ for(let i=0;i<240&&document.getElementById('go').disabled;i++) await new Promise(r=>setTimeout(r,250)); })()`);
+    const err = await planFlight(page, FLIGHTS.c172); expect(!err, err);
+    await settle(page);
+    const vis = await page.eval(VISIBLE_VIEWS);
+    expect(vis.length === 1 && vis[0] === "profile", `after reload + plan: ${JSON.stringify(vis)}`);
+  } finally { await page.close(); }
+});
+
+check("phone-tabbar", async () => {
+  const page = await open("c172", { plan: true, width: 390, height: 844, mobile: true });
+  try {
+    const tabs = await page.eval(`[...document.querySelectorAll('.tabbar button')].filter(b=>b.getClientRects().length).map(b=>b.textContent.trim())`);
+    expect(JSON.stringify(tabs) === JSON.stringify(["Overview", "Route", "Airports", "Profile", "More"]), "tab bar: " + JSON.stringify(tabs));
+    const sidebarW = await page.eval(`document.querySelector('.sidebar').getBoundingClientRect().width`);
+    expect(sidebarW < 1, "sidebar should be hidden on phones, width " + sidebarW);
+    await page.click(`.tabbar [data-view="more"]`); await settle(page);
+    const more = await page.eval(`[...document.querySelectorAll('.moresheet [data-view]')].filter(b=>b.getClientRects().length).map(b=>b.textContent.trim())`);
+    expect(JSON.stringify(more) === JSON.stringify(["Fuel & levels", "FS2024 setup", "Settings"]), "More sheet: " + JSON.stringify(more));
+  } finally { await page.close(); }
+});
+
+check("ipad-portrait", async () => {
+  const page = await open("c172", { plan: true, width: 768, height: 1024, mobile: true });
+  try {
+    const w = () => page.eval(`document.querySelector('.sidebar').getBoundingClientRect().width`);
+    expect(await w() <= 64, "portrait sidebar width " + await w());
+    const labels = await page.eval(`[...document.querySelectorAll('.sidebar [data-view] .lbl')].filter(l=>l.getClientRects().length&&l.getBoundingClientRect().width>0).length`);
+    expect(labels === 0, labels + " sidebar labels visible in icon mode");
+    await page.click("#sbBtn"); await settle(page);
+    expect(await w() >= 200, "after toggle sidebar width " + await w());
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {

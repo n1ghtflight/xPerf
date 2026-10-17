@@ -1,10 +1,4 @@
 /* XPerf app styles — built on styles/tokens.css (nightflight-ui). */
-header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-header h1{font-size:18px;margin:0;letter-spacing:.3px}
-header .sub{color:var(--muted);font-size:12px}
-#status{margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)}
-main{display:grid;grid-template-columns:340px 1fr;gap:18px;padding:18px 24px;max-width:1500px;margin:0 auto}
-@media(max-width:900px){main{grid-template-columns:1fr;padding:16px}}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
 .card h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:0 0 12px;font-weight:600}
 label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px}
@@ -84,8 +78,6 @@ a{color:var(--accent)}
 .maplbl{background:color-mix(in srgb,var(--panel) 85%,transparent);color:var(--text);border:var(--hairline) solid var(--line);font:11px var(--mono);box-shadow:none;padding:1px 4px}
 .leaflet-tooltip-right.maplbl::before,.leaflet-tooltip-top.maplbl::before{display:none}
 details summary{cursor:pointer;margin:6px 0}
-/* ---- sticky form column on wide screens */
-@media(min-width:901px){ main>section:first-child{position:sticky;top:12px;align-self:start;max-height:calc(100vh - 24px);overflow:auto;scrollbar-width:thin} }
 /* ---- FS2024 setup card */
 .setup{border-color:var(--line);background:var(--tile)}
 .setuphead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
@@ -135,14 +127,7 @@ details.sub>summary{font-size:12px;color:var(--accent);font-weight:600;letter-sp
 .maplbl.apt{font-weight:700}
 .plnbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 2px}
 .plnbar button{margin:0;width:auto;padding:8px 14px}
-/* ---- result tabs */
-.tabs{position:sticky;top:0;z-index:500;display:flex;gap:6px;overflow-x:auto;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--line);scrollbar-width:thin}
-.tab{margin:0;width:auto;flex:1 0 auto;background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:7px 14px;text-align:left;
-  display:flex;flex-direction:column;gap:1px;font-weight:600;font-size:13px;cursor:pointer}
-.tab small{font-size:10.5px;font-weight:400;color:var(--muted);white-space:nowrap}
-.tab:hover{border-color:var(--accent);color:var(--text)}
-.tab.on{background:var(--active);border-color:var(--line-strong);color:var(--text)}
-.tab.on small{color:var(--text-2)}
+/* ---- views */
 .tabpanel{display:flex;flex-direction:column;gap:18px}
 .tabpanel[hidden]{display:none}
 .srcnote>summary{font-size:12px;color:var(--accent);font-weight:600}
@@ -196,3 +181,80 @@ button.ghost{background:transparent;color:var(--accent);border:1px solid var(--a
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tiles-dark{filter:invert(1) hue-rotate(190deg) brightness(.85) contrast(.9) saturate(.35)}}
 .leaflet-control-layers{background:var(--tile);color:var(--text);border:var(--hairline) solid var(--line)!important}
 .leaflet-tooltip-left.maplbl::before{display:none}
+
+/* ================= Shell (nightflight-ui layout C) ================= */
+html,body{height:100%}
+body{overflow:hidden}
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.spacer{flex:1}
+.app{display:grid;grid-template-columns:var(--w-sidebar) minmax(0,1fr);grid-template-rows:var(--h-titlebar) minmax(0,1fr) var(--h-statusbar);
+  height:100dvh;background:var(--chrome);transition:grid-template-columns var(--dur-regular) var(--ease)}
+.app.collapsed{grid-template-columns:0 minmax(0,1fr)}
+.app.collapsed .sidebar{visibility:hidden}
+
+.titlebar{grid-column:1/-1;display:flex;align-items:center;gap:6px;padding:0 var(--gutter);padding-top:env(safe-area-inset-top)}
+.tb-left{display:flex;align-items:center;gap:2px;width:calc(var(--w-sidebar) - var(--gutter));transition:width var(--dur-regular) var(--ease)}
+.app.collapsed .tb-left{width:auto}
+.crumb{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:var(--r-sm);background:var(--tile);color:var(--text);
+  font-size:var(--fs-small);font-weight:var(--w-medium);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
+.titlebar .chip{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 6px;margin:0;font-size:var(--fs-mini);font-weight:var(--w-medium);color:var(--text-2)}
+button.icon-btn{display:inline-grid;place-items:center;width:var(--h-control);height:var(--h-control);margin:0;padding:0;border:0;border-radius:var(--r-sm);
+  background:transparent;color:var(--text-3);cursor:pointer;transition:background var(--dur) var(--ease),color var(--dur) var(--ease)}
+button.icon-btn:hover{background:var(--tile-hover);color:var(--text)}
+
+.sidebar{grid-row:2/3;display:flex;flex-direction:column;gap:2px;min-width:0;overflow:auto;padding:0 12px 12px}
+.sb-head{display:flex;align-items:center;height:40px;margin-bottom:6px;padding:0 6px}
+.brand{display:flex;align-items:center;gap:8px;min-width:0}
+.brand .logo{display:grid;place-items:center;width:20px;height:20px;border-radius:var(--r-sm);background:var(--accent);color:var(--accent-ink);font-size:12px;flex:none}
+.brand b{font-size:var(--fs-small);font-weight:var(--w-semibold)}
+.nav{display:flex;align-items:center;gap:8px;height:var(--h-control);padding:0 8px;border-radius:var(--r-sm);color:var(--text-2);
+  font-size:var(--fs-small);font-weight:var(--w-medium);text-decoration:none;white-space:nowrap;transition:background var(--dur) var(--ease)}
+.nav svg{color:var(--text-3)}
+.nav:hover{background:var(--tile-hover);color:var(--text)}
+.nav[aria-current="page"]{background:var(--active);color:var(--text)}
+.nav[aria-current="page"] svg{color:var(--text-2)}
+.sb-foot{margin-top:auto;padding-top:12px}
+
+.surface{grid-row:2/3;min-width:0;margin-right:var(--gutter);overflow:auto;background:var(--panel);
+  border:var(--hairline) solid var(--line-soft);border-radius:var(--r);box-shadow:var(--shadow)}
+.app.collapsed .surface{margin-left:var(--gutter)}
+.work{display:grid;grid-template-columns:340px minmax(0,1fr);gap:18px;padding:18px}
+.work>section{min-width:0}
+#results{display:flex;flex-direction:column;gap:18px;min-width:0}
+.surface[data-view="settings"] .work{display:none}
+.settingspanel{padding:18px;max-width:720px}
+.viewtitle{margin:0 0 12px;font-size:var(--fs-regular);font-weight:var(--w-medium)}
+
+.statusbar{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 12px;color:var(--text-3);font-size:var(--fs-mini);white-space:nowrap;overflow:hidden}
+.statusbar #status{overflow:hidden;text-overflow:ellipsis;font-family:var(--font)}
+.tabbar,.moresheet{display:none}
+
+/* iPad portrait / small laptops: icon-only sidebar that expands on demand */
+@media (min-width:768px) and (max-width:1023px){
+  .app{grid-template-columns:56px minmax(0,1fr)}
+  .app .tb-left{width:auto}
+  .app .sidebar{padding:0 8px 12px}
+  .app:not(.expanded) .sidebar .lbl{display:none}
+  .app:not(.expanded) .sidebar .nav{justify-content:center;padding:0}
+  .app.expanded{grid-template-columns:var(--w-sidebar) minmax(0,1fr)}
+  .work{grid-template-columns:minmax(0,1fr)}
+}
+/* Phones: no sidebar; bottom tab bar + More sheet */
+@media (max-width:767px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:var(--h-titlebar) minmax(0,1fr) auto}
+  .sidebar,.statusbar{display:none}
+  .tb-left{width:auto}
+  .surface{grid-row:2/3;margin:0 var(--gutter) 0}
+  .work{grid-template-columns:minmax(0,1fr);padding:12px}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);grid-row:3/4;border-top:var(--hairline) solid var(--line-soft);background:var(--chrome);
+    padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar button{display:flex;flex-direction:column;align-items:center;gap:3px;margin:0;padding:8px 0 6px;border:0;border-radius:0;background:none;
+    color:var(--text-3);font-size:var(--fs-micro);font-weight:var(--w-medium);width:auto}
+  .tabbar button[aria-current="page"]{color:var(--text)}
+  .tabbar svg.i{width:20px;height:20px}
+  .moresheet:not([hidden]){display:flex;flex-direction:column;gap:2px;position:fixed;right:var(--gutter);bottom:calc(64px + env(safe-area-inset-bottom));z-index:1500;
+    min-width:220px;padding:6px;background:var(--tile);border-radius:var(--r-lg);box-shadow:var(--shadow-pop)}
+  .moresheet button{display:flex;align-items:center;gap:10px;margin:0;width:100%;height:40px;padding:0 10px;border:0;border-radius:var(--r);background:none;
+    color:var(--text);font-size:var(--fs-regular);font-weight:var(--w-medium);text-align:left}
+  .moresheet button:hover,.moresheet button[aria-current="page"]{background:var(--active)}
+}
