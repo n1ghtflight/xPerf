@@ -515,7 +515,11 @@ let failed = 0;
 for (const c of checks) {
   if (only && !only.has(c.name)) continue;
   const t = Date.now();
-  try { await c.fn(); console.log(`PASS ${c.name} (${((Date.now() - t) / 1000).toFixed(1)}s)`); }
+  // a hung headless browser must fail the check, not freeze the whole run
+  let timer;
+  const limit = new Promise((_, no) => { timer = setTimeout(() => no(new Error("timed out after 180 s")), 180000); });
+  try { await Promise.race([c.fn(), limit]); console.log(`PASS ${c.name} (${((Date.now() - t) / 1000).toFixed(1)}s)`); }
   catch (e) { failed++; console.log(`FAIL ${c.name}: ${e.message}`); }
+  finally { clearTimeout(timer); }
 }
 process.exit(failed ? 1 : 0);

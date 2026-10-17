@@ -137,6 +137,7 @@ const XD=(()=>{
     airports: ()=>S?get("/api/airports","json",90000):pack("airports.json"),
     navaids:  ()=>S?get("/api/navaids","json",90000):pack("navaids.json"),
     airways:  ()=>S?get("/api/airways","json",180000):pack("airways.json"),
+    gaPerf:   ()=>once("gaperf",()=>get("data/ga_perf.json","json",60000)),   // XPerf's own GA / turboprop / bizjet table
     airportInfo: a=>S?fetchT("/api/airportinfo?"+new URLSearchParams({ident:a.icao,aliases:[a.iata,...(a.aliases||[])].filter(Boolean).join(","),country:a.country||"",lat:a.lat,lon:a.lon}),"json",120000)
                      :packAirportInfo(a),
     routes: async(dep,arr)=>{

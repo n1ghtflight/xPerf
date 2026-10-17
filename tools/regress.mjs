@@ -1,8 +1,10 @@
 // Pin XPerf's planning output for the three test flights, in both data modes.
 //   node tools/regress.mjs record  [--mode server|packs] [--flight c172|sr22|b789]
-//   node tools/regress.mjs compare [--mode server|packs] [--flight c172|sr22|b789]
+//   node tools/regress.mjs compare [--mode server|packs] [--flight c172|sr22|b789] [--accept]
 // record: plans live, saves network fixtures (gitignored) + a baseline snapshot (committed).
 // compare: replays the fixtures and diffs the snapshot against the baseline; exit 1 on any difference.
+//   --accept: an intended change: print the diff, then save the replayed snapshot as the new baseline
+//   (same recorded weather and data, unlike `record`, which re-plans live).
 // Needs the app server running: python server.py 8770
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -13,6 +15,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2), cmd = args[0];
 const opt = n => { const i = args.indexOf("--" + n); return i >= 0 ? args[i + 1] : null; };
 const port = +(opt("port") || 8770);
+const accept = args.includes("--accept");
 const modes = opt("mode") ? [opt("mode")] : ["server", "packs"];
 const flights = opt("flight") ? [opt("flight")] : Object.keys(FLIGHTS);
 if (!["record", "compare"].includes(cmd)) { console.error("usage: node tools/regress.mjs record|compare [--mode m] [--flight f]"); process.exit(2); }
@@ -53,7 +56,7 @@ function diff(a, b, path = "$", out = []) {
   return out;
 }
 
-let failures = 0, done = 0;
+let failures = 0, done = 0, accepted = 0;
 for (const mode of modes) for (const f of flights) {
   const label = `${mode}-${f}`;
   if (cmd === "compare" && !existsSync(baseline(mode, f))) { console.log(`FAIL ${label}: missing baseline ${baseline(mode, f)} — run record first`); failures++; continue; }
@@ -71,7 +74,7 @@ for (const mode of modes) for (const f of flights) {
       console.log(`recorded ${label}: ${rec.save()} responses, cruise ${snap.cruiseFt} ft, err "${snap.err || ""}"`);
     } else {
       // inventory = hooks that existed after a plan; they may move or gain siblings, but none may disappear
-      const base = JSON.parse(readFileSync(baseline(mode, f), "utf8")), all = new Set(snap.inventoryAll || []);
+      const base = JSON.parse(readFileSync(baseline(mode, f), "utf8")), all = new Set(snap.inventoryAll || []), full = JSON.stringify(snap, null, 1);
       const gone = (base.inventory || []).filter(h => !all.has(h));
       delete base.inventory; delete base.inventoryAll; delete snap.inventory; delete snap.inventoryAll;
       const d = diff(base, snap);
@@ -79,11 +82,12 @@ for (const mode of modes) for (const f of flights) {
       // An unrecorded request only matters if it changed the output (then `d` is non-empty); otherwise it is
       // noise such as a policy-installed browser extension fetching its own assets — warn, don't fail.
       const note = page.misses.length ? `  (warning: ${page.misses.length} unrecorded request(s), e.g. ${page.misses[0].slice(0, 120)})` : "";
-      if (d.length) { failures++; console.log(`FAIL ${label}:\n  ` + d.join("\n  ") + (note ? "\n" + note : "")); }
+      if (d.length && accept) { writeFileSync(baseline(mode, f), full); accepted++; console.log(`accepted ${label}:\n  ` + d.join("\n  ")); }
+      else if (d.length) { failures++; console.log(`FAIL ${label}:\n  ` + d.join("\n  ") + (note ? "\n" + note : "")); }
       else { done++; console.log(`ok   ${label}${note}`); }
     }
   } catch (e) { failures++; console.log(`FAIL ${label}: ${e.message}`); }
   finally { await page.close(); }
 }
-if (cmd === "compare") console.log(failures ? `${failures} differ, ${done} identical` : `${done}/${done} identical`);
+if (cmd === "compare") console.log((failures ? `${failures} differ, ${done} identical` : `${done}/${done} identical`) + (accepted ? `, ${accepted} accepted as new baseline` : ""));
 process.exit(failures ? 1 : 0);

@@ -1,5 +1,5 @@
 {
- "blockKg": 76.818,
+ "blockKg": 78.228,
  "cruiseFt": 3500,
  "err": "",
  "inventory": [
@@ -12,12 +12,114 @@
   "#wah",
   "#windTgl",
   "[data-apt]",
+  "[data-aptback]",
+  "[data-callout]",
   "[data-copy]",
+  "[data-count]",
+  "[data-detail]",
   "[data-key]",
+  "[data-open]",
   "[data-pln]",
   "[data-sec]",
   "[data-secall]",
-  "[data-tab]"
+  "[data-tab]",
+  "[data-tile]"
+ ],
+ "inventoryAll": [
+  "#ac",
+  "#acCard",
+  "#acHint",
+  "#acList",
+  "#acSearch",
+  "#allSettings",
+  "#alt",
+  "#app",
+  "#apprSel",
+  "#aptList",
+  "#arr",
+  "#arrRes",
+  "#chipMenu",
+  "#chipbar",
+  "#crumb",
+  "#dataChip",
+  "#dataInfo",
+  "#dep",
+  "#depRes",
+  "#detlog",
+  "#drawerBody",
+  "#drawerClose",
+  "#err",
+  "#errSlot",
+  "#etd",
+  "#extra",
+  "#fillg",
+  "#fl",
+  "#go",
+  "#hatch",
+  "#i-airports",
+  "#i-alert",
+  "#i-back",
+  "#i-caret",
+  "#i-clock",
+  "#i-fuel",
+  "#i-fwd",
+  "#i-more",
+  "#i-overview",
+  "#i-profile",
+  "#i-route",
+  "#i-settings",
+  "#i-setup",
+  "#i-sidebar",
+  "#i-sun",
+  "#i-swap",
+  "#i-wind",
+  "#load",
+  "#loadLbl",
+  "#map",
+  "#moreSheet",
+  "#nav",
+  "#navBack",
+  "#navFwd",
+  "#opt",
+  "#oxy",
+  "#oxyRow",
+  "#profcard",
+  "#results",
+  "#route",
+  "#routeHint",
+  "#routeImport",
+  "#rules",
+  "#sbBtn",
+  "#sbFetch",
+  "#sbFile",
+  "#sbSrc",
+  "#srcHost",
+  "#status",
+  "#surface",
+  "#swapBtn",
+  "#themeBtn",
+  "#themeSel",
+  "#wah",
+  "#windTgl",
+  "[data-apt]",
+  "[data-aptback]",
+  "[data-callout]",
+  "[data-chip]",
+  "[data-copy]",
+  "[data-count]",
+  "[data-detail]",
+  "[data-for]",
+  "[data-kbd]",
+  "[data-key]",
+  "[data-open]",
+  "[data-pln]",
+  "[data-sec]",
+  "[data-secall]",
+  "[data-seg]",
+  "[data-tab]",
+  "[data-tile]",
+  "[data-tip]",
+  "[data-view]"
  ],
  "legs": [
   {
@@ -40,21 +142,21 @@
    "cop": null,
    "dist": 186.666,
    "eta": {},
-   "ete": 4292.405,
+   "ete": 4467.907,
    "fuelRem": 29.476,
-   "gs": 156.555,
+   "gs": 150.405,
    "guid": "Pilotage / dead reckoning",
    "i": 0,
    "last": true,
    "mc": 148.028,
-   "mh": 148.778,
+   "mh": 148.806,
    "msa": 1700,
    "nav1": null,
    "tc": 146.639,
    "toc": true,
    "tod": true,
    "v": -1.389,
-   "wca": 0.75,
+   "wca": 0.778,
    "wd": 150.909,
    "ws": 12.232,
    "x0": 0,
@@ -65,50 +167,50 @@
   {
    "allowed": true,
    "ft": 3500,
-   "timeS": 4292.405,
-   "tripKg": 47.342
+   "timeS": 4467.907,
+   "tripKg": 48.752
   },
   {
    "allowed": true,
    "ft": 5500,
-   "timeS": 4404.512,
-   "tripKg": 48.735
+   "timeS": 4558.488,
+   "tripKg": 49.536
   },
   {
    "allowed": true,
    "ft": 7500,
-   "timeS": 4440.91,
-   "tripKg": 49.283
+   "timeS": 4591.381,
+   "tripKg": 49.643
   },
   {
    "allowed": true,
    "ft": 9500,
-   "timeS": 4484.709,
-   "tripKg": 49.862
+   "timeS": 4633.391,
+   "tripKg": 49.794
   },
   {
    "allowed": true,
    "ft": 11500,
-   "timeS": 4583.845,
-   "tripKg": 50.977
+   "timeS": 4739.658,
+   "tripKg": 50.571
   },
   {
    "allowed": false,
    "ft": 13500,
-   "timeS": 4806.718,
-   "tripKg": 50.854
+   "timeS": 4957.193,
+   "tripKg": 50.598
   },
   {
    "allowed": false,
    "ft": 15500,
-   "timeS": 5024.077,
-   "tripKg": 51.094
+   "timeS": 5207.123,
+   "tripKg": 51.765
   },
   {
    "allowed": false,
    "ft": 17500,
-   "timeS": 5195.903,
-   "tripKg": 50.984
+   "timeS": 5589.05,
+   "tripKg": 55.515
   }
  ],
  "pln": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SimBase.Document Type=\"AceXML\" version=\"1,0\">\n    <Descr>AceXML Document</Descr>\n    <FlightPlan.FlightPlan>\n        <Title>EGTF to LFPN</Title>\n        <FPType>VFR</FPType>\n        <RouteType>Direct</RouteType>\n        <CruisingAlt>3500</CruisingAlt>\n        <DepartureID>EGTF</DepartureID>\n        <DepartureLLA>N51° 20' 53.16\",W0° 33' 32.00\",+000080.00</DepartureLLA>\n        <DestinationID>LFPN</DestinationID>\n        <DestinationLLA>N48° 45' 6.84\",E2° 6' 22.28\",+000538.00</DestinationLLA>\n        <Descr>EGTF to LFPN · DCT · Cirrus SR22 · 3,500 ft · planned with XPerf</Descr>\n        <DeparturePosition>6</DeparturePosition>\n        <DepartureName>Fairoaks Airport</DepartureName>\n        <DestinationName>Toussus-le-Noble Airport</DestinationName>\n        <AppVersion>\n            <AppVersionMajor>12</AppVersionMajor>\n            <AppVersionBuild>282174</AppVersionBuild>\n        </AppVersion>\n        <ATCWaypoint id=\"EGTF\">\n            <ATCWaypointType>Airport</ATCWaypointType>\n            <WorldPosition>N51° 20' 53.16\",W0° 33' 32.00\",+000080.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <RunwayNumberFP>6</RunwayNumberFP>\n            <RunwayDesignatorFP>NONE</RunwayDesignatorFP>\n            <ICAO>\n                <ICAOIdent>EGTF</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n        <ATCWaypoint id=\"LFPN\">\n            <ATCWaypointType>Airport</ATCWaypointType>\n            <WorldPosition>N48° 45' 6.84\",E2° 6' 22.28\",+000538.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <ApproachTypeFP>ILS</ApproachTypeFP>\n            <RunwayNumberFP>7</RunwayNumberFP>\n            <RunwayDesignatorFP>LEFT</RunwayDesignatorFP>\n            <ICAO>\n                <ICAOIdent>LFPN</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n    </FlightPlan.FlightPlan>\n</SimBase.Document>\n",
@@ -116,16 +218,16 @@
   "EGTF",
   "LFPN"
  ],
- "timeS": 4292.405,
+ "timeS": 4467.907,
  "toc": {
-  "dNM": 2.889,
-  "tS": 156.112
+  "dNM": 4.374,
+  "tS": 180.697
  },
  "tod": {
-  "dNM": 6.001,
-  "tS": 177.72
+  "dNM": 11.497,
+  "tS": 355.44
  },
  "totalNM": 186.666,
- "tripKg": 47.342,
+ "tripKg": 48.752,
  "warnings": []
 }

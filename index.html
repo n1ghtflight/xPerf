@@ -156,10 +156,10 @@
 </div>
 
 <script src="shell.js?v=2026.10.17g"></script>
-<script src="data.js?v=2026.10.17a"></script>
+<script src="data.js?v=2026.10.17b"></script>
 <script src="routeimport.js?v=2026.10.17a"></script>
-<script src="nav.js?v=2026.10.17c"></script>
-<script src="acpicker.js?v=2026.10.16b"></script>
+<script src="nav.js?v=2026.10.17d"></script>
+<script src="acpicker.js?v=2026.10.17a"></script>
 <script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
 <script src="chips.js?v=2026.10.17e"></script>
@@ -173,7 +173,7 @@ const OPENAP_MIRRORS = ["https://raw.githubusercontent.com/TUDelft-CNS-ATM/opena
 // airliners & large jets: OpenAP (TU Delft)
 const AC_NAMES = {a19n:"Airbus A319neo",a20n:"Airbus A320neo",a21n:"Airbus A321neo",a318:"Airbus A318",a319:"Airbus A319",a320:"Airbus A320",a321:"Airbus A321",a332:"Airbus A330-200",a333:"Airbus A330-300",a343:"Airbus A340-300",a359:"Airbus A350-900",a388:"Airbus A380-800",b37m:"Boeing 737 MAX 7",b38m:"Boeing 737 MAX 8",b39m:"Boeing 737 MAX 9",b3xm:"Boeing 737 MAX 10",b734:"Boeing 737-400",b737:"Boeing 737-700",b738:"Boeing 737-800",b739:"Boeing 737-900",b744:"Boeing 747-400",b748:"Boeing 747-8",b752:"Boeing 757-200",b763:"Boeing 767-300",b772:"Boeing 777-200/200ER",b773:"Boeing 777-300",b77w:"Boeing 777-300ER",b788:"Boeing 787-8",b789:"Boeing 787-9",c550:"Cessna Citation II",crj9:"Bombardier CRJ900",e145:"Embraer ERJ145 (LR)",e170:"Embraer E170",e190:"Embraer E190 (LR)",e195:"Embraer E195 (LR)",e75l:"Embraer E175 (LR)",glf6:"Gulfstream G650 / 650ER"};
 const WRAP_CODES = new Set(["a319","a320","a321","a332","a333","a343","a388","b77w","b737","b738","b739","b744","b752","b763","b788","b789","e190"]);
-// general aviation & business aircraft: EUROCONTROL Aircraft Performance Database (live via server.py)
+// general aviation & business aircraft: XPerf's own performance table (data/ga_perf.json, independently sourced)
 const GA_GROUPS = {
   "Single-engine piston": {C150:"Cessna 150",C152:"Cessna 152",C172:"Cessna 172 Skyhawk",C177:"Cessna 177 Cardinal",C182:"Cessna 182 Skylane",
     C206:"Cessna 206 Stationair",C207:"Cessna 207 Skywagon",C210:"Cessna 210 Centurion",PA18:"Piper PA-18 Super Cub",PA38:"Piper PA-38 Tomahawk",
@@ -196,7 +196,8 @@ const GA_GROUPS = {
 const GA_NAMES = Object.assign({},...Object.values(GA_GROUPS));
 const PRESSURIZED = new Set(["PA46","P46T","M600","TBM7","TBM8","PC12","C340","C414","C421","C425","C441","BE9L","BE20","B350","P180"]);
 const TURBO_PISTON = new Set(["P28T","M20T","PA46","C340","C414","C421","PA31"]);   // types whose base model is turbocharged
-// engine ratings where the EUROCONTROL power-plant text is wrong or missing (per engine: hp/shp, or thrust in kN)
+// for "Other" EUROCONTROL lookups only (the table carries its own engine data): types whose base model is
+// pressurized / turbocharged, and engine ratings where the power-plant text is wrong or missing (per engine: hp/shp, or kN)
 const ENGINE_FIX = {C152:{hp:110}, P46T:{hp:500}, C25A:{kN:10.5}, PRM1:{kN:10.2}, CL60:{kN:40.7}};
 const PLEVELS = [1000,925,850,700,600,500,400,300,250,200,150];
 
@@ -297,7 +298,7 @@ async function init(){
     const sel=$("ac"); sel.innerHTML="";
     const group=(label,entries)=>{ const g=document.createElement("optgroup"); g.label=label;
       entries.forEach(([v,t])=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; g.appendChild(o); }); sel.appendChild(g); };
-    for(const [g,list] of Object.entries(GA_GROUPS)) group(g+" — EUROCONTROL", Object.entries(list).sort((a,b)=>a[1].localeCompare(b[1])).map(([c,n])=>["apm:"+c,`${n} (${c})`]));
+    for(const [g,list] of Object.entries(GA_GROUPS)) group(g, Object.entries(list).sort((a,b)=>a[1].localeCompare(b[1])).map(([c,n])=>["apm:"+c,`${n} (${c})`]));
     group("Airliners & large jets — OpenAP", Object.keys(AC_NAMES).sort().map(c=>["oap:"+c,`${AC_NAMES[c]} (${c.toUpperCase()})`]));
     group("Other", [["other","Other ICAO type (EUROCONTROL lookup)…"]]);
     sel.value="apm:C172";
@@ -478,9 +479,19 @@ function maxLevel(m,mass,dT=0){ let best=0; for(let ft=10000;ft<=51000;ft+=1000)
 function aeroOptimum(m,mass,dT=0){ let best=null; for(let ft=10000;ft<=51000;ft+=1000){ const L=m.limits(mass,ft,dT);
     if(!(L.buffetOK&&L.thrustOK&&L.ceilOK)) continue; const sr=L.s.tas/L.s.ff; if(!best||sr>best.sr) best={ft,sr}; } return best?best.ft:null; }
 
-/* ====================== EUROCONTROL APM model (GA, turboprops, bizjets) ====================== */
+/* ====================== APM-style model (GA, turboprops, bizjets) ====================== */
+// Data: XPerf's table (data/ga_perf.json) for the listed types; EUROCONTROL APM for "Other" lookups.
 let SNAPSHOT=null;
+// a table entry in the shape the model reads (perf values without their sourcing), plus its engine facts and sources
+function tableRecord(icao,t,sources){
+  const ids=new Set(); const walk=o=>{ if(o&&typeof o==="object"){ (o.src||[]).forEach(i=>ids.add(i)); Object.values(o).forEach(walk); } }; walk(t);
+  return {icao,name:t.name,variant:t.variant,type:t.type.v,perf:Object.fromEntries(Object.entries(t.perf).map(([k,o])=>[k,o.v])),
+    engine:t.engine,wingspan:t.wingspan_m?.v,cruise:t.cruise,sourcing:t.sourcing,table:true,
+    refs:[...ids].map(i=>sources[i]).filter(Boolean)};
+}
 async function apmData(icao){
+  const T=await XD.gaPerf();
+  if(T.types[icao]) return {d:tableRecord(icao,T.types[icao],T.sources),live:false};
   if(HAS_SERVER){ try{ const d=await XD.apm(icao); return {d,live:true}; }
     catch(e){ if(/not found/i.test(e.message)) throw e; console.warn("live EUROCONTROL fetch failed",e); } }
   if(!SNAPSHOT){ try{ SNAPSHOT=await get("apm_snapshot.json","json"); }catch(e){ SNAPSHOT={}; } }
@@ -508,13 +519,14 @@ async function loadApmModel(icao){
   const type=d.type||"L1P", nEng=+type[1]||1, ek=type[2]||"P";
   const kind=ek==="J"?"jet":ek==="T"?"turboprop":"piston";
   const mtow=P.takeOffMTOW||1200, ceilFt=(P.cruiseCeiling||(kind==="piston"?140:kind==="turboprop"?250:410))*100;
-  const fix=ENGINE_FIX[icao], pw=fix?{hp:fix.hp,thrustN:fix.kN&&fix.kN*1000}:(parsePower(d.powerplant,ek)||{});
+  const E=d.engine, fix=ENGINE_FIX[icao];
+  const pw=E?{hp:E.hp?.v,thrustN:E.thrustKN&&E.thrustKN.v*1000}:fix?{hp:fix.hp,thrustN:fix.kN&&fix.kN*1000}:(parsePower(d.powerplant,ek)||{});
   let hp=pw.hp, thrustN=pw.thrustN, powerEst=false;
   if(kind==="piston" && !(hp>=mtow*0.06/nEng && hp<=mtow*0.35/nEng)){ hp=mtow*0.15/nEng; powerEst=true; }
   if(kind==="turboprop" && !(hp>=mtow*0.08/nEng && hp<=mtow*0.5/nEng)){ hp=mtow*0.25/nEng; powerEst=true; }
   if(kind==="jet" && !(thrustN>=mtow*G0*0.12/nEng && thrustN<=mtow*G0*0.6/nEng)){ thrustN=mtow*G0*0.35/nEng; powerEst=true; }
-  const turbo = kind==="piston" && TURBO_PISTON.has(icao);
-  const pressurized = kind==="jet" || PRESSURIZED.has(icao);
+  const turbo = kind==="piston" && (E?!!E.turbocharged:TURBO_PISTON.has(icao));
+  const pressurized = kind==="jet" || (E?!!E.pressurized:PRESSURIZED.has(icao));
   const span=parseFloat(d.wingspan)||Math.sqrt(mtow/40);
 
   // --- power / thrust lapse with altitude ---
@@ -526,7 +538,12 @@ async function loadApmModel(icao){
   const pCruise=(hft,dT)=>Math.min(PC,pAvail(hft,dT)*(kind==="piston"?1:0.9));
   const refFt = kind==="piston" ? (turbo?Math.min(ceilFt-4000,17500):Math.min(7500,ceilFt-2000))
               : kind==="turboprop" ? (pressurized?ceilFt-4000:Math.min(10000,ceilFt-2000)) : ceilFt-4000;
-  const diesel = kind==="piston" && /diesel|jet[- ]?a|austro|centurion|SMA SR305/i.test(d.powerplant||"");
+  const diesel = kind==="piston" && (E?!!E.diesel:/diesel|jet[- ]?a|austro|centurion|SMA SR305/i.test(d.powerplant||""));
+  // what the cruise TAS refers to: the table states the power (e.g. 75 %) and often the altitude; otherwise 65 % at refFt
+  const tasPct=E&&kind==="piston"?+((String(d.cruise?.power||"").match(/(\d+)\s*%/)||[])[1]||0)/100:0;
+  const tasFt=tasPct&&d.cruise?.alt_ft?d.cruise.alt_ft:refFt;
+  // table climb rates are sea-level figures; EUROCONTROL's read as band averages (mid-band, 2,500 ft)
+  const icMid=E?0:2500;
   const SFC=diesel?{cr:0.36,cl:0.40,de:0.38}:{piston:{cr:0.43,cl:0.50,de:0.45},turboprop:{cr:0.60,cl:0.65,de:0.75}}[kind];
 
   // jets: generic drag polar from span (AR≈8) and TSFC that improves with altitude
@@ -535,7 +552,7 @@ async function loadApmModel(icao){
   const jetMach=P.cruiseMACH||(P.cruiseTAS?tas2mach(P.cruiseTAS*KT,refFt*FT):0.75);
   const vCap=(Math.max(P.climb240IAS||0,P.descentIAS||0,250)+20)*KT;
 
-  const m={kind:"apm",engineKind:kind,code:icao,id:"apm:"+icao,label:GA_NAMES[icao]||`${d.manufacturer||""} ${d.name||icao}`.trim(),
+  const m={kind:"apm",engineKind:kind,code:icao,id:"apm:"+icao,label:GA_NAMES[icao]||`${d.manufacturer||""} ${d.name||icao}`.trim(),table:!!d.table,
     d,P,live,nEng,mtow,ceilFt,turbo,diesel,pressurized,hp,thrustN,powerEst,refFt,
     fuelDensity:kind==="piston"&&!diesel?2.72:3.03, fuelName:kind==="piston"&&!diesel?"avgas":"Jet A",
     defaultLoad:Math.round(mtow*0.92/10)*10, loadLabel:"Takeoff weight (kg)", defaultRules:kind==="piston"&&!pressurized?"vfr":"ifr",
@@ -550,14 +567,14 @@ async function loadApmModel(icao){
       const cap=hft<10000?250*KT:vCap; if(tas2cas(tas,h,dT)>cap) tas=cas2tas(cap,h,dT);
       const {rho}=atm(h,dT), qS=0.5*rho*tas*tas*S, cl=mass*G0/qS, D=(cd0+k*cl*cl)*qS;
       return {tas,ff:D*tsfc(hft,dT),D,cl,mach:tas2mach(tas,h,dT),power:null}; }
-    const pc=pCruise(hft,dT), pr=pCruise(refFt,0), rr=atm(refFt*FT).rho, rh=atm(hft*FT,dT).rho;
+    const pc=pCruise(hft,dT), pr=tasPct?Math.min(tasPct,pAvail(tasFt,0)):pCruise(refFt,0), rr=atm(tasFt*FT).rho, rh=atm(hft*FT,dT).rho;
     // power ∝ drag·V: pure parasite drag gives V ∝ (P/ρ)^(1/3); induced drag tempers the density gain
     let tas=P.cruiseTAS*KT*Math.cbrt(pc/pr)*Math.pow(rr/rh,0.2);
     if(hft<10000 && tas2cas(tas,hft*FT,dT)>250*KT) tas=cas2tas(250*KT,hft*FT,dT);
     return {tas,ff:nEng*hp*pc*SFC.cr*LBH,mach:tas2mach(tas,hft*FT,dT),power:pc};
   };
   m.climbState=(hft,dT,mass)=>{
-    const bands=[{top:5000,ias:P.initialClimbIAS,roc:P.initialClimbROC,key:"ic",mid:2500},
+    const bands=[{top:5000,ias:P.initialClimbIAS,roc:P.initialClimbROC,key:"ic",mid:icMid},
       {top:15000,ias:P.climb150IAS,roc:P.climb150ROC,key:"c150",mid:10000},
       {top:24000,ias:P.climb240IAS,roc:P.climb240ROC,key:"c240",mid:19500},
       {top:1e9,mach:P.machClimbMACH,roc:P.machClimbROC,key:"mach",mid:30000}];
@@ -750,11 +767,12 @@ async function loadModel(id,seq){
   } else {
     const P=m.P, d=m.d, nd=v=>v??"—";
     const eng=m.engineKind==="jet"?`${m.nEng} × ${(m.thrustN/1000).toFixed(1)} kN`:`${m.nEng} × ${Math.round(m.hp)} ${m.engineKind==="turboprop"?"shp":"hp"}`;
-    $("acHint").innerHTML=`<span class="badge ok">EUROCONTROL APM</span><span class="badge ${m.live?"ok":"warn"}">${m.live?"live":"offline snapshot"}</span>`+
+    $("acHint").innerHTML=(m.table?`<span class="badge ok">XPerf data</span><span class="badge ${d.sourcing==="weak"?"warn":d.sourcing==="good"?"ok":""}" data-tip="How well the core figures are sourced: good, fair or weak">${d.sourcing||"fair"} sources</span>`
+      :`<span class="badge ok">EUROCONTROL APM</span><span class="badge ${m.live?"ok":"warn"}">${m.live?"live":"offline snapshot"}</span>`)+
       `<span class="badge">${m.engineKind}${m.diesel?" · diesel":""}${m.turbo?" · turbo":""}${m.pressurized?" · pressurized":""}</span>`+(m.powerEst?`<span class="badge warn">engine power estimated</span>`:"");
     $("acCard").innerHTML=`<h2>Aircraft data — ${m.code}</h2><dl>
       <dt>Type</dt><dd>${m.label}</dd>
-      <dt>Manufacturer</dt><dd>${d.manufacturer||"—"}</dd>
+      ${m.table?`<dt>Modelled on</dt><dd>${svgEsc(d.variant||"—")}</dd>`:`<dt>Manufacturer</dt><dd>${d.manufacturer||"—"}</dd>`}
       <dt>Engines</dt><dd>${eng}</dd>
       <dt>MTOW</dt><dd>${fmtK(m.mtow)} kg</dd>
       <dt>Ceiling</dt><dd>${lvl(m.ceilFt)}</dd>
@@ -768,8 +786,9 @@ async function loadModel(id,seq){
       <dt>Approach</dt><dd>${nd(P.approachIAS)} kt · ${fmtK(P.approachROD)} fpm</dd>
       <dt>V2 / Vat</dt><dd>${nd(P.takeOffV2)} / ${nd(P.landingVat)} kt</dd>
       <dt>TO / LDG distance</dt><dd>${fmtK(P.takeOffDistance)} / ${fmtK(P.landingDistance)} m</dd>
-      </dl><p class="note" style="margin-top:10px">${(d.powerplant||"").slice(0,220)}</p>
-      <p class="note"><a href="${d.source}" target="_blank">EUROCONTROL source page</a> · fetched ${d.fetched||""}</p>`;
+      </dl>${m.table?`<p class="note" style="margin-top:10px">Sources: ${d.refs.map(r=>r.url?`<a href="${svgEsc(r.url)}" target="_blank" rel="noopener">${svgEsc(r.title||r.url)}</a>`:svgEsc(r.title||"")).join(" · ")||"—"}</p>`
+      :`<p class="note" style="margin-top:10px">${(d.powerplant||"").slice(0,220)}</p>
+      <p class="note"><a href="${d.source}" target="_blank">EUROCONTROL source page</a> · fetched ${d.fetched||""}</p>`}`;
   }
 }
 
@@ -1082,7 +1101,7 @@ function render(X){
       <dt>Minimum block fuel</dt><dd>${fuelTxt(sel.block)}</dd>
     </dl>
     ${!apm&&X.aeroOptEnd>X.aeroOpt+1000?`<p class="note">Optimum rises ~${fmtK(X.aeroOptEnd-X.aeroOpt)} ft as fuel burns off — a step climb may save fuel on longer sectors.</p>`:""}
-    ${apm?`<p class="note">Fuel is an estimate from engine power (${m.engineKind==="jet"?"thrust × generic TSFC":"power setting × typical specific fuel consumption"}); EUROCONTROL publishes no fuel-flow data. Use your POH/AFM fuel tables for planning.</p>`:""}
+    ${apm?`<p class="note">Fuel is an estimate from engine power (${m.engineKind==="jet"?"thrust × generic TSFC":"power setting × typical specific fuel consumption"}); ${m.table?"":"EUROCONTROL publishes no fuel-flow data. "}Use your POH/AFM fuel tables for planning.</p>`:""}
     </div>
   </div>
 
@@ -1098,13 +1117,14 @@ function render(X){
   </div>
   <details class="card note srcnote"><summary>Data sources and model assumptions</summary>
     <b>Data sources (fetched live):</b>
-    ${apm?`performance from the <a href="https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/" target="_blank">EUROCONTROL Aircraft Performance Database</a> (${m.live?"live":"offline snapshot"});`
+    ${apm&&m.table?`performance from XPerf's own table (manufacturer, POH and magazine figures, ${m.d.sourcing||"fair"} sources — see Aircraft data);`
+     :apm?`performance from the <a href="https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/" target="_blank">EUROCONTROL Aircraft Performance Database</a> (${m.live?"live":"offline snapshot"});`
       :`specs, drag polar, engine & fuel-flow models and climb/descent statistics from <a href="https://github.com/TUDelft-CNS-ATM/openap" target="_blank">OpenAP</a> (TU Delft; WRAP parameters derived from real ADS-B flight data);`}
     airports from ${DB.aptSource==="OurAirports"?'<a href="https://ourairports.com" target="_blank">OurAirports</a>':"OpenAP nav data"};
     navaids, runways & frequencies from OurAirports; ILS from FAA NASR (US, current) or X-Plane GPL data (elsewhere, 2013); US approach plates from FAA d-TPP; METAR/TAF from <a href="https://aviationweather.gov" target="_blank">aviationweather.gov</a>;
     winds/temperatures aloft from the <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> forecast at ${X.wx?X.wx.length:0} points; terrain from Open-Meteo elevation (Copernicus DEM).
     <br><b>Model assumptions:</b> great-circle routing (no SID/STAR/airways), optimum = minimum ${X.optBy==="time"?"time":"trip fuel"} among allowed levels,
-    ${apm?`piston/turboprop cruise at ${m.engineKind==="piston"?"65%":"~80% max cruise"} power with altitude power lapse${m.turbo?" (turbocharged to 18,000 ft)":""}, climb/descent rates from EUROCONTROL averages${m.engineKind==="piston"&&!m.turbo?" reduced with altitude toward the service ceiling":""}, reserve 45 min at cruise.`
+    ${apm?`piston/turboprop cruise at ${m.engineKind==="piston"?"65%":"~80% max cruise"} power with altitude power lapse${m.turbo?" (turbocharged to 18,000 ft)":""}, climb/descent rates from ${m.table?"the published sea-level climb rate":"EUROCONTROL averages"}${m.engineKind==="piston"&&!m.turbo?" reduced with altitude toward the service ceiling":""}, reserve 45 min at cruise.`
       :`1.3 g buffet margin (generic Mach-dependent buffet C<sub>L</sub>), climb rates = observed ADS-B averages corrected for weight, reserve = 5% trip + 30 min hold.`}
     <br><b style="color:var(--amber)">For flight simulation, planning practice and education only — not certified for operational use. Always use your aircraft's POH/AFM and approved flight planning.</b>
   </details>`;

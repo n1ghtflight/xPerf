@@ -16,7 +16,7 @@ const AcPicker=(()=>{
       if(o.value==="other") continue;
       const group=g.label.replace(/ — .*/,""), code=(o.textContent.match(/\(([^)]+)\)\s*$/)||[])[1]||"";
       const name=o.textContent.replace(/\s*\([^)]+\)\s*$/,"");
-      items.push({value:o.value,text:o.textContent,name,code,group,src:g.label.includes("OpenAP")?"OpenAP":"EUROCONTROL",
+      items.push({value:o.value,text:o.textContent,name,code,group,src:g.label.includes("OpenAP")?"OpenAP":g.label==="Other"?"EUROCONTROL":"XPerf",
         hay:norm(`${o.textContent} ${group} ${code}`),hayWords:`${o.textContent} ${group}`.toLowerCase()});
     }
   }
