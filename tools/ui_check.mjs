@@ -257,7 +257,8 @@ check("theme-follow", async () => {
 
 check("no-hex", async () => {
   const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-  const files = { "charts.js": strip(readFileSync(join(here, "..", "charts.js"), "utf8")), "nav.js": strip(readFileSync(join(here, "..", "nav.js"), "utf8")) };
+  const files = { "charts.js": strip(readFileSync(join(here, "..", "charts.js"), "utf8")), "nav.js": strip(readFileSync(join(here, "..", "nav.js"), "utf8")),
+    "blueprint.js": strip(readFileSync(join(here, "..", "blueprint.js"), "utf8")) };
   const html = readFileSync(join(here, "..", "index.html"), "utf8"), a = html.indexOf("function profileSVG"), b = html.indexOf("\n}\n", a);
   files["profileSVG"] = html.slice(a, b);
   const bad = Object.entries(files).map(([n, s]) => [n, [...new Set(s.match(/#[0-9a-fA-F]{3,8}\b/g) || [])].filter(h => !/^#(fff|ffffff)$/i.test(h))]).filter(([, h]) => h.length);
@@ -530,6 +531,47 @@ check("new-flight", async () => {
     expect(await page.eval(`document.body.classList.contains('planned')&&!!document.querySelector('#drawerBody > .formcol')`), "second plan did not move the form to All settings");
     await page.key("k", { ctrl: true }); await settle(page); await page.type("#pInput", "new flight"); await settle(page);
     expect(/New flight/.test(await page.eval(`document.querySelector('#pList .p-item[aria-selected="true"]')?.textContent||''`)), "no New flight command in the palette");
+  } finally { await page.close(); }
+});
+
+// the aircraft blueprint: on the Overview aircraft tile and the Aircraft data card, never under the tile's text,
+// and hidden by the Settings switch
+const BP_GEOM = `(()=>{ const t=document.querySelector('.actile'), c=t&&t.querySelector('.actxt'), w=t&&t.querySelector('.actile .bp-wing');
+  if(!t||!c||!w) return null; const a=c.getBoundingClientRect(), b=w.getBoundingClientRect(), s=t.getBoundingClientRect();
+  const overlap=a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom;
+  return {overlap, text:[a.left,a.top,a.right,a.bottom].map(Math.round), wing:[b.left,b.top,b.right,b.bottom].map(Math.round), wingInTile:b.right>s.left&&b.left<s.right&&b.bottom>s.top&&b.top<s.bottom, span:t.querySelector('.bp')?.textContent||''}; })()`;
+check("blueprint", async () => {
+  for (const [w, h, mobile] of [[1440, 900, false], [390, 844, true]]) {
+    const page = await open("c172", { plan: true, width: w, height: h, mobile });
+    try {
+      await page.eval(`Shell.showView('overview')`); await settle(page);
+      const g = await page.eval(BP_GEOM);
+      expect(g, `no aircraft tile with a blueprint at ${w}px`);
+      expect(/11\.00 m/.test(g.span), "wingspan label missing: " + g.span);
+      expect(g.wingInTile && !g.overlap, `drawing under the text at ${w}px: text ${g.text}, wing ${g.wing}`);
+      if (w > 1000) {
+        expect(await page.eval(`!!document.querySelector('#acCard .bp')`), "no blueprint on the Aircraft data card");
+        await page.eval(`Shell.showView('settings')`); await settle(page);
+        await page.click("#bpTgl"); await settle(page);
+        expect(await page.eval(`document.body.classList.contains('no-blueprint')&&localStorage.getItem('xperf.blueprint')==='0'`), "switch did not turn the drawing off");
+        await page.eval(`Shell.showView('overview')`); await settle(page);
+        expect(!(await visible(page, ".actile .bp")), "drawing still visible after switching it off");
+        await page.click("#bpTgl"); await settle(page);
+      }
+    } finally { await page.close(); }
+  }
+});
+
+// clicks inside the work surface must reach their controls (the surface records the current view as data-view)
+check("surface-clicks", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.eval(`Shell.showView('profile')`); await settle(page);
+    const before = await page.eval(`document.getElementById('windTgl')?.checked`);
+    expect(typeof before === "boolean", "no winds checkbox on the profile");
+    await page.click("#windTgl"); await settle(page);
+    expect(await page.eval(`document.getElementById('windTgl').checked`) === !before, "checkbox click was cancelled");
+    expect(await page.eval(`!document.getElementById('surface').hasAttribute('aria-current')`), "surface marked as the current page link");
   } finally { await page.close(); }
 });
 

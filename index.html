@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.17b">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.17m">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.17q">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
@@ -120,7 +120,8 @@
   <section class="tabpanel settingspanel" data-tab="settings" hidden>
     <h2 class="viewtitle">Settings</h2>
     <div class="card"><h2>Appearance</h2><label for="themeSel">Theme</label>
-      <select id="themeSel"><option value="system">Follow the device</option><option value="dark">Dark</option><option value="light">Light</option></select></div>
+      <select id="themeSel"><option value="system">Follow the device</option><option value="dark">Dark</option><option value="light">Light</option></select>
+      <div class="chk toggle"><input type="checkbox" id="bpTgl" role="switch" checked><label for="bpTgl">Aircraft blueprint on the Overview and Aircraft data</label></div></div>
     <div class="card"><h2>Data</h2><p class="note" id="dataInfo">Loading data…</p></div>
     <div class="card"><h2>Keyboard shortcuts</h2>
       <dl class="keys">
@@ -155,7 +156,7 @@
 </div>
 </div>
 
-<script src="shell.js?v=2026.10.17i"></script>
+<script src="shell.js?v=2026.10.17k"></script>
 <script src="data.js?v=2026.10.17b"></script>
 <script src="routeimport.js?v=2026.10.17a"></script>
 <script src="nav.js?v=2026.10.17d"></script>
@@ -163,7 +164,8 @@
 <script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
 <script src="chips.js?v=2026.10.17f"></script>
-<script src="overview.js?v=2026.10.17a"></script>
+<script src="blueprint.js?v=2026.10.17c"></script>
+<script src="overview.js?v=2026.10.17c"></script>
 <script src="palette.js?v=2026.10.17b"></script>
 <script>
 "use strict";
@@ -750,7 +752,7 @@ async function loadModel(id,seq){
     const own=m.wrapCode===m.code, W=m.wrap, ac=m.ac, fpm=v=>Math.round(Math.abs(v)/FPM);
     $("acHint").innerHTML=`<span class="badge ok">OpenAP</span><span class="badge ${own?"ok":"warn"}">${own?"ADS-B performance: own type":"ADS-B performance proxy: "+m.wrapCode.toUpperCase()}</span>`+
       `<span class="badge ${m.eng.estimated?"warn":"ok"}">engine: ${m.eng.name}</span>`;
-    $("acCard").innerHTML=`<h2>Aircraft data — ${m.code.toUpperCase()}</h2><dl>
+    $("acCard").innerHTML=`<h2>Aircraft data — ${m.code.toUpperCase()}</h2>${aircraftBlueprint(m,"accard-bp")}<dl>
       <dt>Type</dt><dd>${ac.aircraft}</dd>
       <dt>MTOW / MLW</dt><dd>${fmtK(ac.mtow)} / ${fmtK(ac.mlw)} kg</dd>
       <dt>OEW / Max fuel</dt><dd>${fmtK(ac.oew)} / ${fmtK(ac.mfc)} kg</dd>
@@ -770,7 +772,7 @@ async function loadModel(id,seq){
     $("acHint").innerHTML=(m.table?`<span class="badge ok">XPerf data</span><span class="badge ${d.sourcing==="weak"?"warn":d.sourcing==="good"?"ok":""}" data-tip="How well the core figures are sourced: good, fair or weak">${d.sourcing||"fair"} sources</span>`
       :`<span class="badge ok">EUROCONTROL APM</span><span class="badge ${m.live?"ok":"warn"}">${m.live?"live":"offline snapshot"}</span>`)+
       `<span class="badge">${m.engineKind}${m.diesel?" · diesel":""}${m.turbo?" · turbo":""}${m.pressurized?" · pressurized":""}</span>`+(m.powerEst?`<span class="badge warn">engine power estimated</span>`:"");
-    $("acCard").innerHTML=`<h2>Aircraft data — ${m.code}</h2><dl>
+    $("acCard").innerHTML=`<h2>Aircraft data — ${m.code}</h2>${aircraftBlueprint(m,"accard-bp")}<dl>
       <dt>Type</dt><dd>${m.label}</dd>
       ${m.table?`<dt>Modelled on</dt><dd>${svgEsc(d.variant||"—")}</dd>`:`<dt>Manufacturer</dt><dd>${d.manufacturer||"—"}</dd>`}
       <dt>Engines</dt><dd>${eng}</dd>

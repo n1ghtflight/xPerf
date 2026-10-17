@@ -366,6 +366,25 @@ button.planbtn kbd{background:color-mix(in srgb,#fff 18%,transparent);border-col
 .tile .val.good{color:var(--good)}.tile .val.warn{color:var(--warn)}
 .tile .sub{margin-top:4px;color:var(--text-3);font-size:var(--fs-small)}
 .tile.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+/* aircraft blueprint (blueprint.js): faint, behind the right side, its grid fading in from the left */
+.bp-host{--bp-line:var(--accent);pointer-events:none;-webkit-mask-image:linear-gradient(to right,transparent,black 28%);mask-image:linear-gradient(to right,transparent,black 28%)}
+.bp-host svg{display:block;width:100%;height:100%;overflow:visible}
+.bp-host text{font-family:var(--font);letter-spacing:0}
+body.no-blueprint .bp-host{display:none}
+.tile.actile{grid-column:span 12;min-height:176px;overflow:hidden}
+/* drawn larger than the tile: nose and tail bleed off the top and bottom, the wings stay in view */
+.actile .bp-host{--bp-bg:var(--tile);position:absolute;top:50%;right:4%;height:160%;aspect-ratio:4/3;transform:translateY(-50%)}
+.actile .actxt{position:relative;max-width:46%}
+.actile .acname{margin-top:8px;color:var(--text);font-size:var(--fs-large);font-weight:var(--w-semibold)}
+.acfacts{display:flex;flex-wrap:wrap;gap:6px 22px;margin:12px 0 0}
+.acfacts dt{color:var(--text-3);font-size:var(--fs-mini)}
+.acfacts dd{margin:2px 0 0;color:var(--text);font-size:var(--fs-small);font-weight:var(--w-medium)}
+.accard-bp{--bp-bg:var(--panel);height:190px;margin:-4px 0 10px}
+@media (max-width:767px){
+  .tile.actile{min-height:0;padding-bottom:132px}
+  .actile .actxt{max-width:none}
+  .actile .bp-host{top:auto;bottom:-118px;right:-8px;height:250px;transform:none}
+}
 .tile.split>div+div{border-left:var(--hairline) solid var(--line-soft);padding-left:16px}
 .ovmap{display:block;width:100%;height:calc(100% - 24px);min-height:200px;margin-top:6px}
 .ov-route{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}

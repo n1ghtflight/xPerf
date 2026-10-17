@@ -3,6 +3,15 @@
    Overview: a bento of tiles summarising the plan. Every value here is read from the plan object X
    that calculate()/render() already computed; nothing is recalculated. Each tile opens its detail view.
    ===================================================================== */
+// the selected aircraft as drawing facts (blueprint.js): OpenAP geometry for airliners, the table's wingspan for GA
+function aircraftFacts(m){
+  if(m.kind==="openap"){ const a=m.ac||{}, w=a.wing||{}, f=a.fuselage||{};
+    return {code:String(m.code).toUpperCase(),kind:"jet",n:m.nEng,span:+w.span,length:+f.length,width:+f.width,area:+w.area,
+      sweep:w.sweep!=null?+w.sweep:undefined,mount:a.engine?.mount,mtow:+a.mtow}; }
+  return {code:m.code,kind:m.engineKind,n:m.nEng,span:parseFloat(m.d?.wingspan),mtow:m.mtow};
+}
+const aircraftBlueprint=(m,cls="")=>`<div class="bp-host ${cls}" aria-hidden="true">${blueprintSVG(aircraftSpec(aircraftFacts(m)),{label:String(m.code).toUpperCase()})}</div>`;
+
 function renderOverview(X){
   const {m,dep,arr,total,sel}=X, c=sel.climb, d=sel.descent, cr=sel.cruise, apm=m.kind==="apm";
   const esc=s=>String(s??"").replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
@@ -17,6 +26,15 @@ function renderOverview(X){
       <svg class="i"><use href="#i-alert"/></svg><div><b>${esc(first)}</b>${warn.length>1?`<span class="more"> +${warn.length-1} more</span>`:""}</div>
       <a href="#profile" data-open="profile">Show on profile →</a></div>`
     :`<div data-callout data-count="0" hidden></div>`;
+
+  /* the aircraft, with its blueprint behind the right half */
+  const oap=m.kind==="openap", eng=oap?`${m.nEng} × ${Math.round(m.eng.max_thrust/1000)} kN`
+    :m.engineKind==="jet"?`${m.nEng} × ${(m.thrustN/1000).toFixed(1)} kN`:`${m.nEng} × ${Math.round(m.hp)} ${m.engineKind==="turboprop"?"shp":"hp"}`;
+  const facts=[["Engines",eng],["MTOW",`${fmtK(oap?m.ac.mtow:m.mtow)} kg`],["Cruise",oap?`M${m.cruiseMach}`:`${m.P.cruiseTAS} kt`],["Ceiling",lvl(m.ceilFt)]];
+  const acSub=oap?`OpenAP · ${m.eng.name}`:m.d?.variant||`${m.engineKind} · EUROCONTROL APM`;
+  const acTile=tile("aircraft","setup","span-12 actile",aircraftBlueprint(m)+
+    `<div class="actxt">${head("i-setup","Aircraft")}<div class="acname">${esc(m.label)}</div><div class="sub">${esc(acSub)}</div>`+
+    `<dl class="acfacts">${facts.map(([k,v])=>`<div><dt>${k}</dt><dd class="num">${esc(v)}</dd></div>`).join("")}</dl></div>`,"Open FS2024 setup");
 
   /* map: the route drawn to scale (equirectangular around the mid-latitude) */
   const pts=X.route.points, cosM=Math.cos(((dep.lat+arr.lat)/2)*Math.PI/180);
@@ -83,7 +101,7 @@ function renderOverview(X){
       `<div class="wxgrid">${rows.map(([k,v])=>`<div><span>${k}</span><b class="num">${v}</b></div>`).join("")}</div>${rw}`,`Open ${label.toLowerCase()} airport`);
   };
 
-  return `${callout}<div class="bento">${mapTile}${cruiseTile}${tdTile}${fuelTile}${windTile}${profTile}`+
+  return `${callout}<div class="bento">${acTile}${mapTile}${cruiseTile}${tdTile}${fuelTile}${windTile}${profTile}`+
     `${wxTile("dep-wx",X.briefs?.dep,"Departure",true)}${wxTile("arr-wx",X.briefs?.arr,"Arrival",false)}</div>`;
 }
 

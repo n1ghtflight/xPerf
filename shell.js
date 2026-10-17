@@ -6,6 +6,8 @@
    ===================================================================== */
 const Shell=(()=>{
   const root=document.documentElement, THEMES=["system","dark","light"];
+  // view links and tab buttons; #surface also carries data-view (the current view, for CSS) but is not a control
+  const NAV_CTL="a[data-view],button[data-view]";
   const VIEWS=[["overview","Overview"],["route","Route & nav log"],["airports","Airports & weather"],["profile","Profile"],
                ["fuel","Fuel & levels"],["setup","FS2024 setup"],["settings","Settings"]];
   const PHONE_TABS=["overview","route","airports","profile","more"];
@@ -34,7 +36,7 @@ const Shell=(()=>{
     current=id;
     $$(".tabpanel").forEach(p=>p.hidden=p.dataset.tab!==id);
     const surface=$("#surface"); if(surface) surface.dataset.view=id;
-    $$("[data-view]").forEach(b=>{ const on=b.dataset.view===id; if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+    $$(NAV_CTL).forEach(b=>{ const on=b.dataset.view===id; if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
     store.set("xperf.tab",id);
     if(record&&hist[hi]!==id){ hist=hist.slice(0,hi+1); hist.push(id); hi=hist.length-1; }
     if(surface) surface.scrollTop=0;
@@ -53,7 +55,7 @@ const Shell=(()=>{
 
   /* ---------- events */
   document.addEventListener("click",e=>{
-    const v=e.target.closest&&e.target.closest("[data-view]");
+    const v=e.target.closest&&e.target.closest(NAV_CTL);
     if(v){ e.preventDefault(); showView(v.dataset.view); if(!matchMedia("(min-width:1024px)").matches) $("#app")?.classList.remove("expanded"); return; }
     if(e.target.closest("#sbBtn")) toggleSidebar();
     else if(e.target.closest("#navBack")) go(-1);
@@ -61,7 +63,9 @@ const Shell=(()=>{
     else if(e.target.closest("#themeBtn")) setTheme(THEMES[(THEMES.indexOf(theme)+1)%THEMES.length]);
     else if(!e.target.closest(".moresheet")) toggleMore(false);
   });
-  document.addEventListener("change",e=>{ if(e.target.id==="themeSel") setTheme(e.target.value); });
+  document.addEventListener("change",e=>{ if(e.target.id==="themeSel") setTheme(e.target.value);
+    if(e.target.id==="bpTgl"){ document.body.classList.toggle("no-blueprint",!e.target.checked); store.set("xperf.blueprint",e.target.checked?"1":"0"); } });
+  if(store.get("xperf.blueprint")==="0"){ document.body.classList.add("no-blueprint"); const t=document.getElementById("bpTgl"); if(t) t.checked=false; }
 
   // G then a letter jumps to a view; "," opens Settings; "[" toggles the sidebar. Never while typing.
   let chord=null, chordT=0;
