@@ -23,13 +23,13 @@ const XD=(()=>{
   const once=(k,f)=>memo[k]||(memo[k]=f().catch(e=>{ delete memo[k]; throw e; }));
 
   /* ---------- live HTTP: native (iOS, no CORS) or browser fetch */
-  async function httpText(url,ms=20000){
+  async function httpText(url,ms=20000,anyStatus=false){     // anyStatus: return the body of an error reply too
     if(native&&window.Capacitor?.Plugins?.CapacitorHttp){
       const res=await Capacitor.Plugins.CapacitorHttp.get({url,headers:{"User-Agent":"XPerf (flight simulation planner)"},responseType:"text",connectTimeout:ms,readTimeout:ms});
-      if(res.status>=400) throw new Error(`HTTP ${res.status}`);
+      if(res.status>=400&&!anyStatus) throw new Error(`HTTP ${res.status}`);
       return typeof res.data==="string"?res.data:JSON.stringify(res.data); }
     const c=new AbortController(), t=setTimeout(()=>c.abort(),ms);
-    try{ const res=await fetch(url,{signal:c.signal}); if(!res.ok) throw new Error(`HTTP ${res.status}`); return await res.text(); }
+    try{ const res=await fetch(url,{signal:c.signal}); if(!res.ok&&!anyStatus) throw new Error(`HTTP ${res.status}`); return await res.text(); }
     finally{ clearTimeout(t); }
   }
   // local server.py answering /api (packs mode in a browser): lets live lookups the browser can't make go through it
@@ -148,6 +148,13 @@ const XD=(()=>{
     regions: async pts=>S?(await fetchT("/api/regions?pts="+encodeURIComponent(pts.map(p=>`${p.id},${p.lat.toFixed(5)},${p.lon.toFixed(5)}`).join("|")),"json",60000)).regions
                         :packRegions(pts),
     terrain: pts=>S?serverTerrain(pts):packTerrain(pts),
+    // SimBrief OFP XML (served with CORS): an OFP link, or a pilot ID / username → that pilot's latest OFP.
+    // Error replies are XML with a <status> the caller shows, so their body is kept.
+    simbrief: async src=>{ const s=String(src||"").trim(); let url;
+      if(/^https?:\/\//i.test(s)){ const u=new URL(s); if(!/(^|\.)simbrief\.com$/i.test(u.hostname)) throw new Error("Only simbrief.com links can be fetched.");
+        u.protocol="https:"; url=u.href; }
+      else url="https://www.simbrief.com/api/xml.fetcher.php?"+new URLSearchParams(/^\d+$/.test(s)?{userid:s}:{username:s});
+      return httpText(url,20000,true); },
     // EUROCONTROL APM, live (server scrape). Packs mode only through a local server; otherwise the caller uses apm_snapshot.json
     apm: async icao=>{ if(S||await proxy()) return get(`/api/apm/${icao}`,"json",30000); throw new Error("live EUROCONTROL lookup unavailable"); },
     weather,                          // exposed for tests / native use

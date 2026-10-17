@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.17b">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.17k">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.17m">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
@@ -75,7 +75,15 @@
 
       <label>Navigation</label>
       <div class="seg" data-for="nav" role="group" aria-label="Navigation"></div>
-      <select id="nav" class="seg-src" aria-label="Navigation"><option value="direct">Direct (GPS / pilotage)</option><option value="vor">VOR to VOR</option><option value="vorndb">VOR + NDB</option><option value="awy">Airways — US Victor / Jet</option><option value="pub">Published routes — FAA preferred / CDR</option></select>
+      <select id="nav" class="seg-src" aria-label="Navigation"><option value="direct">Direct (GPS / pilotage)</option><option value="vor">VOR to VOR</option><option value="vorndb">VOR + NDB</option><option value="awy">Airways — US Victor / Jet</option><option value="pub">Published routes — FAA preferred / CDR</option><option value="import">Your route — paste or SimBrief</option></select>
+      <div class="routeimport" id="routeImport" hidden>
+        <label for="route">Route</label>
+        <textarea id="route" rows="3" spellcheck="false" autocomplete="off" placeholder="Paste a route, e.g. KPAO OAK V195 ILA V200 RANGO KTRK (SkyVector, SimBrief or ATC format)"></textarea>
+        <div class="sbrow"><input id="sbSrc" placeholder="SimBrief username, pilot ID or OFP link" autocomplete="off" spellcheck="false">
+          <button type="button" class="sm" id="sbFetch">Fetch</button>
+          <label class="sm filebtn" for="sbFile" data-tip="A SimBrief flight plan saved as XML">XML file…</label><input type="file" id="sbFile" accept=".xml,text/xml,application/xml" hidden></div>
+        <div class="hint" id="routeHint">Airports at the ends set From and To. FAA airways (US) are followed; elsewhere fix to fix.</div>
+      </div>
 
       <div class="row2">
         <div><label for="alt">Alternate (optional)</label><input id="alt" list="aptList" placeholder="ICAO" autocomplete="off"></div>
@@ -147,13 +155,14 @@
 </div>
 </div>
 
-<script src="shell.js?v=2026.10.17f"></script>
-<script src="data.js?v=2026.10.16a"></script>
-<script src="nav.js?v=2026.10.17b"></script>
+<script src="shell.js?v=2026.10.17g"></script>
+<script src="data.js?v=2026.10.17a"></script>
+<script src="routeimport.js?v=2026.10.17a"></script>
+<script src="nav.js?v=2026.10.17c"></script>
 <script src="acpicker.js?v=2026.10.16b"></script>
 <script src="charts.js?v=2026.10.17a"></script>
-<script src="pln.js?v=2026.10.16c"></script>
-<script src="chips.js?v=2026.10.17d"></script>
+<script src="pln.js?v=2026.10.17a"></script>
+<script src="chips.js?v=2026.10.17e"></script>
 <script src="overview.js?v=2026.10.17a"></script>
 <script src="palette.js?v=2026.10.17a"></script>
 <script>
@@ -810,6 +819,14 @@ async function calculate(){
         if(!pub){ mode="awy"; navNote=navNote||`No FAA preferred or coded routes between ${dep.icao} and ${arr.icao} — planned on airways instead.`; } }
     }
     if(mode==="awy"||mode==="pub"){ status("loading FAA airway database…"); try{ await loadAirways(); }catch(_){} }
+    // your own route: pasted text or a SimBrief OFP, flown as written (FAA airways in it are expanded)
+    let imp=null;
+    if(mode==="import"){
+      const txt=$("route").value.trim();
+      if(!txt) throw new Error("Paste a route (e.g. KPAO OAK V195 ILA V200 RANGO KTRK) or load a SimBrief flight plan, or choose another navigation mode.");
+      status("loading FAA airway database…"); try{ await loadAirways(); }catch(_){}
+      imp=importRoute(txt,dep,arr); navNote=importNote(imp,dep,arr);
+    }
     if(mode==="awy"){
       if(!isUSApt(dep)&&!isUSApt(arr)){ mode="vor"; navNote="Airway data is only available for the US (FAA NASR) — both airports are outside the US, so the route is planned VOR to VOR."; }
       else { status("loading FAA airway database…");
@@ -823,6 +840,7 @@ async function calculate(){
     for(let pass=0;pass<2;pass++){
       let route;
       let lim={};
+      if(mode==="import"){ const plan=planFromImport(dep,arr,imp,routeAlt); route=buildRoute(plan.points,plan); lim=plan.lim; }
       if(mode==="pub"){ const plan=planFromPublished(dep,arr,pub.sel,m); route=buildRoute(plan.points,plan); lim=plan.lim;
         if(!pub.sel.ok) navNote=`The selected published route isn't meant for this aircraft (${pub.sel.why||"restricted"}) — check the route picker.`;
         if(pub.sel.r.unresolved?.length) navNote=(navNote?navNote+" ":"")+`Some route points could not be located (${pub.sel.r.unresolved.join(", ")}) and were skipped.`; }
@@ -1005,8 +1023,8 @@ function render(X){
   </div>
   <div class="tabpanel" data-tab="setup">${setupCard(X)}</div>
   <div class="tabpanel" data-tab="route">
-  <div class="card"><h2>Route${X.route.nav?` — ${X.navMode==="pub"?"FAA published route":X.navMode==="awy"?(X.route.plan.hybrid?"VOR to VOR + ":"")+(X.route.plan.high?"Jet airways":"Victor airways"):X.navMode==="vor"?"VOR to VOR":"VOR / NDB"}`:" — direct"}</h2>
-    <div class="routestr">${X.route.plan?.routeString?`<b>${X.route.plan.routeString}</b>`:X.route.points.map(P=>P.kind==="apt"?`<b>${P.apt.icao}</b>`:`<b>${P.nav.ident}</b><span class="note"> ${fmtFreq(P.nav)}</span>`).join(" → ")}</div>
+  <div class="card"><h2>Route${X.route.nav?` — ${X.navMode==="import"?(X.route.plan.imp?.sb?"SimBrief flight plan":"your route"):X.navMode==="pub"?"FAA published route":X.navMode==="awy"?(X.route.plan.hybrid?"VOR to VOR + ":"")+(X.route.plan.high?"Jet airways":"Victor airways"):X.navMode==="vor"?"VOR to VOR":"VOR / NDB"}`:" — direct"}</h2>
+    <div class="routestr">${X.route.plan?.routeString?`<b>${svgEsc(X.route.plan.routeString)}</b>`:X.route.points.map(P=>P.kind==="apt"?`<b>${P.apt.icao}</b>`:`<b>${P.nav.ident}</b><span class="note"> ${fmtFreq(P.nav)}</span>`).join(" → ")}</div>
     ${publishedPicker(X)}
     <div class="plnbar"><button class="sm" data-pln>⬇ Download .PLN for FS2024</button><span class="note plnNote"></span></div>
     <div id="map"></div>

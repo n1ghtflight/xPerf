@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OFP>
+  <params>
+    <airac>2610</airac>
+    <units>kgs</units>
+  </params>
+  <origin>
+    <icao_code>UNTT</icao_code>
+    <plan_rwy>21</plan_rwy>
+  </origin>
+  <destination>
+    <icao_code>UNEE</icao_code>
+    <plan_rwy>23</plan_rwy>
+  </destination>
+  <alternate>
+    <icao_code>UNNT</icao_code>
+  </alternate>
+  <general>
+    <route>NALE1E NALED NALE4B</route>
+    <initial_altitude>5000</initial_altitude>
+  </general>
+  <aircraft>
+    <icaocode>PA24</icaocode>
+    <name>PIPER COMANCHE</name>
+  </aircraft>
+  <times>
+    <sched_out>1791861780</sched_out>
+  </times>
+  <navlog>
+    <fix><ident>DER21</ident><name>DER21</name><icao_region>UN</icao_region><type>wpt</type><pos_lat>56.373769</pos_lat><pos_long>85.199403</pos_long><stage>CLB</stage><via_airway>NALE1E</via_airway><is_sid_star>1</is_sid_star></fix>
+    <fix><ident>TOC</ident><name>TOP OF CLIMB</name><icao_region></icao_region><type>ltlg</type><pos_lat>56.284602</pos_lat><pos_long>85.280782</pos_long><stage>CLB</stage><via_airway>NALE1E</via_airway><is_sid_star>1</is_sid_star></fix>
+    <fix><ident>D152Z</ident><name>D152Z</name><icao_region>UN</icao_region><type>wpt</type><pos_lat>56.010758</pos_lat><pos_long>85.528056</pos_long><stage>CRZ</stage><via_airway>NALE1E</via_airway><is_sid_star>1</is_sid_star></fix>
+    <fix><ident>NALED</ident><name>NALED</name><icao_region>UN</icao_region><type>wpt</type><pos_lat>55.953889</pos_lat><pos_long>85.564444</pos_long><stage>CRZ</stage><via_airway>NALE1E</via_airway><is_sid_star>0</is_sid_star></fix>
+    <fix><ident>TOD</ident><name>TOP OF DESCENT</name><icao_region></icao_region><type>ltlg</type><pos_lat>55.550139</pos_lat><pos_long>86.087505</pos_long><stage>CRZ</stage><via_airway>NALE4B</via_airway><is_sid_star>1</is_sid_star></fix>
+    <fix><ident>D029G</ident><name>D029G</name><icao_region>UN</icao_region><type>wpt</type><pos_lat>55.388333</pos_lat><pos_long>86.293333</pos_long><stage>DSC</stage><via_airway>NALE4B</via_airway><is_sid_star>1</is_sid_star></fix>
+    <fix><ident>D042E</ident><name>D042E</name><icao_region>UN</icao_region><type>wpt</type><pos_lat>55.351667</pos_lat><pos_long>86.286667</pos_long><stage>DSC</stage><via_airway>NALE4B</via_airway><is_sid_star>1</is_sid_star></fix>
+    <fix><ident>CF23</ident><name>CF23</name><icao_region>UN</icao_region><type>wpt</type><pos_lat>55.341583</pos_lat><pos_long>86.280681</pos_long><stage>DSC</stage><via_airway>NALE4B</via_airway><is_sid_star>1</is_sid_star></fix>
+    <fix><ident>UNEE</ident><name>KEMEROVO</name><icao_region>UN</icao_region><type>apt</type><pos_lat>55.270000</pos_lat><pos_long>86.107500</pos_long><stage>DSC</stage><via_airway>NALE4B</via_airway><is_sid_star>1</is_sid_star></fix>
+  </navlog>
+</OFP>

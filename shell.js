@@ -137,6 +137,7 @@ const Palette=(()=>{
     for(const [id,k] of [["overview","O"],["route","R"],["airports","A"],["profile","P"],["fuel","F"],["setup","S"]])
       cmds.push({group:"Navigate",label:"Go to "+Shell.VIEWS.find(v=>v[0]===id)[1],keys:["G",k],run:()=>Shell.showView(id)});
     cmds.push({group:"Navigate",label:"Open Settings",keys:[","],run:()=>Shell.showView("settings")},
+      {group:"App",label:"Your route: paste or load from SimBrief…",keys:[],run:()=>Chips.openImport()},
       {group:"App",label:"Switch theme",keys:[],run:()=>{ const t=["system","dark","light"]; Shell.setTheme(t[(t.indexOf(Shell.theme())+1)%3]); }},
       {group:"App",label:"Toggle sidebar",keys:["["],run:()=>Shell.toggleSidebar()});
     return cmds;
@@ -145,6 +146,10 @@ const Palette=(()=>{
   function typedRows(q){
     if(typeof DB==="undefined"||!DB.airports) return [];
     const list=aircraftList(), r=parseTypedPlan(q,{aptIndex:DB.aptIndex,airports:DB.airports,aircraft:list}), G="Plan a flight";
+    // a pasted route ("KPAO OAK V195 ILA V200 RANGO KTRK"): airports at both ends, something in between
+    const t=tokenizeRoute(q), end=s=>s.length===4&&DB.aptIndex[s];
+    if(r.kind!=="plan"&&t.length>=3&&end(t[0])&&end(t[t.length-1]))
+      return [{group:G,label:`Fly route ${t[0]} → ${t[t.length-1]} via ${t.slice(1,-1).join(" ")}`,keys:["↵"],run:()=>runRoute(q)}];
     if(r.kind==="plan"){
       const ac=r.ac?(list.find(a=>a.value===r.ac)||{}).code:String(window.MODEL?.code||"").toUpperCase();
       return [{group:G,label:`Plan ${r.dep.icao} → ${r.arr.icao}${ac?" in "+ac:""}`,keys:["↵"],run:()=>runPlan(r)}];
@@ -157,6 +162,11 @@ const Palette=(()=>{
   async function runPlan(r){
     if(r.ac&&$("ac").value!==r.ac){ $("ac").value=r.ac; if(window.AcPicker) AcPicker.sync(); $("ac").dispatchEvent(new Event("change")); }
     $("dep").value=r.dep.icao; $("arr").value=r.arr.icao; Chips.syncForm();
+    await replan();
+  }
+
+  async function runRoute(q){
+    $("route").value=q.trim(); setSel("nav","import"); Chips.routeEnds();
     await replan();
   }
 

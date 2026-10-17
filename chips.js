@@ -8,7 +8,7 @@
 const Chips=(()=>{
   const $=id=>document.getElementById(id), body=document.body;
   const OPTS={  // option chips: select id → [value, short label, key]
-    nav:[["direct","Direct","D"],["vor","VOR","V"],["vorndb","VOR + NDB","N"],["awy","Airways","W"],["pub","Published","P"]],
+    nav:[["direct","Direct","D"],["vor","VOR","V"],["vorndb","VOR + NDB","N"],["awy","Airways","W"],["pub","Published","P"],["import","Your route","R"]],
     rules:[["ifr","IFR","I"],["vfr","VFR","V"],["any","Any level","A"]],
     opt:[["fuel","Min fuel","F"],["time","Min time","T"]],
   };
@@ -42,7 +42,7 @@ const Chips=(()=>{
     const chip=(k,txt,tip,bad)=>`<button type="button" class="pchip${bad?" bad":""}" data-chip="${k}" aria-haspopup="true"${tip?` data-tip="${esc(tip)}"`:""}>${txt}<svg class="i caret"><use href="#i-caret"/></svg></button>`;
     return chip("ac",`<b>${esc(ac)}</b>`,X.m.label)+
       chip("route",`<b>${esc(dep)}</b> → <b>${esc(arr)}</b>${esc(alt)}`,routeBad?"Unknown airport code":"Departure and arrival",routeBad)+
-      chip("nav",esc(short("nav",$("nav").value)),"Navigation")+
+      chip("nav",esc(sbActive()&&$("nav").value==="import"?"SimBrief":short("nav",$("nav").value)),"Navigation")+
       chip("rules",esc(short("rules",$("rules").value)),"Level rules")+
       chip("opt",esc(short("opt",$("opt").value)),"Optimise for")+
       chip("fl",esc(levelTxt()),"Cruise level")+
@@ -99,6 +99,7 @@ const Chips=(()=>{
   }
   function pick(v){
     const k=menuChip, sel=$(k); if(!sel) return;
+    if(k==="nav"&&v==="import"&&!$("route").value.trim()){ closeMenu(); openImport(); return; }   // nothing to fly yet: ask for the route
     sel.value=v; sel.dispatchEvent(new Event("change",{bubbles:true}));
     closeMenu(); replan();
   }
@@ -129,8 +130,54 @@ const Chips=(()=>{
     document.querySelectorAll(".seg[data-for]").forEach(seg=>{ const v=$(seg.dataset.for).value;
       seg.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.seg===v))); });
     aptLine("dep"); aptLine("arr");
+    $("routeImport").hidden=$("nav").value!=="import";
     const o=$("oxy"); if(o) o.setAttribute("aria-checked",String(o.checked));
   }
+
+  /* ---------- your own route: pasted text or a SimBrief OFP (parsing in routeimport.js, planning in nav.js) */
+  const HINT0="Airports at the ends set From and To. FAA airways (US) are followed; elsewhere fix to fix.";
+  const sbActive=()=>!!(ROUTE_SB&&ROUTE_SB.text===$("route").value.trim());
+  const hint=(t,bad)=>{ const h=$("routeHint"); h.textContent=t; h.classList.toggle("err",!!bad); };
+  function setNav(v){ const s=$("nav"); if(s.value!==v){ s.value=v; s.dispatchEvent(new Event("change",{bubbles:true})); } syncForm(); }
+  function openImport(){
+    setNav("import");
+    if(body.classList.contains("planned")) openDrawer();
+    const r=$("route"); r.scrollIntoView({block:"center"}); r.focus();
+  }
+  // airports at either end of the typed route become From / To (the planner's own rule, routeimport.js)
+  function routeEnds(){
+    if(sbActive()) return;
+    const r=resolveRoute($("route").value,{dep:null,arr:null,findApt:id=>DB.aptIndex[id]||null,
+      findFix:id=>NAV.loaded?routeIdIndex().get(id)||[]:[],airway:()=>null});
+    if(r.from) $("dep").value=r.from.icao;
+    if(r.to) $("arr").value=r.to.icao;
+    syncForm();
+  }
+  function applySimbrief(sb){
+    ROUTE_SB={...sb,text:`${sb.dep} ${sb.route} ${sb.arr}`.replace(/\s+/g," ").trim()};
+    $("route").value=ROUTE_SB.text; $("dep").value=sb.dep; $("arr").value=sb.arr;
+    if(sb.altn&&DB.aptIndex[sb.altn]) $("alt").value=sb.altn;
+    if(sb.etdMs) $("etd").value=new Date(sb.etdMs).toISOString().slice(0,16);
+    setNav("import");
+    const code=o=>((o.textContent.match(/\(([^)]+)\)\s*$/)||[])[1]||"").toUpperCase();
+    const opt=sb.acType?[...$("ac").options].find(o=>o.value&&code(o)===sb.acType.toUpperCase()):null;
+    if(opt&&$("ac").value!==opt.value){ $("ac").value=opt.value; window.AcPicker?.sync(); $("ac").dispatchEvent(new Event("change")); }
+    hint(`SimBrief ${sb.dep} → ${sb.arr}${sb.airac?` · AIRAC ${sb.airac}`:""} · ${sb.points.length} fixes${sb.initialAlt?` · filed ${lvl(sb.initialAlt)}`:""}`+
+      `${sb.acType&&!opt?` · ${sb.acType} isn't in XPerf, so the current aircraft is kept`:""}. Editing the route switches to the typed route.`);
+    replan();
+  }
+  async function loadSimbrief(getText,what){
+    hint(`Loading ${what}…`);
+    try{ applySimbrief(parseSimbriefXML(await getText())); }
+    catch(e){ hint(/abort/i.test(e.message)?"SimBrief didn't answer — try again.":e.message,true); }
+  }
+  function fetchSimbrief(){
+    const s=$("sbSrc").value.trim();
+    if(!s){ hint("Enter your SimBrief username or pilot ID (Account settings on simbrief.com), or paste an OFP link.",true); $("sbSrc").focus(); return; }
+    try{ localStorage.setItem("xperf.simbrief",s); }catch(_){}
+    loadSimbrief(()=>XD.simbrief(s),/^https?:/i.test(s)?"the SimBrief flight plan":`${s}'s latest SimBrief flight plan`);
+  }
+  try{ const s=localStorage.getItem("xperf.simbrief"); if(s) $("sbSrc").value=s; }catch(_){}
 
   /* ---------- events */
   document.addEventListener("click",e=>{
@@ -144,24 +191,29 @@ const Chips=(()=>{
     const seg=t.closest(".seg [data-seg]"); if(seg){ const sel=$(seg.closest(".seg").dataset.for); sel.value=seg.dataset.seg;
       sel.dispatchEvent(new Event("change",{bubbles:true})); syncForm(); return; }
     if(t.closest("#drawerClose")){ closeDrawer(); return; }
+    if(t.closest("#sbFetch")){ fetchSimbrief(); return; }
     if(!t.closest("#chipMenu")) closeMenu();
   });
   document.addEventListener("input",e=>{ const id=e.target.id;
+    if(id==="route"&&ROUTE_SB&&!sbActive()){ ROUTE_SB=null; hint(HINT0); }
     if(id==="dep"||id==="arr") aptLine(id);
     if(id==="chipDep"||id==="chipArr") aptSearch(e); });
   document.addEventListener("change",e=>{
     if(["nav","rules","opt","fl","oxy"].includes(e.target.id)) syncForm();
+    if(e.target.id==="route") routeEnds();
+    if(e.target.id==="sbFile"&&e.target.files[0]){ const f=e.target.files[0]; e.target.value=""; loadSimbrief(()=>f.text(),f.name); }
     // aircraft picked from the chip's search box: re-plan with it straight away
     // (capture phase: AcPicker dispatches a non-bubbling change event on #ac)
     // replan on the next task, after the app's own #ac handler (onAircraft) has started loading the new model
     if(e.target.id==="ac"&&menuChip==="ac"){ closeMenu(); setTimeout(replan,0); }
   },true);
   document.addEventListener("keydown",e=>{
-    if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){ e.preventDefault();
+    if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){ e.preventDefault(); if(e.target.id==="route") routeEnds();
       if(body.classList.contains("planned")) replan(); else if(!$("go").disabled) $("go").click(); return; }
     if(e.key==="Escape"){ if(!$("chipMenu").hidden){ closeMenu(); e.preventDefault(); } else if(!$("allSettings").hidden){ closeDrawer(); e.preventDefault(); } return; }
     if(e.key==="Enter"&&(e.target.id==="chipDep"||e.target.id==="chipArr")){ e.preventDefault(); applyRoute(); return; }
     if(e.key==="Enter"&&e.target.id==="chipEtd"){ e.preventDefault(); applyEtd(); return; }
+    if(e.key==="Enter"&&e.target.id==="sbSrc"){ e.preventDefault(); fetchSimbrief(); return; }
     // single-letter keys inside an open option menu (never while typing in a field elsewhere)
     const typing=e.target.closest&&e.target.closest("input,textarea,select,[contenteditable]")&&!e.target.closest("#chipMenu");
     if(menuChip&&OPTS[menuChip]&&!typing&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
@@ -170,5 +222,5 @@ const Chips=(()=>{
     }
   },true);
 
-  return { render, afterRender, replan, syncForm, buildSegs, openDrawer, closeDrawer, closeMenu };
+  return { render, afterRender, replan, syncForm, buildSegs, openDrawer, closeDrawer, closeMenu, openImport, routeEnds };
 })();

@@ -45,10 +45,10 @@ async function buildPLN(X){
   route.points.forEach((P,i)=>{ if(P.kind==="apt") return;
     const meta=route.plan?.legs?.[i-1], x=route.legs[i-1].s0+route.legs[i-1].d, h=profileAtX(sel,X.total,x).h;
     const type=P.kind==="nav"?(NDB_TYPES.has(P.nav.type)?"NDB":"VOR"):"Intersection";
-    enr.push({id:P.label,lat:P.lat,lon:P.lon,type,alt:Math.round(h),awy:meta&&meta.awy&&meta.awy!=="DCT"&&!meta.proc?meta.awy:null,proc:meta?.proc?meta.awy:null}); });
+    enr.push({id:P.label,lat:P.lat,lon:P.lon,type,alt:Math.round(h),awy:meta&&meta.awy&&meta.awy!=="DCT"&&!meta.proc?meta.awy:null,proc:meta?.proc?meta.awy:null,region:P.region||null}); });
   const regions=await fetchRegions(enr);
   // outside FAA coverage the ICAO region is the two-letter prefix of the nearby airports (MR, EG, LF, CY, MM …)
-  enr.forEach((o,i)=>{ if(regions[i]) return; let best=null;
+  enr.forEach((o,i)=>{ if(regions[i]) return; if(o.region){ regions[i]=o.region; return; } let best=null;
     for(const a of DB.airports){ if(!/^[A-Z]{4}$/.test(a.icao)||/^[KP]/.test(a.icao)) continue;
       const dl=Math.abs(a.lat-o.lat); if(dl>2.5) continue; const d=gcDist(a,o)/NM; if(d<150&&(!best||d<best.d)) best={d,a}; }
     if(best) regions[i]=best.a.icao.slice(0,2); });

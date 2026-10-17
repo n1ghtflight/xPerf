@@ -195,6 +195,7 @@ function fixText(X,k){ const {route,sel,total}=X, x=k==="TOC"?sel.climb.d:total-
 function navLog(X){
   const {route}=X, rows=X.legs||navLegs(X), awyMode=route.plan?.mode==="awy";
   const p=route.plan, srcNote=p?.mode==="awy"?`Published ${p.high?"Jet":"Victor"} airways from FAA NASR (cycle effective ${p.cycle}): MEA / MOCA, magnetic courses and changeover points as published; radials computed from the airway's VORs. Cruise level is kept at or above the highest MEA on the route (${fmtK(p.maxMea)} ft)${p.high?"":" and at or below 17,500 ft (Victor airway MAA)"}.`
+    :p?.mode==="import"?`Your route${p.imp?.sb?` from SimBrief (${p.cycle})`:""}: waypoints flown in the order given${p.maxMea?`; FAA airway legs keep their MEA (cruise at or above ${fmtK(p.maxMea)} ft)`:""}. Radio stations are tuned when within range at ${lvl(p.altFt)} (AIM 1-1-8 service volumes).`
     :p?`Stations in range at ${lvl(p.altFt)}: VOR service volumes per AIM 1-1-8 (T 25 NM, L 40/70 NM, H up to 130 NM) limited by line of sight; NDB 25/50/75 NM by class. Radials use each VOR's published (slaved) variation; magnetic courses use local variation.`:"Direct great-circle route (GPS / pilotage).";
   const mark=r=>(r.toc?` <span class="tag toc">TOC</span>`:"")+(r.tod?` <span class="tag tod">TOD</span>`:"");
   return `<div class="tblwrap"><table class="navlog full"><tr><th>To</th><th>NAV / ADF</th><th>Heading</th><th>Alt</th><th>NM</th><th>ETE</th><th>Fuel left</th>
@@ -564,6 +565,7 @@ function msfsRouteType(X){
   const mode=X.navMode, p=X.route.plan;
   if(mode==="awy"||mode==="pub") return p?.high?"High-altitude airways":"Low-altitude airways";
   if(mode==="vor"||mode==="vorndb") return "VOR to VOR";
+  if(mode==="import") return p?.legs?.some(l=>l&&l.awy&&l.awy!=="DCT"&&!l.proc)?(p.high?"High-altitude airways":"Low-altitude airways"):"Direct – GPS";
   return "Direct – GPS";
 }
 function sectionize(html){
@@ -914,6 +916,63 @@ function planFromPublished(dep,arr,pick,m){
   return {points,legs,gaps:[],altFt:pick.alt.max||null,mode:"pub",high:pick.high,maxMea,pub:r,routeString:r.route,
     cycle:AWY.cycle||"current",lim:{minFt:pick.high?Math.max(maxMea,18000):maxMea,maxFt:pick.alt.max||(pick.high?45000:17500),
       exactFt:r.type==="TEC"&&pick.alt.max?pick.alt.max:null}};       // TEC routes are filed at their published altitude
+}
+/* ---------------------------------------------------------------- your own route: pasted text or a SimBrief OFP
+   routeimport.js parses; this resolves idents against the navaid / airway data and builds the plan. */
+let ROUTE_SB=null;          // last SimBrief OFP, used while the route box still shows its route
+function routeIdIndex(){
+  if(NAV.byId&&NAV.byIdKey===NAV.list.length+"/"+AWY.points.length) return NAV.byId;
+  const m=new Map(), add=(k,v)=>{ if(!m.has(k)) m.set(k,[]); m.get(k).push(v); };
+  for(const n of NAV.list) add(n.ident,{id:n.ident,lat:n.lat,lon:n.lon,kind:"nav",ref:n});
+  for(const p of AWY.points) if(p.kind!=="nav") add(p.id,{id:p.id,lat:p.lat,lon:p.lon,kind:"fix",navType:p.navType});
+  NAV.byId=m; NAV.byIdKey=NAV.list.length+"/"+AWY.points.length; return m;
+}
+// points along airway `name` after `entry` up to the first point called `exitId` (FAA airways only), or null
+function airwayLeg(name,entry,exitId){
+  if(!AWY.loaded||!AWY.adj) return null;
+  const P=AWY.points;
+  for(let s=0;s<P.length;s++){ if(P[s].id!==entry.id||gcDist(P[s],entry)/NM>5) continue;
+    const prev=new Map([[s,null]]), q=[s];
+    while(q.length){ const u=q.shift();
+      if(u!==s&&P[u].id===exitId){ const out=[];
+        for(let v=u;prev.get(v);v=prev.get(v).u){ const {e}=prev.get(v), p=P[v];
+          out.unshift({id:p.id,lat:p.lat,lon:p.lon,kind:p.kind==="nav"?"nav":"fix",navType:p.navType,seg:AWY.segs[e.seg],fwd:e.fwd}); }
+        return out; }
+      for(const e of AWY.adj[u]){ if(AWY.segs[e.seg].awy!==name||prev.has(e.to)) continue; prev.set(e.to,{u,e}); q.push(e.to); } } }
+  return null;
+}
+function importRoute(txt,dep,arr){
+  const sb=ROUTE_SB&&ROUTE_SB.text===txt.trim()?ROUTE_SB:null;
+  if(sb) return {from:DB.aptIndex[sb.dep]||null,to:DB.aptIndex[sb.arr]||null,points:sb.points,skipped:[],sb};
+  const ix=routeIdIndex();
+  return resolveRoute(txt,{dep,arr,findApt:id=>DB.aptIndex[id]||null,findFix:id=>ix.get(id)||[],airway:airwayLeg});
+}
+function planFromImport(dep,arr,imp,altFt){
+  const points=[aptPoint(dep)], legs=[];
+  for(const q of imp.points){
+    if(q.kind==="apt"){ if(q.ref&&q.ref!==dep&&q.ref!==arr){ points.push(aptPoint(q.ref)); legs.push(null); } continue; }
+    const nav=q.kind==="nav"&&NAV.loaded?(q.ref||navaidsNear(q.lat,q.lon,3,x=>x.ident===q.id)[0]?.n):null;
+    points.push(nav?{kind:"nav",nav,lat:q.lat,lon:q.lon,label:q.id,r:stationRange(nav,altFt)}
+      :{kind:"fix",id:q.id,lat:q.lat,lon:q.lon,label:q.id,navType:q.navType||"",region:q.region||null});
+    const s=q.seg;
+    legs.push(!q.via?null:s?{awy:q.via,mea:s.mea,moca:s.moca,maa:s.maa,crs:q.fwd?s.crs:s.opp}
+      :q.sidstar||!/^[UKS]?[A-Z]\d{1,4}[A-Z]?$/.test(q.via)?{awy:q.via,proc:true}:{awy:q.via});
+  }
+  points.push(aptPoint(arr)); legs.push({awy:"DCT"});
+  const maxMea=Math.max(0,...legs.map(l=>l?.mea||0)), high=legs.some(l=>l&&!l.proc&&/^[JQU]/.test(l.awy));
+  return {points,legs,gaps:[],altFt,mode:"import",high,maxMea,imp,
+    routeString:imp.sb?`${dep.icao} ${imp.sb.route} ${arr.icao}`.replace(/\s+/g," "):routeStringOf(points,legs),
+    cycle:imp.sb?.airac?`AIRAC ${imp.sb.airac} (SimBrief)`:AWY.cycle||"current",lim:{minFt:maxMea}};
+}
+// one line for the planner's note: what was left out of the pasted route and why
+function importNote(imp,dep,arr){
+  const why={procedure:"SID / STAR — fly it from the chart",airway:"airway not in XPerf's data (FAA airways only) — flown direct",unknown:"not found"};
+  const parts=[];
+  if(imp.from&&imp.from!==dep||imp.to&&imp.to!==arr) parts.push(`The route is written for ${imp.from?.icao||dep.icao} → ${imp.to?.icao||arr.icao}; planned ${dep.icao} → ${arr.icao}.`);
+  const groups={}; for(const s of imp.skipped) (groups[s.why]=groups[s.why]||[]).push(s.id);
+  for(const k of Object.keys(groups)) parts.push(`Skipped ${groups[k].join(", ")} (${why[k]}).`);
+  if(groups.unknown&&!(isUSApt(dep)&&isUSApt(arr))) parts.push("Outside the US XPerf knows navaids but not named fixes — load the SimBrief flight plan (it carries coordinates).");
+  return parts.join(" ")||null;
 }
 function publishedPicker(X){
   const P=X.pub; if(!P) return "";

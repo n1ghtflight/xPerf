@@ -446,6 +446,70 @@ check("drawer-error-phone", async () => {
   } finally { await page.close(); }
 });
 
+/* ---------------- your own route: pasted text / SimBrief OFP ---------------- */
+const ROUTE = "KPAO OAK V195 ILA V200 RANGO KTRK";
+const waitPlan = (page, cond) => page.eval(`(async()=>{ for(let i=0;i<1200&&!(${cond})&&!document.getElementById('err').textContent;i++) await new Promise(r=>setTimeout(r,100)); return document.getElementById('err').textContent; })()`);
+
+check("route-paste", async () => {
+  const page = await open("c172");
+  try {
+    await page.eval(`(async()=>{ const $=id=>document.getElementById(id); $('ac').value='apm:C172'; $('ac').dispatchEvent(new Event('change'));
+      for(let i=0;i<120&&(!MODEL||MODEL.id!=='apm:C172');i++) await new Promise(r=>setTimeout(r,250));
+      $('etd').value='2026-10-20T12:00'; $('dep').value=''; $('arr').value=''; })()`);
+    await page.click('.seg[data-for="nav"] [data-seg="import"]'); await settle(page);
+    expect(await visible(page, "#route"), "route box not shown for Your route");
+    await page.type("#route", ROUTE);
+    await page.eval(`document.getElementById('route').dispatchEvent(new Event('change',{bubbles:true}))`);
+    expect(await page.eval(`document.getElementById('dep').value+'-'+document.getElementById('arr').value`) === "KPAO-KTRK", "route ends did not set From / To");
+    await page.click("#go"); const err = await waitPlan(page, "window.LAST_X"); await idle(page);
+    expect(!err, "plan failed: " + err);
+    const r = await page.eval(`({mode:LAST_X.navMode, pts:LAST_X.route.points.map(p=>p.label).join(' '), awy:LAST_X.route.plan.legs.map(l=>l&&l.awy).join(' '), note:LAST_X.navNote, title:document.querySelector('#results h2')?.textContent||''})`);
+    expect(r.mode === "import", "mode " + r.mode);
+    expect(r.pts === "KPAO OAK BERKS SABLO CROIT CORDD RAGGS BESSA ELEGY ZAKUL ILA YUBBA RAILE MRGGO RANGO KTRK", "points: " + r.pts);
+    expect(/V195/.test(r.awy) && /V200/.test(r.awy), "airway legs: " + r.awy);
+    expect(!r.note, "unexpected note: " + r.note);
+    expect(/Your route/.test(await page.eval(`document.querySelector('[data-chip="nav"]').textContent`)), "nav chip label");
+  } finally { await page.close(); }
+});
+
+check("route-simbrief", async () => {
+  const xml = readFileSync(join(here, "..", "tests", "fixtures", "simbrief-UNTT-UNEE.xml"), "utf8");
+  const page = await open("c172", { plan: true });
+  try {
+    await page.eval(`XD.simbrief=async u=>{ window.SB_ASKED=u; return ${JSON.stringify(xml)}; }`);
+    await page.click('[data-chip="nav"]'); await settle(page);
+    await page.click('#chipMenu [data-value="import"]'); await settle(page);
+    expect(await visible(page, "#allSettings"), "empty Your route did not open All settings");
+    expect(await page.eval(`document.activeElement?.id`) === "route", "route box not focused");
+    await page.eval(`window.LAST_X=null; document.getElementById('sbSrc').value='xperf_pilot'`);
+    await page.click("#sbFetch"); const err = await waitPlan(page, "window.LAST_X&&LAST_X.dep.icao==='UNTT'"); await idle(page);
+    expect(!err, "plan failed: " + err);
+    const r = await page.eval(`({asked:window.SB_ASKED, mode:LAST_X.navMode, dep:LAST_X.dep.icao, arr:LAST_X.arr.icao, pts:LAST_X.route.points.map(p=>p.label).join(' '),
+      chip:document.querySelector('[data-chip="nav"]').textContent, hint:document.getElementById('routeHint').textContent, ac:MODEL.id})`);
+    expect(r.asked === "xperf_pilot", "XD.simbrief got " + r.asked);
+    expect(r.mode === "import" && r.dep === "UNTT" && r.arr === "UNEE", `planned ${r.mode} ${r.dep}-${r.arr}`);
+    expect(r.pts === "UNTT DER21 D152Z NALED D029G D042E CF23 UNEE", "points: " + r.pts);
+    expect(/SimBrief/.test(r.chip), "nav chip: " + r.chip);
+    expect(/PA24 isn't in XPerf/.test(r.hint) && r.ac === "apm:C172", "aircraft fallback: " + r.hint);
+    const pln = await page.eval(`buildPLN(LAST_X).then(x=>typeof x==='string'?x:x.xml||JSON.stringify(x))`);
+    expect(/<ICAOIdent>D029G<\/ICAOIdent>/.test(pln) && /<ICAORegion>UN<\/ICAORegion>[\s\S]*?<ICAOIdent>D029G/.test(pln), "PLN lacks SimBrief region for D029G");
+  } finally { await page.close(); }
+});
+
+check("route-palette", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.key("k", { ctrl: true }); await settle(page);
+    await page.type("#pInput", ROUTE); await settle(page);
+    const row = await page.eval(`document.querySelector('#pList .p-item[aria-selected="true"]')?.textContent||''`);
+    expect(/Fly route KPAO → KTRK via OAK V195 ILA V200 RANGO/.test(row), "selected row: " + row);
+    await page.eval(`window.LAST_X=null`); await page.key("Enter");
+    const err = await waitPlan(page, "window.LAST_X"); await idle(page);
+    expect(!err, "plan failed: " + err);
+    expect(await page.eval(`LAST_X.navMode+' '+LAST_X.route.points.length`) === "import 16", "palette route not planned as imported");
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {
