@@ -510,6 +510,29 @@ check("route-palette", async () => {
   } finally { await page.close(); }
 });
 
+check("new-flight", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.eval(`(()=>{ const $=id=>document.getElementById(id); $('alt').value='KSFO'; $('route').value='KPAO OAK KTRK'; $('nav').value='import'; })()`);
+    await page.click('[data-chip="new"]'); await settle(page);
+    const s = await page.eval(`(()=>{ const $=id=>document.getElementById(id);
+      return {planned:document.body.classList.contains('planned'), bar:$('chipbar').hidden, fields:['dep','arr','alt','etd','route'].map(i=>$(i).value).join(''),
+        empty:!!document.querySelector('#results .card.empty'), crumb:$('crumb').textContent, formHome:!!document.querySelector('.work > .formcol'),
+        errHome:$('go').nextElementSibling===$('err'), ac:$('ac').value, x:window.LAST_X, nav:$('nav').value, view:Shell.current()}; })()`);
+    expect(!s.planned && s.bar, "still in the planned layout");
+    expect(s.fields === "", "fields not cleared: " + s.fields);
+    expect(s.empty && s.crumb === "New flight", "results / title not reset");
+    expect(s.formHome && s.errHome, "form or error line not back in place");
+    expect(s.ac === "apm:C172" && s.nav === "import" && s.x === null && s.view === "overview", `kept/cleared wrong: ${JSON.stringify(s)}`);
+    expect(await visible(page, "#dep"), "From field not visible");
+    await page.eval(`document.getElementById('nav').value='direct'`);
+    const err = await planFlight(page, FLIGHTS.c172); expect(!err, "re-plan failed: " + err);
+    expect(await page.eval(`document.body.classList.contains('planned')&&!!document.querySelector('#drawerBody > .formcol')`), "second plan did not move the form to All settings");
+    await page.key("k", { ctrl: true }); await settle(page); await page.type("#pInput", "new flight"); await settle(page);
+    expect(/New flight/.test(await page.eval(`document.querySelector('#pList .p-item[aria-selected="true"]')?.textContent||''`)), "no New flight command in the palette");
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {

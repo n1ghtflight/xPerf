@@ -17,6 +17,7 @@ const Chips=(()=>{
   const levelTxt=()=>$("fl").value==="auto"?"Auto level":lvl(+$("fl").value);
   const etdTxt=()=>{ const v=$("etd").value; return v?`ETD ${v.slice(11,16)}Z`:"ETD now"; };
   let menuChip=null, acHome=null;
+  const EMPTY_RESULTS=$("results")?.innerHTML||"";      // the start screen, restored by New flight
 
   /* ---------- re-planning: latest choice wins, runs never overlap */
   let running=null, again=false;
@@ -47,7 +48,8 @@ const Chips=(()=>{
       chip("opt",esc(short("opt",$("opt").value)),"Optimise for")+
       chip("fl",esc(levelTxt()),"Cruise level")+
       chip("etd",esc(etdTxt()),"Departure time (UTC)")+
-      `<button type="button" class="pchip ghost" data-chip="all" aria-haspopup="dialog"><svg class="i"><use href="#i-settings"/></svg>All settings</button>`;
+      `<button type="button" class="pchip ghost" data-chip="all" aria-haspopup="dialog"><svg class="i"><use href="#i-settings"/></svg>All settings</button>`+
+      `<button type="button" class="pchip ghost" data-chip="new" data-tip="Clear this plan and start again (keeps the aircraft)"><svg class="i"><use href="#i-plus"/></svg>New flight</button>`;
   }
   function afterRender(X){
     if(!body.classList.contains("planned")){
@@ -72,6 +74,7 @@ const Chips=(()=>{
     if(menuChip===k){ closeMenu(); return; }
     closeMenu();
     if(k==="all"){ openDrawer(); return; }
+    if(k==="new"){ newFlight(); return; }
     menuChip=k; btn.setAttribute("aria-expanded","true");
     if(OPTS[k]||k==="fl"){
       const sel=$(k), rows=OPTS[k]||[...sel.options].map(o=>[o.value,o.textContent,""]);
@@ -108,6 +111,22 @@ const Chips=(()=>{
     $("dep").value=d; $("arr").value=a; closeMenu(); syncForm(); replan();
   }
   function applyEtd(){ $("etd").value=$("chipEtd").value; closeMenu(); replan(); }
+
+  /* ---------- New flight: back to the start screen; keeps the aircraft and the planning preferences */
+  function newFlight(){
+    closeMenu(); closeDrawer();
+    for(const id of ["dep","arr","alt","etd","route"]) $(id).value="";
+    $("fl").value="auto"; ROUTE_SB=null; hint(HINT0); $("err").textContent="";
+    if(body.classList.contains("planned")){                 // undo afterRender: the form leaves the drawer
+      body.classList.remove("planned");
+      document.querySelector(".work").prepend(document.querySelector(".formcol"));
+      $("go").after($("err"));
+      $("chipbar").hidden=true; $("chipbar").innerHTML="";
+    }
+    window.LAST_X=null; $("results").innerHTML=EMPTY_RESULTS;
+    Shell.setCrumb("New flight"); Shell.showView("overview"); syncForm();
+    $("dep").focus();
+  }
 
   /* ---------- All settings drawer */
   function openDrawer(){ closeMenu(); $("allSettings").hidden=false; body.classList.add("drawer-open"); $("allSettings").querySelector("input,select,button")?.focus(); }
@@ -222,5 +241,5 @@ const Chips=(()=>{
     }
   },true);
 
-  return { render, afterRender, replan, syncForm, buildSegs, openDrawer, closeDrawer, closeMenu, openImport, routeEnds };
+  return { render, afterRender, replan, syncForm, buildSegs, openDrawer, closeDrawer, closeMenu, openImport, routeEnds, newFlight };
 })();

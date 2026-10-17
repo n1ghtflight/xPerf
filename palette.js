@@ -31,6 +31,13 @@ var parseTypedPlan=function(text,{aptIndex,airports,aircraft}){
   return {kind:"plan",dep:d.apt,arr:a.apt,ac};
 };
 
+// Typed-plan rows come first, unless the query is the start of a command's name: "new flight" must find
+// New flight even though NEW is also an airport code.
+var paletteRows=function(typed,commands,query){
+  const q=String(query||"").trim().toLowerCase();
+  return q&&commands.some(c=>String(c.label).toLowerCase().startsWith(q))?[...commands,...typed]:[...typed,...commands];
+};
+
 var filterCommands=function(commands,query){
   const q=String(query||"").trim().toLowerCase();
   return q?commands.filter(c=>String(c.label).toLowerCase().includes(q)):commands.slice();

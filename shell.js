@@ -137,6 +137,7 @@ const Palette=(()=>{
     for(const [id,k] of [["overview","O"],["route","R"],["airports","A"],["profile","P"],["fuel","F"],["setup","S"]])
       cmds.push({group:"Navigate",label:"Go to "+Shell.VIEWS.find(v=>v[0]===id)[1],keys:["G",k],run:()=>Shell.showView(id)});
     cmds.push({group:"Navigate",label:"Open Settings",keys:[","],run:()=>Shell.showView("settings")},
+      {group:"App",label:"New flight",keys:[],run:()=>Chips.newFlight()},
       {group:"App",label:"Your route: paste or load from SimBrief…",keys:[],run:()=>Chips.openImport()},
       {group:"App",label:"Switch theme",keys:[],run:()=>{ const t=["system","dark","light"]; Shell.setTheme(t[(t.indexOf(Shell.theme())+1)%3]); }},
       {group:"App",label:"Toggle sidebar",keys:["["],run:()=>Shell.toggleSidebar()});
@@ -172,7 +173,7 @@ const Palette=(()=>{
 
   function render(){
     const q=$("pInput").value;
-    items=[...typedRows(q),...filterCommands(staticCommands(),q)];
+    items=paletteRows(typedRows(q),filterCommands(staticCommands(),q),q);
     const firstOk=items.findIndex(i=>!i.disabled); selI=firstOk<0?0:firstOk;
     let html="", last="";
     items.forEach((c,i)=>{ if(c.group!==last){ html+=`<div class="p-group">${esc(c.group)}</div>`; last=c.group; }

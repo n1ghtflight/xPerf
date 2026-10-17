@@ -14,7 +14,7 @@ const lookups = { aptIndex, airports: AIRPORTS, aircraft: AIRCRAFT };
 
 const ctx = vm.createContext({});
 vm.runInContext(readFileSync(new URL("../palette.js", import.meta.url), "utf8"), ctx);
-const { parseTypedPlan, filterCommands } = ctx;
+const { parseTypedPlan, filterCommands, paletteRows } = ctx;
 
 test("ICAO pair with aircraft code plans that aircraft", () => {
   const r = parseTypedPlan("KPAO KTRK C172", lookups);
@@ -53,4 +53,15 @@ test("filterCommands matches label substrings case-insensitively and keeps group
   assert.deepEqual(filterCommands(cmds, "pln").map(c => c.label), ["Export .PLN"]);
   assert.deepEqual(filterCommands(cmds, "o").map(c => c.group), ["This plan", "This plan", "Navigate"]);
   assert.equal(filterCommands(cmds, "").length, 4);
+});
+test("a query that starts a command name lists the commands before typed-plan rows", () => {
+  const typed = [{ group: "Plan a flight", label: "To = 04VG Manquin Flight Park" }];
+  const cmds = [{ group: "App", label: "New flight" }];
+  assert.deepEqual(JSON.parse(JSON.stringify(paletteRows(typed, cmds, "new flight"))).map(r => r.label), ["New flight", "To = 04VG Manquin Flight Park"]);
+  assert.deepEqual(JSON.parse(JSON.stringify(paletteRows(typed, cmds, "  NEW "))).map(r => r.label), ["New flight", "To = 04VG Manquin Flight Park"]);
+});
+test("a typed plan stays first when no command name starts with the query", () => {
+  const typed = [{ group: "Plan a flight", label: "Plan KPAO → KTRK" }];
+  const cmds = [{ group: "App", label: "Copy route" }];
+  assert.deepEqual(JSON.parse(JSON.stringify(paletteRows(typed, cmds, "kpao ktrk"))).map(r => r.label), ["Plan KPAO → KTRK", "Copy route"]);
 });
