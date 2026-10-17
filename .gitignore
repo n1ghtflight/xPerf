@@ -5,3 +5,5 @@ __pycache__/
 *.pyc
 NUL
 dist/
+# Brainstorming companion mockups (local only)
+.superpowers/
