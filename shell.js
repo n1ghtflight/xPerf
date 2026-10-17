@@ -77,3 +77,119 @@ const Shell=(()=>{
 
   return { VIEWS, PHONE_TABS, setTheme, theme:()=>theme, showView, current:()=>current, setCrumb, setData, toggleSidebar, store };
 })();
+
+/* =====================================================================
+   Command palette (Ctrl/Cmd+K). Typed plans first ("KPAO KTRK C172"), then actions on the current plan,
+   then navigation and app commands — each with its shortcut shown as keycaps.
+   Parsing/filtering live in palette.js (unit-tested); this is the UI.
+   ===================================================================== */
+const Palette=(()=>{
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const reEsc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  let root=null, items=[], selI=0;
+
+  function aircraftList(){
+    return [...($("ac")?.options||[])].filter(o=>o.value&&o.value!=="other")
+      .map(o=>({value:o.value,code:(o.textContent.match(/\(([^)]+)\)\s*$/)||[])[1]||"",name:o.textContent.replace(/\s*\([^)]+\)\s*$/,"")}));
+  }
+  const replan=()=>Chips.replan();
+  const setSel=(id,v)=>{ const s=$(id); s.value=v; s.dispatchEvent(new Event("change",{bubbles:true})); };
+  const routeText=X=>X.route.plan?.routeString||X.route.points.map(p=>p.label).join(" ");
+
+  function staticCommands(){
+    const X=window.LAST_X, cmds=[];
+    if(X){
+      const g="This plan";
+      cmds.push({group:g,label:"Export .PLN for FS2024",keys:["E"],run:()=>document.querySelector("[data-pln]")?.click()},
+        {group:g,label:"Copy route",keys:[],run:()=>navigator.clipboard?.writeText(routeText(X))},
+        {group:g,label:"Swap departure and arrival",keys:[],run:()=>{ [$("dep").value,$("arr").value]=[$("arr").value,$("dep").value]; Chips.syncForm(); replan(); }},
+        ...[["ifr","IFR"],["vfr","VFR"],["any","Any level"]].map(([v,l])=>({group:g,label:`Rules: ${l}`,keys:[],run:()=>{ setSel("rules",v); replan(); }})),
+        {group:g,label:"Navigation…",keys:[],run:()=>document.querySelector('[data-chip="nav"]')?.click()},
+        {group:g,label:"Change aircraft…",keys:[],run:()=>document.querySelector('[data-chip="ac"]')?.click()},
+        {group:g,label:"All settings",keys:[],run:()=>Chips.openDrawer()});
+    }
+    for(const [id,k] of [["overview","O"],["route","R"],["airports","A"],["profile","P"],["fuel","F"],["setup","S"]])
+      cmds.push({group:"Navigate",label:"Go to "+Shell.VIEWS.find(v=>v[0]===id)[1],keys:["G",k],run:()=>Shell.showView(id)});
+    cmds.push({group:"Navigate",label:"Open Settings",keys:[","],run:()=>Shell.showView("settings")},
+      {group:"App",label:"Switch theme",keys:[],run:()=>{ const t=["system","dark","light"]; Shell.setTheme(t[(t.indexOf(Shell.theme())+1)%3]); }},
+      {group:"App",label:"Toggle sidebar",keys:["["],run:()=>Shell.toggleSidebar()});
+    return cmds;
+  }
+
+  function typedRows(q){
+    if(typeof DB==="undefined"||!DB.airports) return [];
+    const list=aircraftList(), r=parseTypedPlan(q,{aptIndex:DB.aptIndex,airports:DB.airports,aircraft:list}), G="Plan a flight";
+    if(r.kind==="plan"){
+      const ac=r.ac?(list.find(a=>a.value===r.ac)||{}).code:String(window.MODEL?.code||"").toUpperCase();
+      return [{group:G,label:`Plan ${r.dep.icao} → ${r.arr.icao}${ac?" in "+ac:""}`,keys:["↵"],run:()=>runPlan(r)}];
+    }
+    if(r.kind==="ambiguous") return r.candidates.map(a=>({group:G,label:`${r.field==="dep"?"From":"To"} = ${a.icao} ${a.name}, ${a.country}`,keys:[],keep:true,
+      run:()=>{ const inp=$("pInput"); inp.value=inp.value.replace(new RegExp(reEsc(r.token),"i"),a.icao); render(); }}));
+    if(r.kind==="unknown") return [{group:G,label:r.field==="ac"?`No aircraft type “${r.token}”`:`No airport matches “${r.token}”`,keys:[],disabled:true,run:()=>{}}];
+    return [];
+  }
+  async function runPlan(r){
+    if(r.ac&&$("ac").value!==r.ac){ $("ac").value=r.ac; if(window.AcPicker) AcPicker.sync(); $("ac").dispatchEvent(new Event("change")); }
+    $("dep").value=r.dep.icao; $("arr").value=r.arr.icao; Chips.syncForm();
+    await replan();
+  }
+
+  function render(){
+    const q=$("pInput").value;
+    items=[...typedRows(q),...filterCommands(staticCommands(),q)];
+    const firstOk=items.findIndex(i=>!i.disabled); selI=firstOk<0?0:firstOk;
+    let html="", last="";
+    items.forEach((c,i)=>{ if(c.group!==last){ html+=`<div class="p-group">${esc(c.group)}</div>`; last=c.group; }
+      html+=`<div class="p-item${c.disabled?" off":""}" role="option" data-i="${i}" aria-selected="${i===selI}">${esc(c.label)}<span class="keys">${c.keys.map(k=>`<kbd>${esc(k)}</kbd>`).join("")}</span></div>`; });
+    $("pList").innerHTML=html||`<div class="p-empty">No matching commands</div>`;
+  }
+  function select(i){ selI=i; $("pList").querySelectorAll(".p-item").forEach(el=>el.setAttribute("aria-selected",String(+el.dataset.i===selI)));
+    $("pList").querySelector('[aria-selected="true"]')?.scrollIntoView({block:"nearest"}); }
+  function run(){ const c=items[selI]; if(!c||c.disabled) return; if(!c.keep) close(); c.run(); }
+  function step(d){ const n=items.length; if(!n) return; let j=selI; for(let k=0;k<n;k++){ j=(j+d+n)%n; if(!items[j].disabled) break; } select(j); }
+
+  function build(){
+    root=document.createElement("div"); root.id="paletteRoot"; root.hidden=true;
+    root.innerHTML=`<div class="palette-bd"></div><div class="palette" id="palette" role="dialog" aria-label="Command palette">
+      <input id="pInput" placeholder="Type a command, or plan a flight: KPAO KTRK C172" autocomplete="off" spellcheck="false" role="combobox" aria-controls="pList" aria-expanded="true">
+      <div class="p-list" id="pList" role="listbox"></div></div>`;
+    document.body.appendChild(root);
+    root.querySelector(".palette-bd").addEventListener("click",close);
+    const inp=$("pInput");
+    inp.addEventListener("input",render);
+    inp.addEventListener("keydown",e=>{
+      if(e.key==="ArrowDown"){ e.preventDefault(); step(1); }
+      else if(e.key==="ArrowUp"){ e.preventDefault(); step(-1); }
+      else if(e.key==="Enter"&&!e.ctrlKey&&!e.metaKey){ e.preventDefault(); run(); }
+      else if(e.key==="Escape"){ e.preventDefault(); e.stopPropagation(); close(); }
+    });
+    $("pList").addEventListener("mousemove",e=>{ const it=e.target.closest(".p-item"); if(it&&+it.dataset.i!==selI&&!items[+it.dataset.i].disabled) select(+it.dataset.i); });
+    $("pList").addEventListener("click",e=>{ const it=e.target.closest(".p-item"); if(it){ select(+it.dataset.i); run(); } });
+  }
+  function open(){ if(!root) build(); root.hidden=false; $("pInput").value=""; render(); $("pInput").focus(); }
+  function close(){ if(root) root.hidden=true; }
+  const isOpen=()=>!!root&&!root.hidden;
+  document.addEventListener("keydown",e=>{
+    if((e.ctrlKey||e.metaKey)&&!e.altKey&&e.key.toLowerCase()==="k"){ e.preventDefault(); e.stopPropagation(); isOpen()?close():open(); }
+  },true);
+  return {open,close,isOpen};
+})();
+
+/* Tooltips that teach shortcuts: [data-tip] (+ data-kbd "G O") after a short hover */
+(()=>{
+  const tip=document.createElement("div"); tip.className="tip"; tip.hidden=true; document.body.appendChild(tip);
+  const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  let t=0;
+  document.addEventListener("pointerover",e=>{
+    const el=e.target.closest&&e.target.closest("[data-tip]"); clearTimeout(t);
+    if(!el||e.pointerType==="touch"){ tip.hidden=true; return; }
+    t=setTimeout(()=>{
+      tip.innerHTML=esc(el.dataset.tip)+(el.dataset.kbd||"").split(" ").filter(Boolean).map(k=>`<kbd>${esc(k)}</kbd>`).join("");
+      tip.hidden=false; const r=el.getBoundingClientRect();
+      tip.style.left=Math.max(8,Math.min(innerWidth-tip.offsetWidth-8,r.left+r.width/2-tip.offsetWidth/2))+"px";
+      tip.style.top=(r.bottom+6)+"px";
+    },450);
+  });
+  document.addEventListener("pointerdown",()=>{ clearTimeout(t); tip.hidden=true; });
+})();

@@ -264,6 +264,53 @@ check("no-hex", async () => {
   expect(!bad.length, "hard-coded colours: " + bad.map(([n, h]) => `${n}: ${h.join(" ")}`).join(" | "));
 });
 
+check("palette", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.eval(`document.activeElement?.blur()`);
+    await page.key("k", { ctrl: true }); await settle(page);
+    expect(await visible(page, "#palette"), "Ctrl+K did not open the palette");
+    expect(await page.eval(`document.activeElement?.id`) === "pInput", "palette input not focused");
+    const first = await page.eval(`document.querySelector('#pList .p-group')?.textContent`);
+    expect(first === "This plan", "first group: " + first);
+    await page.key("Escape"); await settle(page);
+    expect(!(await visible(page, "#palette")), "Esc did not close the palette");
+  } finally { await page.close(); }
+});
+
+check("typed-plan", async () => {
+  const page = await open("b789");
+  try {
+    await page.eval(`document.getElementById('etd').value=${JSON.stringify("2026-10-20T12:00")}; document.getElementById('nav').value='awy'; document.activeElement?.blur()`);
+    await page.key("k", { ctrl: true }); await settle(page);
+    await page.type("#pInput", "KJFK EGLL B789"); await settle(page);
+    const row = await page.eval(`document.querySelector('#pList .p-item[aria-selected="true"]')?.textContent||''`);
+    expect(/Plan KJFK → EGLL in B789/.test(row), "selected row: " + row);
+    await page.key("Enter");
+    await page.eval(`(async()=>{ for(let i=0;i<1200&&!(window.LAST_X&&LAST_X.dep.icao==='KJFK');i++) await new Promise(r=>setTimeout(r,100)); })()`);
+    await idle(page);
+    expect(await page.eval(`window.LAST_X?.dep.icao`) === "KJFK", "typed plan did not plan KJFK");
+    expect(await page.eval(`MODEL.id`) === "oap:b789", "aircraft not switched: " + await page.eval(`MODEL.id`));
+  } finally { await page.close(); }
+});
+
+check("keys-in-inputs", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.click('.sidebar [data-view="overview"]'); await settle(page);
+    await page.click('[data-chip="route"]'); await settle(page);
+    await page.type("#chipDep", "gr"); await settle(page);
+    let vis = await page.eval(VISIBLE_VIEWS);
+    expect(vis[0] === "overview", "typing g r in an input switched view to " + vis);
+    await page.key("Escape");
+    await page.key("k", { ctrl: true }); await settle(page);
+    await page.type("#pInput", "gr"); await settle(page);
+    vis = await page.eval(VISIBLE_VIEWS);
+    expect(vis[0] === "overview", "typing g r in the palette switched view to " + vis);
+    expect(await page.eval(`document.getElementById('pInput').value`) === "gr", "palette input did not receive the keys");
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {
