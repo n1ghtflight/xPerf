@@ -1,0 +1,511 @@
+{
+ "blockKg": 41613.36,
+ "cruiseFt": 39000,
+ "err": "",
+ "inventory": [
+  "#apprSel",
+  "#detlog",
+  "#fillg",
+  "#hatch",
+  "#map",
+  "#profcard",
+  "#wah",
+  "#windTgl",
+  "[data-apt]",
+  "[data-copy]",
+  "[data-key]",
+  "[data-plate]",
+  "[data-pln]",
+  "[data-sec]",
+  "[data-secall]",
+  "[data-tab]",
+  "[data-title]"
+ ],
+ "legs": [
+  {
+   "A": {
+    "apt": "apt:KJFK",
+    "kind": "apt",
+    "label": "KJFK",
+    "lat": 40.639,
+    "lon": -73.779
+   },
+   "B": {
+    "id": "WEETS",
+    "kind": "fix",
+    "label": "WEETS",
+    "lat": 41.857,
+    "lon": -74.198,
+    "navType": ""
+   },
+   "adf": null,
+   "alt": 22633.606,
+   "awy": "DCT",
+   "cop": null,
+   "dist": 75.53,
+   "eta": {},
+   "ete": 835.404,
+   "fuelRem": 38819.462,
+   "gs": 325.482,
+   "guid": "<span class=\"awy\">DCT</span> (departure / vectors)",
+   "i": 0,
+   "last": false,
+   "mc": 358.769,
+   "mh": 3.479,
+   "msa": 1500,
+   "nav1": {
+    "dir": "TO",
+    "n": "nav:ALB",
+    "obs": 12.528
+   },
+   "tc": 345.523,
+   "v": -13.246,
+   "wca": 4.71,
+   "wd": 24.408,
+   "ws": 23.186,
+   "x0": 0,
+   "x1": 139881.903
+  },
+  {
+   "A": {
+    "id": "WEETS",
+    "kind": "fix",
+    "label": "WEETS",
+    "lat": 41.857,
+    "lon": -74.198,
+    "navType": ""
+   },
+   "B": {
+    "id": "ACOVE",
+    "kind": "fix",
+    "label": "ACOVE",
+    "lat": 42.235,
+    "lon": -74.032,
+    "navType": ""
+   },
+   "adf": null,
+   "alt": 27357.21,
+   "awy": "J6",
+   "cop": null,
+   "dist": 23.829,
+   "eta": {},
+   "ete": 189.881,
+   "fuelRem": 38244.05,
+   "gs": 451.77,
+   "guid": "<b class=\"awy\">J6</b> published <b>029°M</b><br>Inbound 031° to ALB",
+   "i": 1,
+   "last": false,
+   "mc": 31.551,
+   "mea": 18000,
+   "mh": 29.659,
+   "moca": null,
+   "msa": 3300,
+   "nav1": {
+    "dir": "TO",
+    "n": "nav:ALB",
+    "obs": 31.025
+   },
+   "tc": 18.074,
+   "v": -13.477,
+   "wca": -1.893,
+   "wd": 335.135,
+   "ws": 11.49,
+   "x0": 139881.903,
+   "x1": 184012.33
+  },
+  {
+   "A": {
+    "id": "ACOVE",
+    "kind": "fix",
+    "label": "ACOVE",
+    "lat": 42.235,
+    "lon": -74.032,
+    "navType": ""
+   },
+   "B": {
+    "kind": "nav",
+    "label": "ALB",
+    "lat": 42.747,
+    "lon": -73.803,
+    "nav": "nav:ALB",
+    "r": 70
+   },
+   "adf": null,
+   "alt": 32156.366,
+   "awy": "J6",
+   "cop": null,
+   "dist": 32.393,
+   "eta": {},
+   "ete": 233.062,
+   "fuelRem": 37591.108,
+   "gs": 500.362,
+   "guid": "<b class=\"awy\">J6</b> published <b>029°M</b><br>Inbound <b>031°</b> to ALB (R-211)",
+   "i": 2,
+   "last": false,
+   "mc": 32.044,
+   "mea": 18000,
+   "mh": 30.17,
+   "moca": null,
+   "msa": 1300,
+   "nav1": {
+    "dir": "TO",
+    "n": "nav:ALB",
+    "obs": 31.292
+   },
+   "tc": 18.21,
+   "v": -13.834,
+   "wca": -1.874,
+   "wd": 238.086,
+   "ws": 12.851,
+   "x0": 184012.33,
+   "x1": 244004.36
+  },
+  {
+   "A": {
+    "kind": "nav",
+    "label": "ALB",
+    "lat": 42.747,
+    "lon": -73.803,
+    "nav": "nav:ALB",
+    "r": 70
+   },
+   "B": {
+    "id": "HOWES",
+    "kind": "fix",
+    "label": "HOWES",
+    "lat": 43.359,
+    "lon": -72.448,
+    "navType": ""
+   },
+   "adf": null,
+   "alt": 39000,
+   "awy": "J49",
+   "cop": null,
+   "dist": 69.882,
+   "eta": {},
+   "ete": 487.945,
+   "fuelRem": 36435.912,
+   "gs": 515.58,
+   "guid": "<b class=\"awy\">J49</b> published <b>071°M</b><br>COP 119 NM from ALB → BGR<br>Outbound <b>ALB R-071</b>",
+   "i": 3,
+   "last": false,
+   "mc": 72.571,
+   "mea": 31000,
+   "mh": 72.603,
+   "moca": null,
+   "msa": 2800,
+   "nav1": {
+    "dir": "FROM",
+    "n": "nav:ALB",
+    "obs": 70.826
+   },
+   "tc": 58.281,
+   "toc": true,
+   "v": -14.29,
+   "wca": 0.032,
+   "wd": 237.507,
+   "ws": 25.649,
+   "x0": 244004.36,
+   "x1": 373425.278
+  },
+  {
+   "A": {
+    "id": "HOWES",
+    "kind": "fix",
+    "label": "HOWES",
+    "lat": 43.359,
+    "lon": -72.448,
+    "navType": ""
+   },
+   "B": {
+    "id": "SQUAM",
+    "kind": "fix",
+    "label": "SQUAM",
+    "lat": 43.778,
+    "lon": -71.484,
+    "navType": ""
+   },
+   "adf": null,
+   "alt": 39000,
+   "awy": "J49",
+   "cop": null,
+   "dist": 48.913,
+   "eta": {},
+   "ete": 315.93,
+   "fuelRem": 35889.981,
+   "gs": 557.36,
+   "guid": "<b class=\"awy\">J49</b> published <b>071°M</b><br>Inbound 078° to BGR",
+   "i": 4,
+   "last": false,
+   "mc": 74.248,
+   "mea": 31000,
+   "mh": 74.601,
+   "moca": null,
+   "msa": 2000,
+   "nav1": {
+    "dir": "TO",
+    "n": "nav:BGR",
+    "obs": 77.754
+   },
+   "tc": 59.081,
+   "v": -15.167,
+   "wca": 0.353,
+   "wd": 235.779,
+   "ws": 32.128,
+   "x0": 373425.278,
+   "x1": 464011.954
+  },
+  {
+   "A": {
+    "id": "SQUAM",
+    "kind": "fix",
+    "label": "SQUAM",
+    "lat": 43.778,
+    "lon": -71.484,
+    "navType": ""
+   },
+   "B": {
+    "id": "FRIAR",
+    "kind": "fix",
+    "label": "FRIAR",
+    "lat": 44.441,
+    "lon": -69.885,
+    "navType": ""
+   },
+   "adf": null,
+   "alt": 39000,
+   "awy": "J49",
+   "cop": null,
+   "dist": 79.618,
+   "eta": {},
+   "ete": 514.255,
+   "fuelRem": 35001.34,
+   "gs": 557.36,
+   "guid": "<b class=\"awy\">J49</b> published <b>071°M</b><br>Inbound 078° to BGR",
+   "i": 5,
+   "last": false,
+   "mc": 76.079,
+   "mea": 31000,
+   "mh": 77.276,
+   "moca": null,
+   "msa": 1500,
+   "nav1": {
+    "dir": "TO",
+    "n": "nav:BGR",
+    "obs": 78.42
+   },
+   "tc": 59.97,
+   "v": -16.109,
+   "wca": 1.197,
+   "wd": 231.725,
+   "ws": 41.441,
+   "x0": 464011.954,
+   "x1": 611464.569
+  },
+  {
+   "A": {
+    "id": "FRIAR",
+    "kind": "fix",
+    "label": "FRIAR",
+    "lat": 44.441,
+    "lon": -69.885,
+    "navType": ""
+   },
+   "B": {
+    "kind": "nav",
+    "label": "BGR",
+    "lat": 44.842,
+    "lon": -68.874,
+    "nav": "nav:BGR",
+    "r": 130
+   },
+   "adf": null,
+   "alt": 39000,
+   "awy": "J49",
+   "cop": null,
+   "dist": 49.414,
+   "eta": {},
+   "ete": 319.166,
+   "fuelRem": 34449.817,
+   "gs": 557.36,
+   "guid": "<b class=\"awy\">J49</b> published <b>071°M</b><br>Inbound <b>080°</b> to BGR (R-260)",
+   "i": 6,
+   "last": false,
+   "mc": 77.881,
+   "mea": 31000,
+   "mh": 80.276,
+   "moca": null,
+   "msa": 1200,
+   "nav1": {
+    "dir": "TO",
+    "n": "nav:BGR",
+    "obs": 80.244
+   },
+   "tc": 60.886,
+   "v": -16.995,
+   "wca": 2.395,
+   "wd": 228.423,
+   "ws": 51.916,
+   "x0": 611464.569,
+   "x1": 702979.254
+  },
+  {
+   "A": {
+    "kind": "nav",
+    "label": "BGR",
+    "lat": 44.842,
+    "lon": -68.874,
+    "nav": "nav:BGR",
+    "r": 130
+   },
+   "B": {
+    "kind": "nav",
+    "label": "PQI",
+    "lat": 46.774,
+    "lon": -68.095,
+    "nav": "nav:PQI",
+    "r": 130
+   },
+   "adf": null,
+   "alt": 39000,
+   "awy": "J49",
+   "cop": null,
+   "dist": 120.519,
+   "eta": {},
+   "ete": 778.436,
+   "fuelRem": 33104.668,
+   "gs": 557.36,
+   "guid": "<b class=\"awy\">J49</b> published <b>034°M</b><br>Outbound <b>BGR R-034</b><br>Inbound <b>037°</b> to PQI (R-217)",
+   "i": 7,
+   "last": false,
+   "mc": 33.191,
+   "mea": 18000,
+   "mh": 25.782,
+   "moca": null,
+   "msa": 2000,
+   "nav1": {
+    "dir": "TO",
+    "n": "nav:PQI",
+    "obs": 36.985
+   },
+   "tc": 15.697,
+   "v": -17.493,
+   "wca": -7.409,
+   "wd": 225.688,
+   "ws": 65.877,
+   "x0": 702979.254,
+   "x1": 926180.564
+  },
+  {
+   "A": {
+    "kind": "nav",
+    "label": "PQI",
+    "lat": 46.774,
+    "lon": -68.095,
+    "nav": "nav:PQI",
+    "r": 130
+   },
+   "B": {
+    "apt": "apt:EGLL",
+    "kind": "apt",
+    "label": "EGLL",
+    "lat": 51.471,
+    "lon": -0.46
+   },
+   "adf": null,
+   "alt": 83,
+   "cop": null,
+   "dist": 2576.679,
+   "eta": {},
+   "ete": 17379.16,
+   "fuelRem": 4490.412,
+   "gs": 533.746,
+   "guid": "Outbound <b>PQI R-079</b><br><span style=\"color:var(--amber)\">⚠ 2577 NM outside reception — DR</span>",
+   "i": 8,
+   "last": true,
+   "mc": 82.79,
+   "mh": 78.877,
+   "msa": 2800,
+   "nav1": {
+    "dir": "FROM",
+    "n": "nav:PQI",
+    "obs": 78.78
+   },
+   "tc": 82.79,
+   "tod": true,
+   "v": 0,
+   "wca": -3.913,
+   "wd": 271.729,
+   "ws": 81.941,
+   "x0": 926180.564,
+   "x1": 5698189.517
+  }
+ ],
+ "levels": [
+  {
+   "allowed": true,
+   "ft": 31000,
+   "timeS": 20568.705,
+   "tripKg": 43167.653
+  },
+  {
+   "allowed": true,
+   "ft": 33000,
+   "timeS": 20659.406,
+   "tripKg": 41202.072
+  },
+  {
+   "allowed": true,
+   "ft": 35000,
+   "timeS": 20806.687,
+   "tripKg": 39605.276
+  },
+  {
+   "allowed": true,
+   "ft": 37000,
+   "timeS": 20955.401,
+   "tripKg": 38267.525
+  },
+  {
+   "allowed": true,
+   "ft": 39000,
+   "timeS": 21053.24,
+   "tripKg": 37122.949
+  },
+  {
+   "allowed": false,
+   "ft": 41000,
+   "timeS": 21248.679,
+   "tripKg": 36461.383
+  }
+ ],
+ "pln": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SimBase.Document Type=\"AceXML\" version=\"1,0\">\n    <Descr>AceXML Document</Descr>\n    <FlightPlan.FlightPlan>\n        <Title>KJFK to EGLL</Title>\n        <FPType>IFR</FPType>\n        <RouteType>HighAlt</RouteType>\n        <CruisingAlt>39000</CruisingAlt>\n        <DepartureID>KJFK</DepartureID>\n        <DepartureLLA>N40° 38' 22.02\",W73° 46' 45.55\",+000013.00</DepartureLLA>\n        <DestinationID>EGLL</DestinationID>\n        <DestinationLLA>N51° 28' 14.70\",W0° 27' 35.68\",+000083.00</DestinationLLA>\n        <Descr>KJFK to EGLL · KJFK WEETS J6 ALB J49 PQI EGLL · Boeing 787-9 · FL390 · planned with XPerf</Descr>\n        <DeparturePosition>31L</DeparturePosition>\n        <DepartureName>John F. Kennedy International Airport</DepartureName>\n        <DestinationName>London Heathrow Airport</DestinationName>\n        <AppVersion>\n            <AppVersionMajor>12</AppVersionMajor>\n            <AppVersionBuild>282174</AppVersionBuild>\n        </AppVersion>\n        <ATCWaypoint id=\"KJFK\">\n            <ATCWaypointType>Airport</ATCWaypointType>\n            <WorldPosition>N40° 38' 22.02\",W73° 46' 45.55\",+000013.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <DepartureFP>JFK5</DepartureFP>\n            <RunwayNumberFP>31</RunwayNumberFP>\n            <RunwayDesignatorFP>LEFT</RunwayDesignatorFP>\n            <ICAO>\n                <ICAOIdent>KJFK</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n        <ATCWaypoint id=\"WEETS\">\n            <ATCWaypointType>Intersection</ATCWaypointType>\n            <WorldPosition>N41° 51' 26.96\",W74° 11' 51.50\",+022634.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <ICAO>\n                <ICAORegion>K6</ICAORegion>\n                <ICAOIdent>WEETS</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n        <ATCWaypoint id=\"ACOVE\">\n            <ATCWaypointType>Intersection</ATCWaypointType>\n            <WorldPosition>N42° 14' 5.21\",W74° 1' 54.59\",+027357.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <ATCAirway>J6</ATCAirway>\n            <ICAO>\n                <ICAORegion>K6</ICAORegion>\n                <ICAOIdent>ACOVE</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n        <ATCWaypoint id=\"ALB\">\n            <ATCWaypointType>VOR</ATCWaypointType>\n            <WorldPosition>N42° 44' 50.21\",W73° 48' 11.45\",+032156.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <ATCAirway>J6</ATCAirway>\n            <ICAO>\n                <ICAORegion>K6</ICAORegion>\n                <ICAOIdent>ALB</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n        <ATCWaypoint id=\"HOWES\">\n            <ATCWaypointType>Intersection</ATCWaypointType>\n            <WorldPosition>N43° 21' 33.08\",W72° 26' 53.56\",+039000.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <ATCAirway>J49</ATCAirway>\n            <ICAO>\n                <ICAORegion>K6</ICAORegion>\n                <ICAOIdent>HOWES</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n        <ATCWaypoint id=\"SQUAM\">\n            <ATCWaypointType>Intersection</ATCWaypointType>\n            <WorldPosition>N43° 46' 40.01\",W71° 29' 0.96\",+039000.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <ATCAirway>J49</ATCAirway>\n            <ICAO>\n                <ICAORegion>K6</ICAORegion>\n                <ICAOIdent>SQUAM</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n        <ATCWaypoint id=\"FRIAR\">\n            <ATCWaypointType>Intersection</ATCWaypointType>\n            <WorldPosition>N44° 26' 28.93\",W69° 53' 4.38\",+039000.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <ATCAirway>J49</ATCAirway>\n            <ICAO>\n                <ICAORegion>K6</ICAORegion>\n                <ICAOIdent>FRIAR</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n        <ATCWaypoint id=\"BGR\">\n            <ATCWaypointType>VOR</ATCWaypointType>\n            <WorldPosition>N44° 50' 30.44\",W68° 52' 26.29\",+039000.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <ATCAirway>J49</ATCAirway>\n            <ICAO>\n                <ICAORegion>K6</ICAORegion>\n                <ICAOIdent>BGR</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n        <ATCWaypoint id=\"PQI\">\n            <ATCWaypointType>VOR</ATCWaypointType>\n            <WorldPosition>N46° 46' 27.08\",W68° 5' 40.38\",+039000.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <ATCAirway>J49</ATCAirway>\n            <ICAO>\n                <ICAORegion>K6</ICAORegion>\n                <ICAOIdent>PQI</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n        <ATCWaypoint id=\"EGLL\">\n            <ATCWaypointType>Airport</ATCWaypointType>\n            <WorldPosition>N51° 28' 14.70\",W0° 27' 35.68\",+000083.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <ApproachTypeFP>ILS</ApproachTypeFP>\n            <RunwayNumberFP>27</RunwayNumberFP>\n            <RunwayDesignatorFP>LEFT</RunwayDesignatorFP>\n            <ICAO>\n                <ICAOIdent>EGLL</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n    </FlightPlan.FlightPlan>\n</SimBase.Document>\n",
+ "route": [
+  "KJFK",
+  "WEETS",
+  "ACOVE",
+  "ALB",
+  "HOWES",
+  "SQUAM",
+  "FRIAR",
+  "BGR",
+  "PQI",
+  "EGLL"
+ ],
+ "timeS": 21053.24,
+ "toc": {
+  "dNM": 197.119,
+  "tS": 1717.133
+ },
+ "tod": {
+  "dNM": 166.986,
+  "tS": 1814.883
+ },
+ "totalNM": 3076.776,
+ "tripKg": 37122.949,
+ "warnings": [
+  "Airways are FAA (US) data only: the segment into EGLL outside the US is planned VOR to VOR, joining the US Jet airways.",
+  "Radio coverage gap: 2577 NM on the leg to EGLL is outside published reception at FL350 — fly a higher level, add NDBs, or plan dead reckoning.",
+  "Climb rate reduced >25% at some altitudes (⚠) — aircraft is heavier than a typical observed flight."
+ ]
+}

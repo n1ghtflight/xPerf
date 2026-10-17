@@ -3,8 +3,12 @@
 Flight performance & route planner for MSFS 2024: Python 3.14 stdlib server (`server.py`, `navdata.py`) +
 vanilla HTML/JS UI (`index.html`, `nav.js`, `charts.js`, `data.js`, `acpicker.js`, `pln.js`). No build step, no npm/pip deps.
 
-**Start here:** `HANDOFF.md` (what exists, API, data sources, gotchas) → `HANDOFF_WINDOWS_APP.md` (current work:
-Linear-style redesign + Windows MSI). Layout reference: `design/mockup.html`; tokens: `design/tokens-linear.css`.
+**Start here:** `HANDOFF.md` (what exists, API, data sources, gotchas). **Current work:** the redesign in the
+nightflight-ui house style — spec `docs/superpowers/specs/2026-10-16-xperf-redesign-design.md`, plan
+`docs/superpowers/plans/2026-10-16-xperf-redesign.md` (branch `redesign`) — followed by a public **web release**
+(static hosting + data packs + a METAR/TAF helper). The Windows MSI in `HANDOFF_WINDOWS_APP.md` is **shelved**.
+Layout reference: `design/mockup.html`; tokens: `design/tokens-linear.css`.
+Regression check (numbers must not change): `node tools/regress.mjs compare` with the server on 8770.
 
 ## Run / check
 

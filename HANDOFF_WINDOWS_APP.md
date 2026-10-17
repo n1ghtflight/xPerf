@@ -1,5 +1,10 @@
 # XPerf → Windows desktop app (redesign + installer) · handoff
 
+> **Status 2026-10-16: the Windows MSI (Part 2) is shelved.** The owner will publish XPerf as a free **web app**
+> instead (no SmartScreen/antivirus issues). Part 1's redesign continues under
+> `docs/superpowers/specs/2026-10-16-xperf-redesign-design.md` (which supersedes the visual notes below where they
+> differ: layout C with editable setup chips, phone tab bar, typed plans in Ctrl+K).
+
 Written 2026-10-16 to continue in VS Code / GitHub Copilot CLI. **Read `HANDOFF.md` first** (what the app does,
 files, API, data sources, gotchas), then this file. Nothing below has been implemented yet; the only new
 artefacts are `design/mockup.html` (layout reference), `design/tokens-linear.css` (starting tokens) and

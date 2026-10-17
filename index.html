@@ -1073,11 +1073,8 @@ function showTab(name){
 document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest(".tabs .tab"); if(!b) return;
   showTab(b.dataset.tab); const t=document.querySelector(".tabs"); if(t&&t.getBoundingClientRect().top<0) t.scrollIntoView({block:"start"}); });
 
-function render(X){
-  window.LAST_X=X;          // kept for approach changes and the plate viewer
-  const {m,dep,arr,total,sel,best}=X, c=sel.climb, d=sel.descent, cr=sel.cruise, crzFt=sel.ft, apm=m.kind==="apm";
-  const fpm=v=>Math.round(v/FPM), gal=kg=>kg/m.fuelDensity;
-  const fuelTxt=kg=>apm?`${fmtK(kg)} kg · ${fmtK(gal(kg))} gal`:`${fmtK(kg)} kg`;
+function planWarnings(X){
+  const {m,dep,arr,total,sel}=X, c=sel.climb, d=sel.descent, cr=sel.cruise, crzFt=sel.ft, apm=m.kind==="apm";
   const warn=[];
   if(X.wxErr) warn.push(`Winds aloft unavailable (Open-Meteo: ${X.wxErr}) — computed in ISA, calm wind. Try again in a minute.`);
   if(!X.terrain) warn.push("Terrain data unavailable — no terrain clearance check.");
@@ -1107,6 +1104,15 @@ function render(X){
        :` Consider routing around the high ground, IFR rules, or a manual level.`)); }
   else if(!sel.allowed) warn.push(`${lvl(crzFt)} is outside the limits: ${statusOf(sel,X)[0]}.`);
   if(sel.steepDescent) warn.push(`Route is short for this level: the descent needs about ${fmtK(sel.steepDescent)} fpm (faster than the typical ${fmtK(m.P.descentROD)} fpm).`);
+  return warn;
+}
+
+function render(X){
+  window.LAST_X=X;          // kept for approach changes and the plate viewer
+  const {m,dep,arr,total,sel,best}=X, c=sel.climb, d=sel.descent, cr=sel.cruise, crzFt=sel.ft, apm=m.kind==="apm";
+  const fpm=v=>Math.round(v/FPM), gal=kg=>kg/m.fuelDensity;
+  const fuelTxt=kg=>apm?`${fmtK(kg)} kg · ${fmtK(gal(kg))} gal`:`${fmtK(kg)} kg`;
+  const warn=planWarnings(X);
 
   const avgTail=Math.round(cr.tail/KT), rule3=Math.round((crzFt-arr.alt)/1000*3);
   const todGs=d.bands.length?d.bands[d.bands.length-1].gs:cr.tas;

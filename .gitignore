@@ -7,3 +7,5 @@ NUL
 dist/
 # Brainstorming companion mockups (local only)
 .superpowers/
+# Regression harness network recordings (large, machine-local)
+tools/regress/fixtures/
