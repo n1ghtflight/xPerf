@@ -467,3 +467,12 @@ button.aptback{display:none;margin:0 0 10px;width:auto;padding:0 10px;height:var
   .card table:not(.legs){display:block;max-width:100%;overflow-x:auto}
   .card{padding:12px}
 }
+
+/* ================= Settings ================= */
+.settingspanel{display:flex;flex-direction:column;gap:12px}
+.settingspanel .card{box-shadow:none}
+dl.keys{grid-template-columns:max-content 1fr;gap:8px 16px;font-size:var(--fs-small)}
+dl.keys dt{color:var(--text-2);white-space:nowrap}
+dl.keys dd{text-align:left;color:var(--text-2);font-family:var(--font)}
+#srcHost .srcnote{margin:0}
+.simonly{margin:12px 0 0;color:var(--text-3);font-size:var(--fs-mini)}

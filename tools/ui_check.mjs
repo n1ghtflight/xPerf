@@ -342,6 +342,30 @@ check("overflow", async () => {
   expect(!bad.length, "horizontal overflow:\n    " + bad.join("\n    "));
 });
 
+const SIM_ONLY = "For flight simulation only — not for real-world navigation.";
+
+check("settings", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.eval(`document.activeElement?.blur()`); await page.key(","); await settle(page);
+    const vis = await page.eval(VISIBLE_VIEWS);
+    expect(vis[0] === "settings", ", opened " + vis);
+    await page.eval(`(()=>{ const s=document.getElementById('themeSel'); s.value='light'; s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+    expect(await page.eval(`document.documentElement.dataset.theme`) === "light", "theme control did not set data-theme");
+    const txt = await page.eval(`document.querySelector('.settingspanel').innerText`);
+    expect(txt.includes(SIM_ONLY), "settings lacks the simulation-only line");
+    expect(/Data sources and model assumptions/.test(txt), "settings lacks data sources and assumptions");
+    expect(/Ctrl\s*K/i.test(txt) && /G\s*O/.test(txt), "settings lacks the keyboard shortcut list");
+  } finally { await page.close(); }
+});
+
+check("first-visit", async () => {
+  const page = await open("c172");
+  try {
+    expect(await page.eval(`document.querySelector('#surface .formcol').innerText.includes(${JSON.stringify(SIM_ONLY)})`), "setup form lacks the simulation-only line");
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {

@@ -9,3 +9,5 @@ dist/
 .superpowers/
 # Regression harness network recordings (large, machine-local)
 tools/regress/fixtures/
+# Local review screenshots
+out/

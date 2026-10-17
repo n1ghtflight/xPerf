@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.17b">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.17i">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.17j">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
@@ -99,6 +99,7 @@
 
       <button id="go" disabled>Plan flight <kbd>Ctrl</kbd><kbd>↵</kbd></button>
       <div class="hint err" id="err"></div>
+      <p class="note simonly">For flight simulation only — not for real-world navigation.</p>
     </div>
     <div class="card" style="margin-top:18px" id="acCard"><h2>Aircraft data</h2><div class="note">Select an aircraft.</div></div>
   </section>
@@ -110,8 +111,20 @@
   </div>
   <section class="tabpanel settingspanel" data-tab="settings" hidden>
     <h2 class="viewtitle">Settings</h2>
-    <div class="card"><label for="themeSel">Theme</label>
+    <div class="card"><h2>Appearance</h2><label for="themeSel">Theme</label>
       <select id="themeSel"><option value="system">Follow the device</option><option value="dark">Dark</option><option value="light">Light</option></select></div>
+    <div class="card"><h2>Data</h2><p class="note" id="dataInfo">Loading data…</p></div>
+    <div class="card"><h2>Keyboard shortcuts</h2>
+      <dl class="keys">
+        <dt><kbd>Ctrl</kbd> <kbd>K</kbd></dt><dd>Command palette — type a command, or a flight such as KPAO KTRK C172</dd>
+        <dt><kbd>Ctrl</kbd> <kbd>↵</kbd></dt><dd>Plan the flight</dd>
+        <dt><kbd>G</kbd> <kbd>O</kbd> · <kbd>G</kbd> <kbd>R</kbd> · <kbd>G</kbd> <kbd>A</kbd></dt><dd>Overview · Route &amp; nav log · Airports &amp; weather</dd>
+        <dt><kbd>G</kbd> <kbd>P</kbd> · <kbd>G</kbd> <kbd>F</kbd> · <kbd>G</kbd> <kbd>S</kbd></dt><dd>Profile · Fuel &amp; levels · FS2024 setup</dd>
+        <dt><kbd>,</kbd> · <kbd>[</kbd></dt><dd>Settings · show or hide the sidebar</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Close a menu, the palette or All settings</dd>
+      </dl></div>
+    <div id="srcHost"><div class="card note">Data sources and model assumptions appear here after the first plan.</div></div>
+    <p class="note simonly">For flight simulation only — not for real-world navigation.</p>
   </section>
 </main>
 <aside class="drawer" id="allSettings" hidden aria-label="All settings">
@@ -283,6 +296,7 @@ async function init(){
     AcPicker.init();          // searchable picker over the list (restores the last aircraft used)
     status(`${Object.keys(GA_NAMES).length+Object.keys(AC_NAMES).length} aircraft types · ${DB.airports.length.toLocaleString()} airports (${DB.aptSource})${XD.mode==="packs"?" · "+await XD.label().catch(()=>"offline packs unavailable"):""}`);
     Shell.setData(XD.mode==="packs"?"● Offline packs":"● Live data");
+    XD.label().then(t=>{ $("dataInfo").textContent=`${DB.airports.length.toLocaleString()} airports (${DB.aptSource}) · ${Object.keys(GA_NAMES).length+Object.keys(AC_NAMES).length} aircraft types · data: ${t==="server"?"live from the local server":t}`; }).catch(()=>{});
     $("go").disabled=false; onAircraft();
     window.NAV_READY=loadNavaids();
   }catch(e){ status("data load failed"); $("err").textContent="Could not load data: "+e.message; }
@@ -1077,6 +1091,7 @@ function render(X){
     <br><b style="color:var(--amber)">For flight simulation, planning practice and education only — not certified for operational use. Always use your aircraft's POH/AFM and approved flight planning.</b>
   </details>`;
   $("results").innerHTML=html;
+  { const sn=$("results").querySelector(".srcnote"); if(sn) $("srcHost").replaceChildren(sn); }   // per-plan sources live in Settings
   try{ if(localStorage.getItem("xperf.detlog")==="1") $("detlog").open=true; }catch(_){}
   X._mapDrawn=false;
   showTab(currentTab());
