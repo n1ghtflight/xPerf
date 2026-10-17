@@ -24,7 +24,7 @@ const cleanHeaders = hs => (hs || []).filter(h => !/^(content-encoding|content-l
 
 // Responses that are part of the app itself (or big, AIRAC-stable data) are not recorded.
 function passThrough(url, origin) {
-  if (!url.startsWith(origin)) return /^(data|blob):/.test(url);
+  if (!url.startsWith(origin)) return /^(data|blob|chrome-extension|extension):/.test(url);
   const path = new URL(url).pathname;
   if (path.startsWith("/packs/")) return true;
   if (/^\/api\/(airports|navaids|airways|health)$/.test(path)) return true;
@@ -35,7 +35,8 @@ export async function launch({ width = 1440, height = 900, mobile = false, schem
   const exe = BROWSERS.find(p => existsSync(p));
   if (!exe) throw new Error("no Chromium browser found; set BROWSER");
   const dbg = 9500 + Math.floor(Math.random() * 400), prof = mkdtempSync(join(tmpdir(), "xperf-cdp-"));
-  const proc = spawn(exe, ["--headless=new", "--disable-gpu", "--hide-scrollbars", `--remote-debugging-port=${dbg}`,
+  // extensions (some are force-installed by machine policy) inject scripts and requests that are not the app's
+  const proc = spawn(exe, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--disable-extensions", "--disable-component-extensions-with-background-pages", `--remote-debugging-port=${dbg}`,
     `--user-data-dir=${prof}`, "about:blank"], { stdio: "ignore" });
   let list;
   for (let i = 0; i < 80 && !list; i++) { try { list = await (await fetch(`http://127.0.0.1:${dbg}/json/list`)).json(); } catch { await sleep(250); } }
