@@ -177,12 +177,47 @@
    "url": "https://www.diamondaircraft.com/en/private-owners/aircraft/da42/tech-specs/"
   },
   "diamond_da50": {
-   "title": "Diamond DA50 RG – tech specs (as relayed by Aviatize, GlobalAir and the 2020 preliminary facts & specifications)",
+   "title": "Diamond DA50 RG – tech specs",
    "publisher": "Diamond Aircraft",
-   "year": "2020–2026",
+   "year": "web page, accessed 2026-10-17",
+   "kind": "manufacturer",
+   "url": "https://www.diamondaircraft.com/en/private-owners/aircraft/da50/tech-specs/"
+  },
+  "rp_c152": {
+   "title": "Cessna 152: the complete guide (specs, V-speeds)",
+   "publisher": "Rotate Pilot",
+   "year": "web page, accessed 2026-10-17",
    "kind": "reference",
-   "url": "https://www.aviatize.com/aircraft/diamond-da50-rg",
-   "note": "Diamond's own page could not be fetched; figures read from secondary pages quoting it"
+   "url": "https://rotatepilot.com/guides/cessna-152-guide"
+  },
+  "aero_c207": {
+   "title": "Cessna 207 Skywagon",
+   "publisher": "Aeropedia (Australia)",
+   "year": "web page, accessed 2026-10-17",
+   "kind": "reference",
+   "url": "https://aeropedia.com.au/content/cessna-207-skywagon/"
+  },
+  "aero_c337": {
+   "title": "Cessna 337 Super Skymaster",
+   "publisher": "Aeropedia (Australia)",
+   "year": "web page, accessed 2026-10-17",
+   "kind": "reference",
+   "url": "https://aeropedia.com.au/?p=11092"
+  },
+  "aero_saratoga": {
+   "title": "Piper PA-32R-301 Saratoga II HP",
+   "publisher": "Aeropedia (Australia)",
+   "year": "web page, accessed 2026-10-17",
+   "kind": "reference",
+   "url": "https://aeropedia.com.au/?p=18070"
+  },
+  "pilatus_pc6": {
+   "title": "PC-6 Turbo Porter factsheet (PC-6/B2-H4)",
+   "publisher": "Pilatus Aircraft Ltd",
+   "year": "undated factsheet, accessed 2026-10-17",
+   "kind": "manufacturer",
+   "url": "https://pc-6.com/vPilatus-Fact%20Sheet.pdf",
+   "note": "Pilatus factsheet hosted on pc-6.com; read with pdftotext"
   },
   "pilatus_pc12ngx": {
    "title": "Pilatus PC-12 NGX factsheet",
@@ -398,6 +433,35 @@
    "year": "undated web archive",
    "kind": "magazine",
    "url": "https://planeandpilotmag.com/tbm-850-elite/"
+  },
+  "pp_e33a": {
+   "title": "1968 Beech E33A Bonanza – specifications",
+   "publisher": "Plane & Pilot",
+   "year": "undated web archive",
+   "kind": "magazine",
+   "url": "https://planeandpilotmag.com/1968-beech-e33a-bonanza-n611vs/"
+  },
+  "pp_tb10": {
+   "title": "Socata 'Tobago' TB10 GT / 'Tobago XL' TB200 GT – standard data",
+   "publisher": "Plane & Pilot",
+   "year": "undated web archive",
+   "kind": "magazine",
+   "url": "https://planeandpilotmag.com/article/socata-tobago-tb10-gt-tobago-xl-tb200-gt/"
+  },
+  "aopa_tbm700": {
+   "title": "Turbine Pilot: TBM 700B (spec box)",
+   "publisher": "AOPA Pilot",
+   "year": "September 2002",
+   "kind": "magazine",
+   "url": "https://www.aopa.org/news-and-media/all-news/2002/september/pilot/turbine-pilot-%287%29"
+  },
+  "ubas_g115": {
+   "title": "Grob Tutor (G 115E) technical data, 'from the Grob website'",
+   "publisher": "University of Birmingham Air Squadron",
+   "year": "web page (now serves unrelated content), accessed 2026-10-17",
+   "kind": "reference",
+   "url": "https://ubasonline.co.uk/AircraftInfo.html",
+   "note": "figures read via a search engine's cached summary of the page"
   },
   "piper_seminole_2023": {
    "title": "2023 Seminole spec sheet",
@@ -1246,11 +1310,11 @@
    },
    "wingspan_m": {
     "v": 9.98,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "aopa_c23"
+     "wiki_types"
     ],
-    "ref": "wing span 32 ft 9 in [32.75 ft]"
+    "ref": "wingspan 32 ft 9 in (9.98 m) (Musketeer/Sundowner airframe, A23A data) [32.75 ft]"
    },
    "cruise": {
     "power": "75%",
@@ -1362,12 +1426,12 @@
   },
   "BE33": {
    "name": "Beechcraft Debonair / Bonanza 33",
-   "variant": "F33A Bonanza (1970–94), Continental IO-520-BB 285 hp",
+   "variant": "E33A Bonanza (1968), Continental IO-520-B/-BA 285 hp",
    "type": {
     "v": "L1P",
     "s": "der",
     "src": [
-     "aggr_misc"
+     "pp_e33a"
     ],
     "method": "[DESIG]"
    },
@@ -1375,7 +1439,7 @@
     "v": "L",
     "s": "der",
     "src": [
-     "ga"
+     "pp_e33a"
     ],
     "method": "[WTC]"
    },
@@ -1390,28 +1454,31 @@
      "v": 285,
      "s": "pub",
      "src": [
-      "aggr_misc"
+      "pp_e33a"
      ],
-     "ref": "Continental IO-520-BB, 285 hp at 2,700 rpm (airpowerinc.com engine page)"
+     "ref": "Continental IO-520-B/-BA, 285 hp at sea level and on takeoff"
     }
    },
    "wingspan_m": {
-    "v": 10.21,
-    "s": "rec",
+    "v": 10.01,
+    "s": "pub",
     "src": [
-     "ga"
+     "pp_e33a"
     ],
-    "ref": "wing span 33 ft 6 in [33.5 ft]"
+    "ref": "wingspan 32 ft 10 in [32.83 ft]"
    },
    "cruise": {
-    "power": "normal cruise (not stated)",
+    "power": "75%",
     "alt_ft": null
    },
    "perf": {
     "approachIAS": {
      "v": 80,
-     "s": "est",
-     "method": "[APP] with estimated Vso 55 kt (est: Bonanza class (G36 Vso ≈ 59 kt at 3,650 lb, scaled to 3,400 lb))"
+     "s": "der",
+     "src": [
+      "pp_e33a"
+     ],
+     "method": "[APP] Vso 53 kt"
     },
     "approachROD": {
      "v": 400,
@@ -1419,25 +1486,28 @@
      "method": "[APPROD]"
     },
     "cruiseCeiling": {
-     "v": 180,
+     "v": 183,
      "s": "pub",
      "src": [
-      "ga"
+      "pp_e33a"
      ],
-     "ref": "service ceiling 18,000 ft"
+     "ref": "service ceiling 18,300 ft"
     },
     "cruiseRange": {
-     "v": 770,
-     "s": "est",
-     "method": "[RANGE]"
-    },
-    "cruiseTAS": {
-     "v": 172,
+     "v": 660,
      "s": "pub",
      "src": [
-      "ga"
+      "pp_e33a"
      ],
-     "ref": "normal cruise 172 kt (max 182 kt)"
+     "ref": "range at 75% power 660 nm (65%: 740 nm)"
+    },
+    "cruiseTAS": {
+     "v": 174,
+     "s": "pub",
+     "src": [
+      "pp_e33a"
+     ],
+     "ref": "cruise, 75% power: 174 kt (65%: 166 kt, marked estimated)"
     },
     "descentIAS": {
      "v": 150,
@@ -1450,59 +1520,65 @@
      "method": "[DESROD]"
     },
     "initialClimbIAS": {
-     "v": 85,
-     "s": "est",
-     "method": "[VY] with estimated Vso 55 kt (est: Bonanza class (G36 Vso ≈ 59 kt at 3,650 lb, scaled to 3,400 lb))"
+     "v": 80,
+     "s": "der",
+     "src": [
+      "pp_e33a"
+     ],
+     "method": "[VY] Vso 53 kt"
     },
     "initialClimbROC": {
-     "v": 1167,
+     "v": 1200,
      "s": "pub",
      "src": [
-      "ga"
+      "pp_e33a"
      ],
-     "ref": "rate of climb 1,167 fpm"
+     "ref": "best rate of climb, SL 1,200 fpm"
     },
     "landingDistance": {
-     "v": 427,
-     "s": "est",
-     "method": "est: G36 class landing distance; no published F33A 50-ft figure found [1,400 ft]"
-    },
-    "landingVat": {
-     "v": 72,
-     "s": "est",
-     "method": "[VAT] with estimated Vso 55 kt (est: Bonanza class (G36 Vso ≈ 59 kt at 3,650 lb, scaled to 3,400 lb))"
-    },
-    "takeOffDistance": {
-     "v": 533,
-     "s": "est",
-     "method": "est: F33A at 3,400 lb is lighter than the G36 (1,913 ft at 3,650 lb, 300 hp); scaled by weight² / power [1,750 ft]"
-    },
-    "takeOffMTOW": {
-     "v": 1542,
+     "v": 351,
      "s": "pub",
      "src": [
-      "ga"
+      "pp_e33a"
      ],
-     "ref": "max takeoff weight 3,400 lb [3,400 lb]"
+     "ref": "landing over 50-ft obstacle 1,150 ft (ground roll 625 ft) [1,150 ft]"
+    },
+    "landingVat": {
+     "v": 69,
+     "s": "der",
+     "src": [
+      "pp_e33a"
+     ],
+     "method": "[VAT] Vso 53 kt"
+    },
+    "takeOffDistance": {
+     "v": 373,
+     "s": "pub",
+     "src": [
+      "pp_e33a"
+     ],
+     "ref": "takeoff over 50-ft obstacle 1,225 ft (ground roll 880 ft) [1,225 ft]"
+    },
+    "takeOffMTOW": {
+     "v": 1497,
+     "s": "pub",
+     "src": [
+      "pp_e33a"
+     ],
+     "ref": "gross weight 3,300 lb [3,300 lb]"
     },
     "takeOffV2": {
-     "v": 66,
-     "s": "est",
-     "method": "[V50] with estimated Vso 55 kt (est: Bonanza class (G36 Vso ≈ 59 kt at 3,650 lb, scaled to 3,400 lb))"
+     "v": 64,
+     "s": "der",
+     "src": [
+      "pp_e33a"
+     ],
+     "method": "[V50] Vso 53 kt"
     }
    },
-   "sourcing": "weak",
-   "sourcing_reasons": [
-    "takeOffMTOW from aggregator only",
-    "cruiseTAS from aggregator only",
-    "cruiseCeiling from aggregator only",
-    "takeOffDistance estimated",
-    "landingDistance estimated",
-    "initialClimbROC from aggregator only",
-    "engine power from aggregator only"
-   ],
+   "sourcing": "fair",
    "notes": [
-    "Only aggregator (GlobalAir) data found for the F33A — verify against the POH before release."
+    "ICAO BE33 covers the Debonair and Bonanza 33 series (C33 to F33A). The 1968 E33A is used because a complete magazine data set was found; the later F33A has the same 285 hp engine at 3,400 lb (GlobalAir: 18,000 ft ceiling, 172 kt normal cruise)."
    ]
   },
   "BE36": {
@@ -1542,11 +1618,11 @@
    },
    "wingspan_m": {
     "v": 10.21,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "pp_g36"
+     "wiki_types"
     ],
-    "ref": "wing span 33 ft 6 in [33.5 ft]"
+    "ref": "wingspan 33 ft 6 in (10.21 m) (2011 G36, Hawker Beechcraft data; Plane & Pilot prints 36 ft) [33.5 ft]"
    },
    "cruise": {
     "power": "75%",
@@ -2007,11 +2083,11 @@
    },
    "wingspan_m": {
     "v": 11.58,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "pp_be76"
+     "wiki_types"
     ],
-    "ref": "wing span 38 ft [38.0 ft]"
+    "ref": "wingspan 38 ft 0 in (11.58 m) (Jane's 1980–81) [38.0 ft]"
    },
    "cruise": {
     "power": "cruise (not stated)",
@@ -2554,11 +2630,11 @@
     },
     "initialClimbIAS": {
      "v": 67,
-     "s": "rec",
+     "s": "pub",
      "src": [
-      "im_c152"
+      "rp_c152"
      ],
-     "ref": "best rate of climb speed 67 KIAS"
+     "ref": "Vy best rate of climb 67 KIAS at maximum gross weight"
     },
     "initialClimbROC": {
      "v": 715,
@@ -2578,12 +2654,12 @@
      "ref": "total distance over 50-ft obstacle 1,200 ft (ground roll 475 ft) [1,200 ft]"
     },
     "landingVat": {
-     "v": 54,
-     "s": "rec",
+     "v": 56,
+     "s": "der",
      "src": [
-      "im_c152"
+      "club_152"
      ],
-     "ref": "short-field landing approach speed 54 KIAS"
+     "method": "[VAT] Vso 43 kt"
     },
     "takeOffDistance": {
      "v": 408,
@@ -3286,11 +3362,11 @@
    },
    "wingspan_m": {
     "v": 10.92,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "pp_c207"
+     "aero_c207"
     ],
-    "ref": "wing span 35 ft 10 in [35.83 ft]"
+    "ref": "wingspan 10.92 m (GlobalAir: 35 ft 10 in)"
    },
    "cruise": {
     "power": "cruise (not stated)",
@@ -3607,11 +3683,11 @@
    },
    "wingspan_m": {
     "v": 11.2,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "pp_t210n"
+     "wiki_types"
     ],
-    "ref": "wing span 36 ft 9 in [36.75 ft]"
+    "ref": "wingspan 36 ft 9 in (11.20 m) (T210N, Jane's 1982–83; the Plane & Pilot aircraft has Flint tip tanks, 39.7 ft) [36.75 ft]"
    },
    "cruise": {
     "power": "75%",
@@ -4288,12 +4364,12 @@
     }
    },
    "wingspan_m": {
-    "v": 11.63,
-    "s": "rec",
+    "v": 11.58,
+    "s": "pub",
     "src": [
-     "pp_337"
+     "aero_c337"
     ],
-    "ref": "wing span 38 ft 2 in [38.17 ft]"
+    "ref": "wingspan 11.58 m (38 ft), 337 Super Skymaster series (SKYbrary 11.60 m; the recalled 38 ft 2 in could not be confirmed)"
    },
    "cruise": {
     "power": "cruise (not stated)",
@@ -4594,11 +4670,11 @@
    },
    "wingspan_m": {
     "v": 13.45,
-    "s": "rec",
+    "s": "pub",
     "src": [
      "wiki_types"
     ],
-    "ref": "wing span 44 ft 1.5 in [44.13 ft]"
+    "ref": "wingspan 44 ft 1.5 in (13.45 m) (402C, Jane's 1982–83) [44.13 ft]"
    },
    "cruise": {
     "power": "normal cruise (not stated)",
@@ -4748,11 +4824,11 @@
    },
    "wingspan_m": {
     "v": 13.45,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "aero_c414"
+     "wiki_types"
     ],
-    "ref": "wing span 44 ft 1.5 in [44.13 ft]"
+    "ref": "wingspan 44 ft 1.5 in (13.45 m) (414A, Jane's 1982–83) [44.13 ft]"
    },
    "cruise": {
     "power": "75%",
@@ -4898,12 +4974,12 @@
     }
    },
    "wingspan_m": {
-    "v": 12.52,
-    "s": "rec",
+    "v": 12.54,
+    "s": "pub",
     "src": [
      "wiki_types"
     ],
-    "ref": "wing span 41 ft 1 in [41.08 ft]"
+    "ref": "wingspan 41 ft 1.5 in (12.53 m) (421C, Jane's 1976–77) [41.13 ft]"
    },
    "cruise": {
     "power": "75%",
@@ -5174,7 +5250,8 @@
     "v": "L2T",
     "s": "der",
     "src": [
-     "fi_c441"
+     "fi_c441",
+     "wiki_types"
     ],
     "method": "[DESIG]"
    },
@@ -5182,7 +5259,8 @@
     "v": "L",
     "s": "der",
     "src": [
-     "fi_c441"
+     "fi_c441",
+     "wiki_types"
     ],
     "method": "[WTC]"
    },
@@ -5197,16 +5275,18 @@
      "v": 636,
      "s": "pub",
      "src": [
-      "fi_c441"
+      "fi_c441",
+      "wiki_types"
      ],
-     "ref": "Garrett TPE331-8, 636 shp each"
+     "ref": "2 × Garrett TPE331-8-403S, 636 shp each (Jane's 1982–83 via Wikipedia)"
     }
    },
    "wingspan_m": {
     "v": 15.04,
     "s": "pub",
     "src": [
-     "fi_c441"
+     "fi_c441",
+     "wiki_types"
     ],
     "ref": "wingspan 15.04 m / 49 ft 4 in [49.33 ft]"
    },
@@ -5249,14 +5329,18 @@
      "v": 350,
      "s": "pub",
      "src": [
-      "wiki_types"
+      "wiki_types",
+      "fi_c441"
      ],
-     "ref": "service ceiling 35,000 ft (FL330 with -8 engines per one source)"
+     "ref": "service ceiling 35,000 ft (Jane's 1982–83)"
     },
     "cruiseRange": {
-     "v": 1170,
-     "s": "est",
-     "method": "[RANGE]"
+     "v": 2194,
+     "s": "pub",
+     "src": [
+      "wiki_types"
+     ],
+     "ref": "range 2,194 nm at 35,000 ft (Jane's 1982–83)"
     },
     "cruiseTAS": {
      "v": 259,
@@ -5264,7 +5348,7 @@
      "src": [
       "wiki_types"
      ],
-     "ref": "cruise speed 259 kn at 35,000 ft (TPE331-8; -10 conversions cruise ~300 kt)"
+     "ref": "cruise 259 kn at 35,000 ft (Jane's 1982–83, TPE331-8; -10 conversions cruise ~300 kt)"
     },
     "descentIAS": {
      "v": 195,
@@ -5287,7 +5371,7 @@
      "src": [
       "wiki_types"
      ],
-     "ref": "rate of climb 2,435 ft/min (engine version unconfirmed)"
+     "ref": "rate of climb 2,435 ft/min (Jane's 1982–83)"
     },
     "landingDistance": {
      "v": 572,
@@ -5314,7 +5398,8 @@
      "v": 4468,
      "s": "pub",
      "src": [
-      "fi_c441"
+      "fi_c441",
+      "wiki_types"
      ],
      "ref": "maximum takeoff weight 9,850 lb (4,468 kg) [9,850 lb]"
     },
@@ -5345,7 +5430,7 @@
     "landingDistance from aggregator only"
    ],
    "notes": [
-    "Weak: data mixes the original -8 engines and the common -10 conversion."
+    "Landing distance is aggregator-only (planephd); no magazine or POH figure found online."
    ]
   },
   "C525": {
@@ -6144,12 +6229,12 @@
     }
    },
    "wingspan_m": {
-    "v": 19.48,
-    "s": "rec",
+    "v": 19.39,
+    "s": "pub",
     "src": [
-     "jetcraft"
+     "wiki_types"
     ],
-    "ref": "wingspan 63 ft 11 in (19.48 m; X+ 21.09 m) [63.92 ft]"
+    "ref": "span 63.6 ft (19.39 m) (Citation X; Wikipedia table citing EASA TCDS IM.A.097); X+ 21.08 m"
    },
    "cruise": {
     "power": "maximum/high-speed cruise",
@@ -7229,16 +7314,16 @@
      "src": [
       "diamond_da50"
      ],
-     "ref": "Continental CD-300 V6 diesel, 300 hp take-off (270 hp max continuous)"
+     "ref": "Continental CD-300 turbocharged common-rail Jet A-1 engine, 300 hp TOP / 272 hp MCP"
     }
    },
    "wingspan_m": {
     "v": 13.41,
-    "s": "rec",
+    "s": "pub",
     "src": [
      "diamond_da50"
     ],
-    "ref": "wing span about 44 ft [44.0 ft]"
+    "ref": "wingspan 13.41 m / 44 ft (dimensions drawing)"
    },
    "cruise": {
     "power": "82%",
@@ -7251,7 +7336,7 @@
      "src": [
       "diamond_da50"
      ],
-     "method": "[APP] Vso 57 kt"
+     "method": "[APP] Vso 58 kt"
     },
     "approachROD": {
      "v": 450,
@@ -7264,15 +7349,15 @@
      "src": [
       "diamond_da50"
      ],
-     "ref": "service ceiling 20,000 ft"
+     "ref": "max. operating altitude 6,096 m / 20,000 ft"
     },
     "cruiseRange": {
-     "v": 750,
+     "v": 754,
      "s": "pub",
      "src": [
       "diamond_da50"
      ],
-     "ref": "range about 750 nm with 30-min reserve (820 nm without)"
+     "ref": "max. range, no climb, no reserves 754 nm (820 nm at FL180, 45% power)"
     },
     "cruiseTAS": {
      "v": 172,
@@ -7280,7 +7365,7 @@
      "src": [
       "diamond_da50"
      ],
-     "ref": "cruise at 82% power, 14,000 ft: about 172 KTAS (max 181 KTAS)"
+     "ref": "cruise speed at 82% (14,000 ft) 172 kts TAS"
     },
     "descentIAS": {
      "v": 135,
@@ -7298,39 +7383,39 @@
      "src": [
       "diamond_da50"
      ],
-     "method": "[VY] Vso 57 kt"
+     "method": "[VY] Vso 58 kt"
     },
     "initialClimbROC": {
-     "v": 1050,
+     "v": 780,
      "s": "pub",
      "src": [
       "diamond_da50"
      ],
-     "ref": "best rate of climb about 1,050 fpm"
+     "ref": "best rate of climb 3.96 m/s / 780 ft/min (AOPA lists 1,050 fpm)"
     },
     "landingDistance": {
-     "v": 340,
+     "v": 678,
      "s": "pub",
      "src": [
-      "ga"
+      "diamond_da50"
      ],
-     "ref": "landing distance 1,115 ft (basis not stated; treated as over 50 ft) [1,115 ft]"
+     "ref": "landing performance (MSL, ground roll / landing distance) 344 m / 678 m (1,129 / 2,224 ft)"
     },
     "landingVat": {
-     "v": 74,
+     "v": 75,
      "s": "der",
      "src": [
       "diamond_da50"
      ],
-     "method": "[VAT] Vso 57 kt"
+     "method": "[VAT] Vso 58 kt"
     },
     "takeOffDistance": {
-     "v": 440,
+     "v": 734,
      "s": "pub",
      "src": [
-      "ga"
+      "diamond_da50"
      ],
-     "ref": "takeoff distance 1,444 ft (basis not stated; treated as over 50 ft) [1,444 ft]"
+     "ref": "take-off performance (MSL, ground roll / take-off obstacle) 407 m / 734 m (1,335 / 2,408 ft); AOPA 2,427 ft"
     },
     "takeOffMTOW": {
      "v": 1999,
@@ -7338,15 +7423,15 @@
      "src": [
       "diamond_da50"
      ],
-     "ref": "MTOW 1,999 kg / 4,407 lb"
+     "ref": "max. take-off mass 1,999 kg / 4,407 lbs"
     },
     "takeOffV2": {
-     "v": 68,
+     "v": 70,
      "s": "der",
      "src": [
       "diamond_da50"
      ],
-     "method": "[V50] Vso 57 kt"
+     "method": "[V50] Vso 58 kt"
     }
    },
    "fuel": {
@@ -7357,19 +7442,15 @@
       "src": [
        "diamond_da50"
       ],
-      "ref": "about 8 US gal/h (30.2 l/h) at max-range power [8.0 gph]"
+      "ref": "consumption at max. range (FL180, 45% PWR) 30.2 l/h / 8 US gal/h [8.0 gph]"
      },
-     "setting": "max-range power",
-     "alt_ft": null,
+     "setting": "max-range power (FL180, 45%)",
+     "alt_ft": 18000,
      "tas_kt": null,
      "engines": "single"
     }
    },
-   "sourcing": "weak",
-   "sourcing_reasons": [
-    "takeOffDistance from aggregator only",
-    "landingDistance from aggregator only"
-   ],
+   "sourcing": "good",
    "notes": [
     "The DA50 RG is a single-engine aircraft (L1P). XPerf's current upstream data types it L2P and mixes in the unrelated DA50 Superstar/Magnum prototypes."
    ]
@@ -7381,7 +7462,7 @@
     "v": "L2T",
     "s": "der",
     "src": [
-     "aero_dhc6"
+     "wiki_types"
     ],
     "method": "[DESIG]"
    },
@@ -7402,20 +7483,20 @@
     "pressurized": false,
     "hp": {
      "v": 620,
-     "s": "rec",
+     "s": "pub",
      "src": [
-      "aero_dhc6"
+      "wiki_types"
      ],
-     "ref": "PT6A-27, 620 shp each (flat-rated)"
+     "ref": "PT6A-27 (680 hp) flat-rated to 620 hp each for the Series 300"
     }
    },
    "wingspan_m": {
     "v": 19.81,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "aero_dhc6"
+     "wiki_types"
     ],
-    "ref": "wing span 65 ft [65.0 ft]"
+    "ref": "wingspan 65 ft 0 in (19.81 m) [65.0 ft]"
    },
    "cruise": {
     "power": "maximum cruise",
@@ -7563,11 +7644,12 @@
    },
    "wingspan_m": {
     "v": 8.72,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "aero_dr400"
+     "aero_dr400",
+     "wiki_types"
     ],
-    "ref": "wing span 8.72 m"
+    "ref": "wingspan 8.72 m (all DR400 versions, Wikipedia citing Massé 2000)"
    },
    "cruise": {
     "power": "65%",
@@ -8642,30 +8724,33 @@
     "pressurized": false,
     "hp": {
      "v": 180,
-     "s": "rec",
+     "s": "pub",
      "src": [
       "wiki_types"
      ],
-     "ref": "Lycoming AEIO-360-B1F, 180 hp"
+     "ref": "Lycoming AEIO-360-B1F/B, 130 kW (180 hp) (Jane's 2004–05 via Wikipedia)"
     }
    },
    "wingspan_m": {
     "v": 10.0,
-    "s": "rec",
+    "s": "pub",
     "src": [
      "wiki_types"
     ],
-    "ref": "wing span 10.00 m"
+    "ref": "wingspan 10.00 m (32 ft 10 in)"
    },
    "cruise": {
-    "power": "cruise (not stated)",
-    "alt_ft": null
+    "power": "75%",
+    "alt_ft": 5000
    },
    "perf": {
     "approachIAS": {
      "v": 75,
-     "s": "est",
-     "method": "[APP] with estimated Vso 50 kt (est: light aerobatic trainer class; no published figure found)"
+     "s": "der",
+     "src": [
+      "wiki_types"
+     ],
+     "method": "[APP] Vso 49 kt"
     },
     "approachROD": {
      "v": 400,
@@ -8673,30 +8758,33 @@
      "method": "[APPROD]"
     },
     "cruiseCeiling": {
-     "v": 160,
+     "v": 200,
      "s": "pub",
      "src": [
-      "aggr_misc"
+      "wiki_types"
      ],
-     "ref": "ceiling 16,000 ft (sources range 10,000–20,000 ft)"
+     "ref": "service ceiling 6,095 m (20,000 ft) (Jane's 2004–05; aggregators 16,000 ft)"
     },
     "cruiseRange": {
-     "v": 560,
-     "s": "est",
-     "method": "[RANGE]"
+     "v": 620,
+     "s": "pub",
+     "src": [
+      "wiki_types"
+     ],
+     "ref": "range 1,150 km (620 nm) at 45% power, FL80, 45-min reserves"
     },
     "cruiseTAS": {
      "v": 124,
      "s": "pub",
      "src": [
-      "aggr_misc"
+      "ubas_g115"
      ],
-     "ref": "cruise about 124 kt (sprinkle/aerocorner)"
+     "ref": "cruise speed at 75% power 124 kt TAS at 5,000 ft ISA (max level speed 135 kt)"
     },
     "descentIAS": {
-     "v": 105,
+     "v": 115,
      "s": "est",
-     "method": "[DESIAS] cruise altitude not stated, 8,000 ft assumed"
+     "method": "[DESIAS]"
     },
     "descentROD": {
      "v": 500,
@@ -8704,35 +8792,45 @@
      "method": "[DESROD]"
     },
     "initialClimbIAS": {
-     "v": 80,
-     "s": "est",
-     "method": "[VY] with estimated Vso 50 kt (est: light aerobatic trainer class; no published figure found)"
+     "v": 75,
+     "s": "der",
+     "src": [
+      "wiki_types"
+     ],
+     "method": "[VY] Vso 49 kt"
     },
     "initialClimbROC": {
-     "v": 1000,
-     "s": "est",
-     "method": "est: 180 hp at 990 kg (power loading similar to the DR400/180's 826 fpm, plus aerobatic-trainer prop); the single 1,500 fpm figure found is unconfirmed"
+     "v": 1050,
+     "s": "pub",
+     "src": [
+      "wiki_types",
+      "ubas_g115"
+     ],
+     "ref": "rate of climb 5.3 m/s (1,050 ft/min), SL, ISA, MTOW"
     },
     "landingDistance": {
-     "v": 380,
+     "v": 457,
      "s": "pub",
      "src": [
-      "aggr_misc"
+      "ubas_g115"
      ],
-     "ref": "landing distance about 380 m (basis not stated; treated as over 15 m)"
+     "ref": "landing distance from 15 m / 50 ft 457 m (1,500 ft), SL, ISA, max weight"
     },
     "landingVat": {
-     "v": 65,
-     "s": "est",
-     "method": "[VAT] with estimated Vso 50 kt (est: light aerobatic trainer class; no published figure found)"
+     "v": 64,
+     "s": "der",
+     "src": [
+      "wiki_types"
+     ],
+     "method": "[VAT] Vso 49 kt"
     },
     "takeOffDistance": {
-     "v": 460,
+     "v": 461,
      "s": "pub",
      "src": [
-      "aggr_misc"
+      "ubas_g115"
      ],
-     "ref": "take-off distance about 460 m (basis not stated; treated as over 15 m)"
+     "ref": "take-off distance to 15 m / 50 ft 461 m (1,510 ft), SL, ISA, max weight"
     },
     "takeOffMTOW": {
      "v": 990,
@@ -8740,24 +8838,20 @@
      "src": [
       "wiki_types"
      ],
-     "ref": "max takeoff weight 990 kg"
+     "ref": "max takeoff weight 990 kg (2,183 lb)"
     },
     "takeOffV2": {
-     "v": 60,
-     "s": "est",
-     "method": "[V50] with estimated Vso 50 kt (est: light aerobatic trainer class; no published figure found)"
+     "v": 59,
+     "s": "der",
+     "src": [
+      "wiki_types"
+     ],
+     "method": "[V50] Vso 49 kt"
     }
    },
-   "sourcing": "weak",
-   "sourcing_reasons": [
-    "cruiseTAS from aggregator only",
-    "cruiseCeiling from aggregator only",
-    "takeOffDistance from aggregator only",
-    "landingDistance from aggregator only",
-    "initialClimbROC estimated"
-   ],
+   "sourcing": "fair",
    "notes": [
-    "Only aggregator data found — weak. ICAO G115 also covers 115/116 hp G 115A/B/C variants."
+    "ICAO G115 also covers 115/116 hp G 115A/B/C variants."
    ]
   },
   "GLEX": {
@@ -9906,7 +10000,8 @@
     "v": "L1P",
     "s": "der",
     "src": [
-     "ga"
+     "ga",
+     "aggr_misc"
     ],
     "method": "[DESIG]"
    },
@@ -9914,7 +10009,8 @@
     "v": "L",
     "s": "der",
     "src": [
-     "ga"
+     "ga",
+     "aggr_misc"
     ],
     "method": "[WTC]"
    },
@@ -9927,11 +10023,12 @@
     "pressurized": false,
     "hp": {
      "v": 200,
-     "s": "rec",
+     "s": "pub",
      "src": [
-      "ga"
+      "ga",
+      "aggr_misc"
      ],
-     "ref": "Lycoming IO-360-A3B6D, 200 hp"
+     "ref": "Lycoming IO-360-A3B6D, 200 hp (GlobalAir; metarcentral TCDS A21SO summary; sales listings)"
     }
    },
    "wingspan_m": {
@@ -9997,14 +10094,18 @@
      "v": 1030,
      "s": "pub",
      "src": [
-      "ga"
+      "ga",
+      "aggr_misc"
      ],
-     "ref": "rate of climb 1,030 fpm"
+     "ref": "rate of climb 1,030 fpm (GlobalAir, planephd)"
     },
     "landingDistance": {
      "v": 472,
-     "s": "est",
-     "method": "est: no published 50-ft landing found (GlobalAir's 800 ft is likely a ground roll: 800 × 1.9) [1,550 ft]"
+     "s": "pub",
+     "src": [
+      "aggr_misc"
+     ],
+     "ref": "landing over 50-ft obstacle 1,550 ft (planephd; ground roll 770 ft) [1,550 ft]"
     },
     "landingVat": {
      "v": 72,
@@ -10013,16 +10114,20 @@
     },
     "takeOffDistance": {
      "v": 472,
-     "s": "est",
-     "method": "est: no published 50-ft takeoff found (GlobalAir's 970 ft is likely a ground roll: 970 × 1.6) [1,550 ft]"
+     "s": "pub",
+     "src": [
+      "aggr_misc"
+     ],
+     "ref": "takeoff over 50-ft obstacle 1,550 ft (planephd; ground roll 880 ft) [1,550 ft]"
     },
     "takeOffMTOW": {
      "v": 1243,
      "s": "pub",
      "src": [
-      "ga"
+      "ga",
+      "aggr_misc"
      ],
-     "ref": "max takeoff weight 2,740 lb [2,740 lb]"
+     "ref": "max takeoff weight 2,740 lb (GlobalAir, planephd) [2,740 lb]"
     },
     "takeOffV2": {
      "v": 66,
@@ -10035,8 +10140,8 @@
     "takeOffMTOW from aggregator only",
     "cruiseTAS from aggregator only",
     "cruiseCeiling from aggregator only",
-    "takeOffDistance estimated",
-    "landingDistance estimated",
+    "takeOffDistance from aggregator only",
+    "landingDistance from aggregator only",
     "initialClimbROC from aggregator only",
     "engine power from aggregator only"
    ],
@@ -10080,12 +10185,13 @@
     }
    },
    "wingspan_m": {
-    "v": 11.0,
-    "s": "rec",
+    "v": 11.13,
+    "s": "pub",
     "src": [
-     "pp_acclaim"
+     "aopa_acclaim",
+     "wiki_types"
     ],
-    "ref": "wing span 36 ft 1 in [36.08 ft]"
+    "ref": "wingspan 36 ft 6 in (AOPA Acclaim guide; Wikipedia, Mooney data for the Acclaim Ultra) [36.5 ft]"
    },
    "cruise": {
     "power": "75%",
@@ -10383,12 +10489,12 @@
     }
    },
    "wingspan_m": {
-    "v": 14.02,
-    "s": "rec",
+    "v": 14.0,
+    "s": "pub",
     "src": [
-     "piaggio_evo"
+     "wiki_types"
     ],
-    "ref": "wing span 46 ft 0.5 in (14.03 m) [46.0 ft]"
+    "ref": "wingspan 14 m (46 ft) (Avanti EVO, Aviation Week data)"
    },
    "cruise": {
     "power": "maximum cruise",
@@ -10872,11 +10978,12 @@
    },
    "wingspan_m": {
     "v": 10.8,
-    "s": "rec",
+    "s": "der",
     "src": [
+     "aopa_arrow",
      "pp_turbo_arrow"
     ],
-    "ref": "wing span 35 ft 5 in [35.42 ft]"
+    "method": "same wing as the Arrow III/IV, 35 ft 5 in (AOPA); Plane & Pilot rounds the Turbo Arrow III to 35 ft"
    },
    "cruise": {
     "power": "75%",
@@ -11044,12 +11151,13 @@
     }
    },
    "wingspan_m": {
-    "v": 11.02,
-    "s": "rec",
+    "v": 11.03,
+    "s": "pub",
     "src": [
+     "aero_saratoga",
      "ga"
     ],
-    "ref": "wing span 36 ft 2 in [36.17 ft]"
+    "ref": "wingspan 11.03 m (36 ft 2 in) (Saratoga II HP; same tapered wing as the Saratoga SP)"
    },
    "cruise": {
     "power": "cruise (not stated)",
@@ -11372,12 +11480,12 @@
     }
    },
    "wingspan_m": {
-    "v": 10.77,
-    "s": "rec",
+    "v": 10.73,
+    "s": "pub",
     "src": [
-     "pp_pa18"
+     "wiki_types"
     ],
-    "ref": "wing span 35 ft 4 in [35.33 ft]"
+    "ref": "wingspan 35 ft 2.5 in (10.732 m) (PA-18-150, Jane's 1976–77) [35.21 ft]"
    },
    "cruise": {
     "power": "cruise (not stated)",
@@ -11665,12 +11773,12 @@
     }
    },
    "wingspan_m": {
-    "v": 11.33,
-    "s": "rec",
+    "v": 11.34,
+    "s": "pub",
     "src": [
-     "pp_aztec"
+     "wiki_types"
     ],
-    "ref": "wing span 37 ft 2 in [37.17 ft]"
+    "ref": "wingspan 37 ft 2.5 in (11.341 m) (PA-23-250F, Jane's 1976–77) [37.21 ft]"
    },
    "cruise": {
     "power": "75%",
@@ -11820,11 +11928,11 @@
    },
    "wingspan_m": {
     "v": 12.4,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "ga"
+     "wiki_types"
     ],
-    "ref": "wing span 40 ft 8 in [40.67 ft]"
+    "ref": "wingspan 40 ft 8 in (12.40 m) (PA-31-350 Chieftain, Jane's 1976–77) [40.67 ft]"
    },
    "cruise": {
     "power": "cruise (not stated)",
@@ -12285,11 +12393,11 @@
    },
    "wingspan_m": {
     "v": 10.36,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "pp_pa38"
+     "wiki_types"
     ],
-    "ref": "wing span 34 ft [34.0 ft]"
+    "ref": "wingspan 34 ft 0 in (10.36 m) (PA-38-112 Tomahawk II, Jane's 1982–83) [34.0 ft]"
    },
    "cruise": {
     "power": "75%",
@@ -12584,11 +12692,11 @@
     "pressurized": true,
     "hp": {
      "v": 350,
-     "s": "rec",
+     "s": "pub",
      "src": [
       "piper_m350"
      ],
-     "ref": "Lycoming TIO-540-AE2A, 350 hp"
+     "ref": "turbocharged Lycoming TIO-540-AE2A, 350 hp (2023 spec sheet)"
     }
    },
    "wingspan_m": {
@@ -12907,7 +13015,7 @@
     "v": "L1T",
     "s": "der",
     "src": [
-     "fg_pc6"
+     "pilatus_pc6"
     ],
     "method": "[DESIG]"
    },
@@ -12915,6 +13023,7 @@
     "v": "L",
     "s": "der",
     "src": [
+     "pilatus_pc6",
      "fg_pc6"
     ],
     "method": "[WTC]"
@@ -12930,28 +13039,31 @@
      "v": 550,
      "s": "pub",
      "src": [
-      "fg_pc6"
+      "pilatus_pc6"
      ],
-     "ref": "PT6A-27, 550 shp"
+     "ref": "550 shp Pratt & Whitney Canada PT6A-27 (680 shp thermodynamic rating)"
     }
    },
    "wingspan_m": {
     "v": 15.87,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "fg_pc6"
+     "pilatus_pc6"
     ],
-    "ref": "wing span 15.87 m"
+    "ref": "wingspan 15.87 m (52 ft 1 in)"
    },
    "cruise": {
-    "power": null,
-    "alt_ft": null
+    "power": "maximum cruise",
+    "alt_ft": 10000
    },
    "perf": {
     "approachIAS": {
-     "v": 75,
-     "s": "est",
-     "method": "[APP] with estimated Vso 50 kt (est: STOL class; no published figure found)"
+     "v": 80,
+     "s": "der",
+     "src": [
+      "pilatus_pc6"
+     ],
+     "method": "[APP] Vso 52 kt"
     },
     "approachROD": {
      "v": 400,
@@ -12964,32 +13076,38 @@
      "method": "[TPCLIMB]"
     },
     "climb150ROC": {
-     "v": 800,
+     "v": 900,
      "s": "est",
      "method": "[TPCLIMB]"
     },
     "cruiseCeiling": {
      "v": 250,
-     "s": "rec",
+     "s": "pub",
      "src": [
-      "fg_pc6"
+      "pilatus_pc6"
      ],
-     "ref": "maximum operating altitude 25,000 ft (one source gives about 26,900 ft service ceiling)"
+     "ref": "max. operating altitude 25,000 ft (7,620 m)"
     },
     "cruiseRange": {
-     "v": 520,
-     "s": "est",
-     "method": "[RANGE]"
+     "v": 500,
+     "s": "pub",
+     "src": [
+      "pilatus_pc6"
+     ],
+     "ref": "max. range at 10,000 ft 500 NM (870 NM with underwing tanks)"
     },
     "cruiseTAS": {
-     "v": 115,
-     "s": "est",
-     "method": "est: published maximum speeds range 125–151 kt; typical cruise about 115 KTAS"
+     "v": 125,
+     "s": "pub",
+     "src": [
+      "pilatus_pc6"
+     ],
+     "ref": "max. cruise speed 125 KTAS (232 km/h)"
     },
     "descentIAS": {
-     "v": 85,
+     "v": 105,
      "s": "est",
-     "method": "[DESIAS] cruise altitude not stated, 20,000 ft assumed"
+     "method": "[DESIAS]"
     },
     "descentROD": {
      "v": 1000,
@@ -12998,57 +13116,63 @@
     },
     "initialClimbIAS": {
      "v": 80,
-     "s": "est",
-     "method": "[VY] with estimated Vso 50 kt (est: STOL class; no published figure found)"
+     "s": "der",
+     "src": [
+      "pilatus_pc6"
+     ],
+     "method": "[VY] Vso 52 kt"
     },
     "initialClimbROC": {
-     "v": 1000,
-     "s": "est",
-     "method": "est: no published figure found; Turbo Porter class at 2,800 kg"
+     "v": 1010,
+     "s": "pub",
+     "src": [
+      "pilatus_pc6"
+     ],
+     "ref": "rate of climb (MTOW) 1,010 ft/min (5.13 m/s), ISA"
     },
     "landingDistance": {
-     "v": 229,
-     "s": "der",
+     "v": 315,
+     "s": "pub",
      "src": [
-      "fg_pc6"
+      "pilatus_pc6"
      ],
-     "method": "[LDGGR] ground roll 127 m × 1.8"
+     "ref": "landing distance over 50 ft (15 m) obstacle (STOL) 1,033 ft (315 m), ISA"
     },
     "landingVat": {
-     "v": 65,
-     "s": "est",
-     "method": "[VAT] with estimated Vso 50 kt (est: STOL class; no published figure found)"
-    },
-    "takeOffDistance": {
-     "v": 276,
+     "v": 68,
      "s": "der",
      "src": [
-      "fg_pc6"
+      "pilatus_pc6"
      ],
-     "method": "[TOGR] ground roll 197 m × 1.4"
+     "method": "[VAT] Vso 52 kt"
+    },
+    "takeOffDistance": {
+     "v": 440,
+     "s": "pub",
+     "src": [
+      "pilatus_pc6"
+     ],
+     "ref": "take-off distance over 50 ft (15 m) obstacle (STOL) 1,444 ft (440 m), ISA; flight test ground roll 197 m"
     },
     "takeOffMTOW": {
      "v": 2800,
      "s": "pub",
      "src": [
+      "pilatus_pc6",
       "fg_pc6"
      ],
-     "ref": "H4: maximum take-off weight 2,800 kg"
+     "ref": "max. take-off weight 6,173 lb (2,800 kg)"
     },
     "takeOffV2": {
-     "v": 60,
-     "s": "est",
-     "method": "[V50] with estimated Vso 50 kt (est: STOL class; no published figure found)"
+     "v": 62,
+     "s": "der",
+     "src": [
+      "pilatus_pc6"
+     ],
+     "method": "[V50] Vso 52 kt"
     }
    },
-   "sourcing": "weak",
-   "sourcing_reasons": [
-    "cruiseTAS estimated",
-    "initialClimbROC estimated"
-   ],
-   "notes": [
-    "Weak: few published figures; cruise speed and climb estimated."
-   ]
+   "sourcing": "good"
   },
   "PRM1": {
    "name": "Beechcraft Premier I",
@@ -13712,7 +13836,8 @@
     "v": "L1P",
     "s": "der",
     "src": [
-     "aero_tb9"
+     "aero_tb9",
+     "wiki_types"
     ],
     "method": "[DESIG]"
    },
@@ -13733,20 +13858,21 @@
     "pressurized": false,
     "hp": {
      "v": 160,
-     "s": "rec",
+     "s": "pub",
      "src": [
-      "aero_tb9"
+      "aero_tb9",
+      "wiki_types"
      ],
-     "ref": "Lycoming O-320-D2A, 160 hp"
+     "ref": "Lycoming O-320-D2A, 119 kW (160 hp)"
     }
    },
    "wingspan_m": {
     "v": 9.76,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "aero_tb9"
+     "wiki_types"
     ],
-    "ref": "wing span 9.76 m"
+    "ref": "wingspan 9.76 m (32 ft 0 in) (TB 10, Jane's 1982–83; the TB 9 shares the airframe)"
    },
    "cruise": {
     "power": "75%",
@@ -13846,12 +13972,12 @@
   },
   "TBM7": {
    "name": "Daher TBM 700",
-   "variant": "TBM 700 (A/B), P&WC PT6A-64 700 shp",
+   "variant": "TBM 700B (1999–), P&WC PT6A-64 700 shp",
    "type": {
     "v": "L1T",
     "s": "der",
     "src": [
-     "ga"
+     "aopa_tbm700"
     ],
     "method": "[DESIG]"
    },
@@ -13859,7 +13985,7 @@
     "v": "L",
     "s": "der",
     "src": [
-     "aggr_misc"
+     "aopa_tbm700"
     ],
     "method": "[WTC]"
    },
@@ -13872,79 +13998,82 @@
     "pressurized": true,
     "hp": {
      "v": 700,
-     "s": "rec",
+     "s": "pub",
      "src": [
-      "ga"
+      "aopa_tbm700"
      ],
-     "ref": "PT6A-64, 700 shp"
+     "ref": "Pratt & Whitney PT-6A-64, 700 shp"
     }
    },
    "wingspan_m": {
     "v": 12.67,
     "s": "pub",
     "src": [
-     "ga"
+     "aopa_tbm700"
     ],
     "ref": "wingspan 41 ft 7 in [41.58 ft]"
    },
    "cruise": {
     "power": "maximum cruise",
-    "alt_ft": 26000
+    "alt_ft": 30000
    },
    "perf": {
     "approachIAS": {
-     "v": 100,
-     "s": "est",
-     "method": "[APP] with estimated Vso 65 kt (est: TBM class; no published figure found)"
+     "v": 90,
+     "s": "der",
+     "src": [
+      "aopa_tbm700"
+     ],
+     "method": "[APP] Vso 61 kt"
     },
     "approachROD": {
-     "v": 550,
+     "v": 500,
      "s": "est",
      "method": "[APPROD]"
     },
     "climb150IAS": {
-     "v": 130,
+     "v": 125,
      "s": "est",
      "method": "[TPCLIMB]"
     },
     "climb150ROC": {
-     "v": 1700,
+     "v": 1600,
      "s": "est",
      "method": "[TPCLIMB]"
     },
     "climb240IAS": {
-     "v": 130,
+     "v": 125,
      "s": "est",
      "method": "[TPCLIMB]"
     },
     "climb240ROC": {
-     "v": 1300,
+     "v": 1200,
      "s": "est",
      "method": "[TPCLIMB]"
     },
     "cruiseCeiling": {
-     "v": 300,
+     "v": 310,
      "s": "pub",
      "src": [
-      "ga"
+      "aopa_tbm700"
      ],
-     "ref": "service ceiling 30,000 ft"
+     "ref": "max operating altitude 31,000 ft"
     },
     "cruiseRange": {
-     "v": 1460,
+     "v": 1350,
      "s": "pub",
      "src": [
-      "aggr_misc"
+      "aopa_tbm700"
      ],
-     "ref": "range 1,460 nm with IFR reserves (sources: 1,350–1,550 nm)"
+     "ref": "1,350 nm at max cruise, 30,000 ft (1,550 nm at max-range setting, 242 kt)"
     },
     "cruiseTAS": {
-     "v": 300,
+     "v": 298,
      "s": "pub",
      "src": [
-      "ga"
+      "aopa_tbm700"
      ],
-     "ref": "maximum cruise about 300 kt"
+     "ref": "max cruise setting, 30,000 ft: 298 kt / 1,350 nm (47.9 gph)"
     },
     "descentIAS": {
      "v": 225,
@@ -13957,63 +14086,63 @@
      "method": "[DESROD]"
     },
     "initialClimbIAS": {
-     "v": 100,
-     "s": "est",
-     "method": "[VY] with estimated Vso 65 kt (est: TBM class; no published figure found)"
+     "v": 95,
+     "s": "der",
+     "src": [
+      "aopa_tbm700"
+     ],
+     "method": "[VY] Vso 61 kt"
     },
     "initialClimbROC": {
-     "v": 2000,
-     "s": "est",
-     "method": "est: TBM 700 class (TBM 850 published 2,400 fpm with more power); no TBM 700 figure found"
+     "v": 1830,
+     "s": "pub",
+     "src": [
+      "aopa_tbm700"
+     ],
+     "ref": "rate of climb, sea level 1,830 fpm"
     },
     "landingDistance": {
+     "v": 651,
+     "s": "pub",
+     "src": [
+      "aopa_tbm700"
+     ],
+     "ref": "landing distance over 50-ft obstacle 2,135 ft [2,135 ft]"
+    },
+    "landingVat": {
+     "v": 79,
+     "s": "der",
+     "src": [
+      "aopa_tbm700"
+     ],
+     "method": "[VAT] Vso 61 kt"
+    },
+    "takeOffDistance": {
      "v": 650,
      "s": "pub",
      "src": [
-      "ga"
+      "aopa_tbm700"
      ],
-     "ref": "landing distance 2,133 ft (700B page) [2,133 ft]"
-    },
-    "landingVat": {
-     "v": 84,
-     "s": "est",
-     "method": "[VAT] with estimated Vso 65 kt (est: TBM class; no published figure found)"
-    },
-    "takeOffDistance": {
-     "v": 656,
-     "s": "pub",
-     "src": [
-      "ga"
-     ],
-     "ref": "takeoff distance 2,153 ft (700C page) [2,153 ft]"
+     "ref": "takeoff field length, sea level 2,133 ft [2,133 ft]"
     },
     "takeOffMTOW": {
      "v": 2984,
      "s": "pub",
      "src": [
-      "aggr_misc"
+      "aopa_tbm700"
      ],
-     "ref": "MTOW 6,579 lb (TBM 700/700B; 700C2: 7,394 lb) [6,579 lb]"
+     "ref": "max takeoff weight 6,579 lb (700C2: 7,394 lb) [6,579 lb]"
     },
     "takeOffV2": {
-     "v": 78,
-     "s": "est",
-     "method": "[V50] with estimated Vso 65 kt (est: TBM class; no published figure found)"
+     "v": 73,
+     "s": "der",
+     "src": [
+      "aopa_tbm700"
+     ],
+     "method": "[V50] Vso 61 kt"
     }
    },
-   "sourcing": "weak",
-   "sourcing_reasons": [
-    "takeOffMTOW from aggregator only",
-    "cruiseTAS from aggregator only",
-    "cruiseCeiling from aggregator only",
-    "takeOffDistance from aggregator only",
-    "landingDistance from aggregator only",
-    "initialClimbROC estimated",
-    "engine power from aggregator only"
-   ],
-   "notes": [
-    "Only aggregator data found — weak."
-   ]
+   "sourcing": "fair"
   },
   "TBM8": {
    "name": "Daher TBM 850",
@@ -14022,7 +14151,7 @@
     "v": "L1T",
     "s": "der",
     "src": [
-     "aero_tbm850"
+     "wiki_types"
     ],
     "method": "[DESIG]"
    },
@@ -14043,11 +14172,11 @@
     "pressurized": true,
     "hp": {
      "v": 850,
-     "s": "rec",
+     "s": "pub",
      "src": [
-      "aero_tbm850"
+      "wiki_types"
      ],
-     "ref": "PT6A-66D, 850 shp (flat-rated)"
+     "ref": "PT6A-66D flat-rated 850 shp (634 kW); take-off and landing limited to 700 shp"
     }
    },
    "wingspan_m": {
@@ -14196,7 +14325,7 @@
     "v": "L1P",
     "s": "der",
     "src": [
-     "aero_tb9"
+     "pp_tb10"
     ],
     "method": "[DESIG]"
    },
@@ -14204,7 +14333,8 @@
     "v": "L",
     "s": "der",
     "src": [
-     "aero_tb9"
+     "aero_tb9",
+     "pp_tb10"
     ],
     "method": "[WTC]"
    },
@@ -14217,20 +14347,20 @@
     "pressurized": false,
     "hp": {
      "v": 180,
-     "s": "rec",
+     "s": "pub",
      "src": [
-      "aero_tb9"
+      "pp_tb10"
      ],
-     "ref": "Lycoming O-360-A1AD, 180 hp"
+     "ref": "engine (std.) 180-hp Lycoming O-360-A1AD"
     }
    },
    "wingspan_m": {
     "v": 9.76,
-    "s": "rec",
+    "s": "pub",
     "src": [
-     "aero_tb9"
+     "wiki_types"
     ],
-    "ref": "wing span 9.76 m"
+    "ref": "wingspan 9.76 m (32 ft 0 in) (TB 10, Jane's 1982–83)"
    },
    "cruise": {
     "power": "75%",
@@ -14251,14 +14381,18 @@
      "v": 130,
      "s": "pub",
      "src": [
-      "aero_tb9"
+      "aero_tb9",
+      "pp_tb10"
      ],
      "ref": "service ceiling 13,000 ft"
     },
     "cruiseRange": {
-     "v": 570,
-     "s": "est",
-     "method": "[RANGE]"
+     "v": 504,
+     "s": "pub",
+     "src": [
+      "pp_tb10"
+     ],
+     "ref": "range 580 statute miles (504 nm)"
     },
     "cruiseTAS": {
      "v": 127,
@@ -14266,7 +14400,7 @@
      "src": [
       "aero_tb9"
      ],
-     "ref": "75% power cruise 235 km/h (127 kt)"
+     "ref": "75% power cruise 235 km/h (127 kt); Plane & Pilot cruise 143 mph (124 kt)"
     },
     "descentIAS": {
      "v": 110,
@@ -14289,15 +14423,15 @@
      "src": [
       "aero_tb9"
      ],
-     "ref": "climb rate 790 ft/min at sea level"
+     "ref": "climb rate 790 ft/min at sea level (Plane & Pilot 787)"
     },
     "landingDistance": {
      "v": 460,
      "s": "pub",
      "src": [
-      "ga"
+      "pp_tb10"
      ],
-     "ref": "landing distance 1,509 ft (basis not stated; treated as over 50 ft) [1,509 ft]"
+     "ref": "landing distance (50 ft) 1,509 ft [1,509 ft]"
     },
     "landingVat": {
      "v": 69,
@@ -14308,17 +14442,18 @@
      "v": 505,
      "s": "pub",
      "src": [
-      "ga"
+      "pp_tb10"
      ],
-     "ref": "takeoff distance 1,657 ft (basis not stated; treated as over 50 ft) [1,657 ft]"
+     "ref": "takeoff distance (50 ft) 1,657 ft [1,657 ft]"
     },
     "takeOffMTOW": {
      "v": 1150,
      "s": "pub",
      "src": [
-      "aero_tb9"
+      "aero_tb9",
+      "pp_tb10"
      ],
-     "ref": "loaded weight 1,150 kg (2,530 lb)"
+     "ref": "loaded weight 1,150 kg (Plane & Pilot: gross wt. 2,535 lb)"
     },
     "takeOffV2": {
      "v": 64,
@@ -14326,11 +14461,7 @@
      "method": "[V50] with estimated Vso 53 kt (est: TB-series class; no published figure found)"
     }
    },
-   "sourcing": "weak",
-   "sourcing_reasons": [
-    "takeOffDistance from aggregator only",
-    "landingDistance from aggregator only"
-   ]
+   "sourcing": "fair"
   },
   "TRIN": {
    "name": "Socata TB-20 Trinidad",
