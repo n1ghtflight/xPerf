@@ -75,7 +75,12 @@ export async function launch({ width = 1440, height = 900, mobile = false, schem
       for (const ch of text) await page.key(ch);
     },
     async shot(file) { const { result } = await send("Page.captureScreenshot", { format: "png" }); mkdirSync(dirname(file), { recursive: true }); writeFileSync(file, Buffer.from(result.data, "base64")); },
-    async setScheme(s) { await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: s }, { name: "prefers-reduced-motion", value: "reduce" }] }); },
+    async setScheme(s) {
+      await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: s }, { name: "prefers-reduced-motion", value: "reduce" }] });
+      // emulation applies asynchronously: wait until the page's media query reports the new scheme
+      for (let i = 0; i < 40; i++) { if (await page.eval(`matchMedia('(prefers-color-scheme: ${s})').matches`).catch(() => true)) break; await sleep(50); }
+      await sleep(50);
+    },
     async setViewport(w, h, mob = false) { await send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: mob ? 2 : 1, mobile: mob }); await send("Emulation.setTouchEmulationEnabled", { enabled: mob, maxTouchPoints: mob ? 5 : 0 }); },
     async close() { try { ws.close(); } catch {} proc.kill(); await sleep(300); try { rmSync(prof, { recursive: true, force: true }); } catch {} },
   };

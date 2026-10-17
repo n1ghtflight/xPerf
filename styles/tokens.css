@@ -1,0 +1,128 @@
+/* XPerf tokens = nightflight-ui · tokens v1 (2026-10-16)
+   Calm near-black, opaque hairlines, one indigo accent, keyboard-first.
+   Surface/text/geometry/motion values were measured from a reference productivity app's computed
+   styles (see references/provenance.md); everything else is derived to match.
+
+   Theme: follows the OS by default. Force one with <html data-theme="dark"> or "light".
+   Colours use light-dark(LIGHT, DARK), resolved per element from its color-scheme — so a single
+   region can also be forced dark/light by setting color-scheme on it.
+   Needs Chromium 123+ / Safari 17.5+ / Firefox 120+ (WebView2 and Electron are fine). */
+
+:root{
+  color-scheme:light dark;
+
+  /* ── Type ─────────────────────────────────────────────── */
+  --font:"Inter Var","InterVariable","Inter",system-ui,"Segoe UI",-apple-system,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Mono","SF Mono",Consolas,ui-monospace,monospace;
+  --font-features:"calt";
+  --num-features:"calt","tnum";          /* figures: tabular so columns and live values don't jitter */
+  --tracking:-.1px;
+  --fs-micro:11px; --fs-mini:12px; --fs-small:13px; --fs-regular:15px;
+  --fs-large:18px; --fs-title3:20px; --fs-title2:24px; --fs-title1:36px;
+  --w-regular:450; --w-medium:500; --w-semibold:600;
+  --lh-tight:1.25; --lh:1.5;
+
+  /* ── Space (4px grid) ─────────────────────────────────── */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px; --s-7:48px;
+
+  /* ── Shape & size ─────────────────────────────────────── */
+  --r-xs:4px; --r-sm:6px; --r:8px; --r-lg:12px; --r-full:9999px;
+  --hairline:.5px;                       /* browsers round this up to exactly 1 device pixel */
+  --h-control:28px; --h-control-lg:32px;
+  --h-titlebar:42px; --h-header:43px; --h-statusbar:32px;
+  --w-sidebar:244px; --gutter:8px;
+
+  /* ── Motion ───────────────────────────────────────────── */
+  --ease:cubic-bezier(.23,1,.32,1);      /* ease-out-quint: fast start, soft landing */
+  --ease-in-out:cubic-bezier(.645,.045,.355,1);
+  --dur-quick:100ms; --dur:150ms; --dur-regular:250ms; --dur-slow:350ms;
+
+  /* ── Surfaces (darkest = chrome; work surfaces step up) ── */
+  --bg:          light-dark(#efeff0, lch(2.6% .4 272));
+  --chrome:      var(--bg);
+  --panel:       light-dark(#f9f9fa, lch(5.52% .4 272));
+  --field:       light-dark(#f4f4f5, lch(7.32% .85 272));
+  --tile:        light-dark(#ffffff, lch(8.22% 1.3 272));
+  --tile-hover:  light-dark(#f6f6f7, lch(9.35% .85 272));
+  --active:      light-dark(#e4e4e6, lch(13.85% 1.3 272));
+  --line-soft:   light-dark(#ebebec, lch(9.84% 1.48 272));
+  --line:        light-dark(#e2e2e2, lch(14.16% 1.48 272));
+  --line-strong: light-dark(#d4d4d6, lch(16.32% 1.48 272));
+  --overlay:     light-dark(rgb(15 15 30 / .18), rgb(0 0 0 / .55));
+
+  /* ── Text (4 steps; --text-4 is for disabled/placeholder only) ── */
+  --text:   light-dark(#23252a, lch(100% 0 272));
+  --text-2: light-dark(#3c3f46, lch(90.45% 1.2 272));
+  --text-3: light-dark(#6b6f76, lch(61.8% 1.2 272));
+  --text-4: light-dark(#a0a4ab, lch(36.98% 1.2 272));
+
+  /* ── Accent (the only saturated colour in chrome) ──────── */
+  --accent:       #5e69d1;
+  --accent-hover: light-dark(#5059c4, #6c77e0);
+  --accent-ink:   #ffffff;
+  --accent-soft:  color-mix(in srgb, var(--accent) 16%, transparent);
+  --selection:    color-mix(in srgb, var(--accent) 40%, transparent);
+  --focus-ring:   1px solid var(--accent);
+  --link:         light-dark(#5e69d1, lch(80% 80 288.43));
+
+  /* ── Status (sparingly: state, never decoration) ──────── */
+  --good:   light-dark(oklch(.55 .14 158), oklch(.74 .15 158));
+  --warn:   light-dark(oklch(.62 .15 65),  oklch(.80 .14 75));
+  --bad:    light-dark(oklch(.56 .20 25),  oklch(.68 .19 25));
+  --info:   light-dark(oklch(.52 .17 255), oklch(.68 .15 255));
+  --violet: light-dark(oklch(.55 .18 300), oklch(.72 .14 300));
+  --good-soft: color-mix(in oklch, var(--good) 14%, transparent);
+  --warn-soft: color-mix(in oklch, var(--warn) 12%, transparent);
+  --bad-soft:  color-mix(in oklch, var(--bad) 14%, transparent);
+  --info-soft: color-mix(in oklch, var(--info) 14%, transparent);
+
+  /* ── Elevation ─────────────────────────────────────────── */
+  --shadow:     0 .5px 1px 1px light-dark(rgb(15 15 30 / .05), lch(0% 0 0 / .3)),
+                0 4px 16px -8px light-dark(rgb(15 15 30 / .12), transparent);
+  --shadow-pop: 0 0 0 var(--hairline) var(--line),
+                0 16px 48px -12px light-dark(rgb(15 15 30 / .28), rgb(0 0 0 / .6));
+}
+:root[data-theme="dark"]{color-scheme:dark}
+:root[data-theme="light"]{color-scheme:light}
+
+/* ── Base ─────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);
+  font:var(--w-regular) var(--fs-regular)/var(--lh) var(--font);
+  font-feature-settings:var(--font-features);letter-spacing:var(--tracking);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+::selection{background:var(--selection)}
+:focus-visible{outline:var(--focus-ring);outline-offset:1px}
+.num{font-feature-settings:var(--num-features);font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono);font-feature-settings:normal;letter-spacing:0}
+kbd,.kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;
+  border:var(--hairline) solid var(--line);border-radius:var(--r-xs);background:var(--field);
+  color:var(--text-2);font:var(--w-medium) var(--fs-micro)/1 var(--font);letter-spacing:0}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
+/* ── XPerf · aviation colours (XPerf's own, both themes) ─────────────────────── */
+:root{
+  --vfr:          var(--good);
+  --mvfr:         light-dark(oklch(.52 .17 255), oklch(.68 .15 255));
+  --ifr:          var(--bad);
+  --lifr:         light-dark(oklch(.52 .22 330), oklch(.70 .20 330));
+  --terrain:      light-dark(oklch(.92 .03 140), oklch(.30 .03 150));
+  --terrain-line: light-dark(oklch(.80 .05 140), oklch(.40 .04 150));
+  --map-water:    light-dark(oklch(.93 .02 240), oklch(.19 .02 240));
+  --map-land:     light-dark(oklch(.97 .006 120), oklch(.17 .006 260));
+  --violet-soft:  color-mix(in oklch, var(--violet) 16%, transparent);
+  --cat-ink:      var(--bg);              /* text on a flight-category badge */
+
+  /* Transition aliases: names used by nav.js/charts.js inline styles before the redesign. */
+  --panel2: var(--field);
+  --muted:  var(--text-3);
+  --green:  var(--good);
+  --amber:  var(--warn);
+  --red:    var(--bad);
+  --magenta:var(--violet);
+}
