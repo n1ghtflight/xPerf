@@ -258,3 +258,72 @@ button.icon-btn:hover{background:var(--tile-hover);color:var(--text)}
     color:var(--text);font-size:var(--fs-regular);font-weight:var(--w-medium);text-align:left}
   .moresheet button:hover,.moresheet button[aria-current="page"]{background:var(--active)}
 }
+
+/* ================= Setup form, chips, All settings drawer ================= */
+.visually-hidden,.seg-src{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body:not(.planned) .work{grid-template-columns:minmax(0,560px);justify-content:center}
+body.planned .work{grid-template-columns:minmax(0,1fr)}
+body.planned .work>.formcol{display:none}
+.setupform .viewtitle{margin-bottom:4px}
+.routefields{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:8px}
+.aptfield{min-width:0}
+input.icao{height:44px;font-size:var(--fs-large);font-weight:var(--w-semibold);letter-spacing:.02em;text-transform:uppercase}
+.aptres{min-height:16px;margin-top:4px;color:var(--text-3);font-size:var(--fs-mini);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aptres.bad{color:var(--bad)}
+button.icon-btn.swap{margin-bottom:22px;border:var(--hairline) solid var(--line);background:var(--field)}
+.seg{display:flex;flex-wrap:wrap;gap:2px;padding:2px;background:var(--field);border:var(--hairline) solid var(--line);border-radius:var(--r)}
+.seg button{flex:1 1 auto;margin:0;width:auto;height:26px;padding:0 10px;border:0;border-radius:var(--r-sm);background:none;
+  color:var(--text-2);font-size:var(--fs-small);font-weight:var(--w-medium);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--tile);color:var(--text);box-shadow:var(--shadow)}
+.chk.toggle{gap:10px}
+.chk.toggle input{appearance:none;-webkit-appearance:none;position:relative;flex:none;width:28px;height:16px;margin:0;padding:0;border:0;
+  border-radius:var(--r-full);background:var(--active);cursor:pointer;transition:background var(--dur) var(--ease)}
+.chk.toggle input::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--text-3);transition:transform var(--dur) var(--ease),background var(--dur)}
+.chk.toggle input:checked{background:var(--accent)}
+.chk.toggle input:checked::after{transform:translateX(12px);background:#fff}
+#go{display:flex;align-items:center;justify-content:center;gap:6px;height:var(--h-control-lg);padding:0 14px}
+#go kbd{background:color-mix(in srgb,#fff 18%,transparent);border-color:transparent;color:inherit}
+.hint.err{color:var(--bad)}
+
+.chipbar{position:sticky;top:0;z-index:600;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 18px;
+  background:var(--panel);border-bottom:var(--hairline) solid var(--line-soft)}
+.chipbar[hidden]{display:none}
+button.pchip{display:inline-flex;align-items:center;gap:4px;height:var(--h-control);margin:0;width:auto;padding:0 8px 0 10px;
+  border:var(--hairline) solid var(--line);border-radius:var(--r-sm);background:var(--field);color:var(--text-2);
+  font-size:var(--fs-small);font-weight:var(--w-regular);cursor:pointer;white-space:nowrap}
+button.pchip b{color:var(--text);font-weight:var(--w-semibold)}
+button.pchip:hover,button.pchip[aria-expanded="true"]{background:var(--tile-hover);color:var(--text)}
+button.pchip .caret{width:12px;height:12px;color:var(--text-3)}
+button.pchip.ghost{background:transparent;border-color:transparent;color:var(--text-3)}
+button.pchip.ghost:hover{color:var(--text);background:var(--tile-hover)}
+.errslot{padding:0 18px}
+.errslot #err:not(:empty){margin-top:12px;padding:10px 12px;border-radius:var(--r);background:var(--bad-soft);
+  border:var(--hairline) solid color-mix(in oklch,var(--bad) 35%,transparent);color:var(--text);font-size:var(--fs-small)}
+body.replanning #results{opacity:.45;pointer-events:none;transition:opacity var(--dur) var(--ease)}
+
+.chipmenu{position:fixed;z-index:1800;min-width:180px;max-width:calc(100vw - 16px);max-height:min(420px,60vh);overflow:auto;padding:4px;
+  background:var(--tile);border-radius:var(--r);box-shadow:var(--shadow-pop)}
+.chipmenu[hidden]{display:none}
+.chipmenu.list button{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0;width:100%;height:30px;padding:0 10px;
+  border:0;border-radius:var(--r-sm);background:none;color:var(--text);font-size:var(--fs-small);font-weight:var(--w-medium);text-align:left;cursor:pointer}
+.chipmenu.list button:hover,.chipmenu.list button.on{background:var(--active)}
+.chipmenu.form{display:flex;flex-direction:column;gap:10px;padding:12px;min-width:300px}
+.chipmenu.form label{margin:0;display:flex;flex-direction:column;gap:4px}
+.chipmenu.ac{min-width:min(420px,calc(100vw - 16px))}
+.routeedit{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:6px}
+.routeedit button.icon-btn{margin-bottom:6px}
+button.planbtn{display:flex;align-items:center;justify-content:center;gap:6px;margin:0;height:var(--h-control-lg)}
+button.planbtn kbd{background:color-mix(in srgb,#fff 18%,transparent);border-color:transparent;color:inherit}
+
+.drawer{position:fixed;z-index:1700;top:var(--h-titlebar);bottom:var(--h-statusbar);left:calc(var(--w-sidebar) + var(--gutter));width:min(400px,calc(100vw - 16px));
+  display:flex;flex-direction:column;background:var(--panel);border:var(--hairline) solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-pop);
+  animation:drawerIn var(--dur-regular) var(--ease)}
+.drawer[hidden]{display:none}
+@keyframes drawerIn{from{opacity:0;transform:translateX(-12px)}}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;height:var(--h-header);padding:0 8px 0 16px;border-bottom:var(--hairline) solid var(--line-soft)}
+.drawer-head b{font-size:var(--fs-regular);font-weight:var(--w-medium)}
+.drawer-body{flex:1;overflow:auto;padding:0 12px 12px}
+.drawer-body .card{border:0;background:none;padding:12px 4px}
+.drawer-body .setupform .viewtitle{display:none}
+@media (max-width:1023px){ .drawer{left:var(--gutter)} }
+@media (max-width:767px){ .drawer{top:var(--h-titlebar);bottom:0;left:0;width:100vw;border-radius:0} .chipbar{padding:8px 12px;flex-wrap:nowrap;overflow-x:auto} .errslot{padding:0 12px} }

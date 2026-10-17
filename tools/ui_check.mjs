@@ -114,6 +114,83 @@ check("ipad-portrait", async () => {
   } finally { await page.close(); }
 });
 
+// wait until no re-plan is running (body.replanning cleared and #go enabled), after a short grace period
+const idle = page => page.eval(`(async()=>{ const w=ms=>new Promise(r=>setTimeout(r,ms)); await w(150);
+  for(let i=0;i<1200&&(document.body.classList.contains('replanning')||document.getElementById('go').disabled);i++) await w(100); })()`);
+const visible = (page, sel) => page.eval(`(()=>{const e=document.querySelector(${JSON.stringify(sel)}); return !!e&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden';})()`);
+async function chipPick(page, chip, value) {
+  await page.click(`[data-chip="${chip}"]`); await settle(page);
+  await page.click(`.chipmenu [data-value="${value}"]`);
+}
+
+check("setup-first", async () => {
+  const page = await open("c172");
+  try {
+    expect(await visible(page, "#surface .formcol"), "setup form should be visible in the surface before the first plan");
+    const chips = await page.eval(`[...document.querySelectorAll('[data-chip]')].filter(e=>e.getClientRects().length).length`);
+    expect(chips === 0, chips + " chips visible before the first plan");
+    await page.eval(`(()=>{ const $=id=>document.getElementById(id); $('dep').value='KPAO'; $('arr').value='KTRK'; })()`);
+    await page.click("#swapBtn");
+    const swapped = await page.eval(`document.getElementById('dep').value+'/'+document.getElementById('arr').value`);
+    expect(swapped === "KTRK/KPAO", "swap gave " + swapped);
+    await page.click("#swapBtn");
+    await page.eval(`(()=>{ document.getElementById('etd').value=${JSON.stringify("2026-10-20T12:00")}; document.activeElement?.blur(); })()`);
+    await page.key("Enter", { ctrl: true });
+    await page.eval(`(async()=>{ for(let i=0;i<600&&!window.LAST_X;i++) await new Promise(r=>setTimeout(r,100)); })()`);
+    expect(await page.eval(`!!window.LAST_X`), "Ctrl+Enter did not plan");
+  } finally { await page.close(); }
+});
+
+check("chips", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    expect(await visible(page, '[data-chip="rules"]'), "rules chip not visible after planning");
+    await page.eval(`window._x0=window.LAST_X`);
+    await chipPick(page, "rules", "ifr"); await idle(page);
+    expect(await page.eval(`document.getElementById('rules').value`) === "ifr", "rules not set to ifr");
+    expect(await page.eval(`window.LAST_X&&window.LAST_X!==window._x0`), "no re-plan after picking IFR");
+    expect(!(await page.eval(`document.body.classList.contains('replanning')`)), "replanning state not cleared");
+  } finally { await page.close(); }
+});
+
+check("chips-race", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    const ft0 = await page.eval(`LAST_X.sel.ft`);
+    expect(await page.eval(`document.getElementById('rules').value`) === "vfr", "C172 default rules should be VFR");
+    await chipPick(page, "rules", "ifr");
+    await chipPick(page, "rules", "vfr");
+    await idle(page);
+    expect(await page.eval(`document.getElementById('rules').value`) === "vfr", "final rules not vfr");
+    const ft = await page.eval(`LAST_X.sel.ft`);
+    expect(ft === ft0, `final cruise ${ft} ≠ VFR plan ${ft0}`);
+    expect(await page.eval(`document.querySelector('.tabpanel[data-tab="overview"]').textContent.includes(lvl(LAST_X.sel.ft))`), "overview does not show the final cruise level");
+  } finally { await page.close(); }
+});
+
+check("replan-error", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.click('[data-chip="route"]'); await settle(page);
+    await page.eval(`document.getElementById('chipArr').value='ZZZZ'`);
+    await page.click("#chipRouteGo"); await idle(page);
+    const err = await page.eval(`document.getElementById('err').textContent`);
+    expect(/Enter valid airport codes/.test(err), "error text: " + err);
+    expect(await visible(page, "#err"), "#err is not visible");
+    expect(await page.eval(`document.querySelector('.tabpanel[data-tab="overview"]')?.children.length>0`), "previous results were cleared");
+  } finally { await page.close(); }
+});
+
+check("all-settings", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.click('[data-chip="all"]'); await settle(page);
+    expect(await visible(page, "#allSettings"), "All settings drawer not visible");
+    const missing = await page.eval(`["ac","dep","arr","nav","alt","etd","load","extra","rules","opt","fl","oxy","go"].filter(id=>!document.querySelector('#allSettings #'+id))`);
+    expect(!missing.length, "drawer lacks: " + missing.join(", "));
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {

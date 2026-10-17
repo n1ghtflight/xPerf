@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.17a">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.17b">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.17d">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
@@ -22,6 +22,8 @@
   <symbol id="i-fuel" viewBox="0 0 16 16"><path d="M8 2.5s-4 4.6-4 7.5a4 4 0 0 0 8 0c0-2.9-4-7.5-4-7.5z"/></symbol>
   <symbol id="i-setup" viewBox="0 0 16 16"><path d="M8 2v4.5L2 9.5V11l6-1.5v3l-1.5 1V15L8 14.5l1.5.5v-1.5l-1.5-1v-3L14 11V9.5L8 6.5V2"/></symbol>
   <symbol id="i-settings" viewBox="0 0 16 16"><path d="M3 4.5h6M12 4.5h1M3 11.5h1M7 11.5h6"/><circle cx="10.5" cy="4.5" r="1.5"/><circle cx="5.5" cy="11.5" r="1.5"/></symbol>
+  <symbol id="i-caret" viewBox="0 0 16 16"><path d="M4.5 6.5 8 10l3.5-3.5"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 16 16"><path d="M5 2.5v11M5 13.5l-2.5-2.5M5 13.5 7.5 11M11 13.5v-11M11 2.5 8.5 5M11 2.5 13.5 5"/></symbol>
   <symbol id="i-more" viewBox="0 0 16 16"><path d="M3.5 8h.01M8 8h.01M12.5 8h.01" stroke-width="2.2"/></symbol>
 </svg>
 <div class="app" id="app">
@@ -50,52 +52,56 @@
   </div>
 </nav>
 <main class="surface" id="surface">
+  <div class="chipbar" id="chipbar" hidden aria-label="Flight setup"></div>
+  <div class="errslot" id="errSlot"></div>
   <div class="work">
   <section class="formcol">
-    <div class="card">
-      <h2>Flight</h2>
+    <div class="card setupform">
+      <h2 class="viewtitle">Plan a flight</h2>
       <label for="ac">Aircraft</label>
       <select id="ac"><option>Loading aircraft…</option></select>
       <div id="otherRow"><input id="otherCode" placeholder="ICAO type, e.g. C82R" maxlength="4"><button class="sm" id="otherGo">Load</button></div>
       <div class="hint" id="acHint"></div>
 
-      <div class="row2">
-        <div><label for="dep">Departure</label><input id="dep" list="aptList" placeholder="ICAO / IATA / name" autocomplete="off"></div>
-        <div><label for="arr">Arrival</label><input id="arr" list="aptList" placeholder="ICAO / IATA / name" autocomplete="off"></div>
+      <div class="routefields">
+        <div class="aptfield"><label for="dep">From</label><input id="dep" class="icao" list="aptList" placeholder="ICAO / IATA / name" autocomplete="off"><div class="aptres" id="depRes"></div></div>
+        <button type="button" class="icon-btn swap" id="swapBtn" data-tip="Swap departure and arrival" aria-label="Swap departure and arrival"><svg class="i"><use href="#i-swap"/></svg></button>
+        <div class="aptfield"><label for="arr">To</label><input id="arr" class="icao" list="aptList" placeholder="ICAO / IATA / name" autocomplete="off"><div class="aptres" id="arrRes"></div></div>
       </div>
       <datalist id="aptList"></datalist>
-      <div class="row2">
-        <div><label for="nav">Navigation</label>
-          <select id="nav"><option value="direct">Direct (GPS / pilotage)</option><option value="vor">VOR to VOR</option><option value="vorndb">VOR + NDB</option><option value="awy">Airways — US Victor / Jet</option><option value="pub">Published routes — FAA preferred / CDR</option></select></div>
-        <div><label for="alt">Alternate (optional)</label><input id="alt" list="aptList" placeholder="ICAO" autocomplete="off"></div>
-      </div>
 
-      <label for="etd">Departure time (UTC)</label>
-      <input id="etd" type="datetime-local">
+      <label>Navigation</label>
+      <div class="seg" data-for="nav" role="group" aria-label="Navigation"></div>
+      <select id="nav" class="seg-src" aria-label="Navigation"><option value="direct">Direct (GPS / pilotage)</option><option value="vor">VOR to VOR</option><option value="vorndb">VOR + NDB</option><option value="awy">Airways — US Victor / Jet</option><option value="pub">Published routes — FAA preferred / CDR</option></select>
+
+      <div class="row2">
+        <div><label for="alt">Alternate (optional)</label><input id="alt" list="aptList" placeholder="ICAO" autocomplete="off"></div>
+        <div><label for="etd">Departure (UTC)</label><input id="etd" type="datetime-local"></div>
+      </div>
 
       <div class="row2">
         <div><label for="load" id="loadLbl">Payload (kg)</label><input id="load" type="number" min="0" step="10"></div>
         <div><label for="extra">Extra fuel (kg)</label><input id="extra" type="number" min="0" step="10" value="0"></div>
       </div>
 
-      <div class="row2">
-        <div><label for="rules">Level rules</label>
-          <select id="rules"><option value="ifr">IFR (semicircular)</option><option value="vfr">VFR (+500 ft)</option><option value="any">Any level</option></select></div>
-        <div><label for="opt">Optimize for</label>
-          <select id="opt"><option value="fuel">Minimum fuel</option><option value="time">Minimum time</option></select></div>
-      </div>
+      <label>Level rules</label>
+      <div class="seg" data-for="rules" role="group" aria-label="Level rules"></div>
+      <select id="rules" class="seg-src" aria-label="Level rules"><option value="ifr">IFR (semicircular)</option><option value="vfr">VFR (+500 ft)</option><option value="any">Any level</option></select>
+      <label>Optimise for</label>
+      <div class="seg" data-for="opt" role="group" aria-label="Optimise for"></div>
+      <select id="opt" class="seg-src" aria-label="Optimize for"><option value="fuel">Minimum fuel</option><option value="time">Minimum time</option></select>
       <label for="fl">Cruise level</label>
       <select id="fl"><option value="auto">Auto — optimum</option></select>
-      <div class="chk" id="oxyRow"><input type="checkbox" id="oxy" checked><label for="oxy">No supplemental O₂ — stay at or below 12,500 ft</label></div>
+      <div class="chk toggle" id="oxyRow"><input type="checkbox" id="oxy" role="switch" checked><label for="oxy">No supplemental O₂ — stay at or below 12,500 ft</label></div>
 
-      <button id="go" disabled>Calculate</button>
-      <div class="hint" id="err" style="color:var(--red)"></div>
+      <button id="go" disabled>Plan flight <kbd>Ctrl</kbd><kbd>↵</kbd></button>
+      <div class="hint err" id="err"></div>
     </div>
     <div class="card" style="margin-top:18px" id="acCard"><h2>Aircraft data</h2><div class="note">Select an aircraft.</div></div>
   </section>
 
   <section id="results">
-    <div class="card empty">Pick an aircraft, departure and arrival, then press <b>Calculate</b>.<br><br>
+    <div class="card empty">Pick an aircraft, departure and arrival, then press <b>Plan flight</b> (Ctrl+Enter).<br><br>
       <span class="note">Examples: Cessna 172 · KPAO → KTRK &nbsp;·&nbsp; SR22 · EGTF → LFPN &nbsp;·&nbsp; A320 · EGLL → LFPG &nbsp;·&nbsp; B789 · KJFK → EGLL</span></div>
   </section>
   </div>
@@ -105,6 +111,11 @@
       <select id="themeSel"><option value="system">Follow the device</option><option value="dark">Dark</option><option value="light">Light</option></select></div>
   </section>
 </main>
+<aside class="drawer" id="allSettings" hidden aria-label="All settings">
+  <div class="drawer-head"><b>All settings</b><button type="button" class="icon-btn" id="drawerClose" aria-label="Close" data-tip="Close" data-kbd="Esc">✕</button></div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+<div class="chipmenu" id="chipMenu" hidden></div>
 <footer class="statusbar"><span id="status">loading data…</span><span class="spacer"></span><span class="kbdhint"><kbd>G</kbd> then a letter switches views</span></footer>
 <nav class="tabbar" aria-label="Views">
   <button data-view="overview"><svg class="i"><use href="#i-overview"/></svg><span>Overview</span></button>
@@ -120,12 +131,13 @@
 </div>
 </div>
 
-<script src="shell.js?v=2026.10.17b"></script>
+<script src="shell.js?v=2026.10.17c"></script>
 <script src="data.js?v=2026.10.16a"></script>
 <script src="nav.js?v=2026.10.16s"></script>
 <script src="acpicker.js?v=2026.10.16b"></script>
 <script src="charts.js?v=2026.10.16c"></script>
 <script src="pln.js?v=2026.10.16c"></script>
+<script src="chips.js?v=2026.10.17a"></script>
 <script>
 "use strict";
 /* ====================== Data sources ====================== */
@@ -262,6 +274,7 @@ async function init(){
     group("Airliners & large jets — OpenAP", Object.keys(AC_NAMES).sort().map(c=>["oap:"+c,`${AC_NAMES[c]} (${c.toUpperCase()})`]));
     group("Other", [["other","Other ICAO type (EUROCONTROL lookup)…"]]);
     sel.value="apm:C172";
+    Chips.buildSegs(); Chips.syncForm();
     AcPicker.init();          // searchable picker over the list (restores the last aircraft used)
     status(`${Object.keys(GA_NAMES).length+Object.keys(AC_NAMES).length} aircraft types · ${DB.airports.length.toLocaleString()} airports (${DB.aptSource})${XD.mode==="packs"?" · "+await XD.label().catch(()=>"offline packs unavailable"):""}`);
     Shell.setData(XD.mode==="packs"?"● Offline packs":"● Live data");
@@ -684,6 +697,7 @@ async function loadModel(id,seq){
   MODEL=m;
   $("load").value=m.defaultLoad; $("loadLbl").textContent=m.loadLabel; $("rules").value=m.defaultRules;
   $("oxyRow").style.display=m.pressurized?"none":"flex";
+  Chips.syncForm();
   const step=m.kind==="apm"&&m.ceilFt<=25000?500:1000;
   const flSel=$("fl"); flSel.innerHTML='<option value="auto">Auto — optimum</option>';
   for(let ft=Math.floor(m.ceilFt/step)*step;ft>=2000;ft-=step){ const o=document.createElement("option"); o.value=ft; o.textContent=lvl(ft); flSel.appendChild(o); }
@@ -1070,6 +1084,7 @@ function render(X){
   try{ if(localStorage.getItem("xperf.detlog")==="1") $("detlog").open=true; }catch(_){}
   X._mapDrawn=false;
   showTab(currentTab());
+  Chips.afterRender(X);
 }
 
 function profileSVG(X){
@@ -1105,7 +1120,7 @@ function profileSVG(X){
 $("ac").addEventListener("change",onAircraft);
 $("otherGo").addEventListener("click",()=>{ const c=$("otherCode").value.trim().toUpperCase(); if(/^[A-Z0-9]{2,4}$/.test(c)){ $("err").textContent=""; selectModel("apm:"+c); } else $("err").textContent="Enter a 2–4 character ICAO type designator."; });
 $("dep").addEventListener("input",aptSearch); $("arr").addEventListener("input",aptSearch); $("alt").addEventListener("input",aptSearch);
-$("go").addEventListener("click",calculate);
+$("go").addEventListener("click",()=>document.body.classList.contains("planned")?Chips.replan():calculate());
 document.addEventListener("change",e=>{ if(e.target?.id==="windTgl"){ $("profcard").classList.toggle("nowinds",!e.target.checked); try{ localStorage.setItem("xperf.winds",e.target.checked?"1":"0"); }catch(_){} } });
 { const n=new Date(); n.setUTCMinutes(0,0,0); $("etd").value=n.toISOString().slice(0,16); }
 init();
