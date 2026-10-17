@@ -4,3 +4,4 @@ packs/
 __pycache__/
 *.pyc
 NUL
+dist/

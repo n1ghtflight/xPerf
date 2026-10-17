@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XPerf — design mockup</title>
+<style>
+/* ───────────── Tokens ───────────── */
+:root{
+  --font: "Segoe UI Variable Text","Segoe UI Variable","Segoe UI",system-ui,sans-serif;
+  --font-display: "Segoe UI Variable Display","Segoe UI Variable","Segoe UI",system-ui,sans-serif;
+  --mono: "Cascadia Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+  --r-sm:8px; --r:12px; --r-lg:16px;
+  --ease: cubic-bezier(.2,.8,.2,1);
+}
+:root,[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0a0d12;
+  --bg-tint: radial-gradient(1200px 700px at 12% -10%, #13253a 0%, transparent 60%),
+             radial-gradient(900px 600px at 100% 0%, #1a1630 0%, transparent 55%);
+  --chrome: rgba(16,20,27,.72);
+  --panel:#10151c;
+  --tile:#131922;
+  --tile-hi: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0) 40%);
+  --tile-hover:#161e28;
+  --line: rgba(255,255,255,.07);
+  --line-strong: rgba(255,255,255,.12);
+  --field:#0d1218;
+  --text:#e8edf3; --text-2:#a3b0bd; --text-3:#6b7887;
+  --accent:#4cc2ff; --accent-ink:#04121c; --accent-soft: rgba(76,194,255,.12);
+  --good:#3ddc97; --good-soft: rgba(61,220,151,.12);
+  --warn:#ffb648; --warn-soft: rgba(255,182,72,.10);
+  --bad:#ff6b6b;
+  --violet:#b69cff;
+  --vfr:#3ddc97; --mvfr:#4c9bff; --ifr:#ff6b6b; --lifr:#e879f9;
+  --terrain:#2a3a2f; --terrain-line:#3f5a46;
+  --map-water:#0e1a26; --map-land:#121a20;
+  --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 8px 24px -12px rgba(0,0,0,.6);
+}
+[data-theme="light"]{
+  color-scheme: light;
+  --bg:#eef1f5;
+  --bg-tint: radial-gradient(1200px 700px at 12% -10%, #dbe9f7 0%, transparent 60%),
+             radial-gradient(900px 600px at 100% 0%, #ebe5f7 0%, transparent 55%);
+  --chrome: rgba(248,250,252,.78);
+  --panel:#f7f9fb;
+  --tile:#ffffff;
+  --tile-hi: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,0) 40%);
+  --tile-hover:#fbfcfd;
+  --line: rgba(15,23,42,.08);
+  --line-strong: rgba(15,23,42,.14);
+  --field:#f2f5f8;
+  --text:#0f1720; --text-2:#4b5866; --text-3:#7d8996;
+  --accent:#0a74c9; --accent-ink:#ffffff; --accent-soft: rgba(10,116,201,.10);
+  --good:#108a5a; --good-soft: rgba(16,138,90,.10);
+  --warn:#b26a00; --warn-soft: rgba(230,150,20,.12);
+  --bad:#c93434;
+  --violet:#6d4fd8;
+  --vfr:#108a5a; --mvfr:#1f63d6; --ifr:#c93434; --lifr:#a21caf;
+  --terrain:#dfe8d9; --terrain-line:#b8c9b0;
+  --map-water:#dbe7f1; --map-land:#eef2ee;
+  --shadow: 0 1px 2px rgba(15,23,42,.05), 0 10px 28px -16px rgba(15,23,42,.25);
+}
+
+/* ───────────── Base ───────────── */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);background-image:var(--bg-tint);background-attachment:fixed;color:var(--text);
+  font:14px/1.45 var(--font);-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+.num{font-family:var(--font-display);font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.01em}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+svg{display:block}
+
+/* ───────────── App shell ───────────── */
+.app{height:100vh;display:grid;grid-template-rows:44px 1fr;grid-template-columns:60px 320px 1fr;
+  grid-template-areas:"title title title" "rail setup main"}
+.app.setup-collapsed{grid-template-columns:60px 0 1fr}
+
+/* Title bar (Mica-style) */
+.titlebar{grid-area:title;display:flex;align-items:center;gap:14px;padding-left:14px;
+  background:var(--chrome);backdrop-filter:blur(24px) saturate(140%);border-bottom:1px solid var(--line);
+  user-select:none}
+.brand{display:flex;align-items:center;gap:9px;font-weight:600;letter-spacing:.01em}
+.brand-mark{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#4cc2ff,#7a5cff);color:#fff;box-shadow:0 2px 8px -2px rgba(76,194,255,.6)}
+.crumb{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:13px}
+.crumb .sep{opacity:.4}
+.titlebar .spacer{flex:1}
+.status{display:flex;align-items:center;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;
+  background:var(--tile);border:1px solid var(--line);font-size:12px;color:var(--text-2);white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px var(--good-soft)}
+.iconbtn{width:32px;height:32px;border-radius:8px;border:0;background:transparent;display:grid;place-items:center;
+  color:var(--text-2);cursor:pointer;transition:background .15s}
+.iconbtn:hover{background:var(--line);color:var(--text)}
+.winctl{display:flex;height:100%;margin-left:6px}
+.winctl span{width:46px;display:grid;place-items:center;color:var(--text-2)}
+.winctl span:hover{background:var(--line)}
+.winctl span:last-child:hover{background:#c42b1c;color:#fff}
+
+/* Rail */
+.rail{grid-area:rail;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0;
+  border-right:1px solid var(--line);background:var(--chrome)}
+.rail a{position:relative;width:44px;height:44px;border-radius:10px;display:grid;place-items:center;color:var(--text-3);
+  cursor:pointer;transition:background .15s,color .15s}
+.rail a:hover{background:var(--line);color:var(--text)}
+.rail a.on{color:var(--accent);background:var(--accent-soft)}
+.rail a.on::before{content:"";position:absolute;left:-8px;top:12px;bottom:12px;width:3px;border-radius:3px;background:var(--accent)}
+.rail a .tip{position:absolute;left:52px;white-space:nowrap;background:var(--text);color:var(--bg);font-size:12px;
+  padding:4px 8px;border-radius:6px;opacity:0;pointer-events:none;transform:translateX(-4px);transition:.15s;z-index:5}
+.rail a:hover .tip{opacity:1;transform:none}
+.rail .grow{flex:1}
+
+/* Setup panel */
+.setup{grid-area:setup;overflow:hidden;border-right:1px solid var(--line);background:color-mix(in srgb,var(--panel) 70%,transparent);
+  display:flex;flex-direction:column;min-width:0}
+.setup-scroll{overflow:auto;padding:18px 18px 8px;flex:1;scrollbar-width:thin}
+.setup h2{margin:0 0 14px;font:600 15px var(--font-display);display:flex;align-items:center;justify-content:space-between}
+.group{margin-bottom:18px}
+.glabel{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin:0 0 8px}
+.field{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:var(--r-sm);background:var(--field);
+  border:1px solid var(--line);transition:border-color .15s, box-shadow .15s}
+.field:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.field input,.field select{flex:1;min-width:0;border:0;background:transparent;outline:0;height:100%}
+.field .unit{color:var(--text-3);font-size:12px}
+.lbl{font-size:12px;color:var(--text-2);margin:0 0 5px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.aircraft{padding:12px;border-radius:var(--r);background:var(--tile);border:1px solid var(--line);display:flex;gap:12px;align-items:center;cursor:pointer}
+.aircraft:hover{border-color:var(--line-strong)}
+.ac-badge{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);
+  font:600 12px var(--mono)}
+.ac-name{font-weight:600}
+.ac-meta{font-size:12px;color:var(--text-3)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--text-2)}
+.chip.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 30%,transparent);background:var(--good-soft)}
+.route-fields{position:relative;display:grid;gap:8px}
+.icao{height:56px;padding:0 14px;display:flex;align-items:center;gap:12px;border-radius:var(--r);background:var(--field);border:1px solid var(--line)}
+.icao b{font:600 20px var(--font-display);letter-spacing:.04em;min-width:64px}
+.icao span{font-size:12px;color:var(--text-2);line-height:1.3}
+.icao small{display:block;color:var(--text-3)}
+.icao .tag{margin-left:auto;font-size:11px;color:var(--text-3)}
+.swap{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;
+  border:1px solid var(--line-strong);background:var(--tile);display:grid;place-items:center;color:var(--text-2);cursor:pointer}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:3px;border-radius:10px;background:var(--field);border:1px solid var(--line)}
+.seg button{height:30px;border:0;background:transparent;border-radius:7px;color:var(--text-2);cursor:pointer;font-size:13px}
+.seg button.on{background:var(--tile);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.25);font-weight:600}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:var(--text-2)}
+.toggle{width:40px;height:22px;border-radius:999px;background:var(--accent);position:relative;flex:none}
+.toggle::after{content:"";position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.setup-foot{padding:14px 18px;border-top:1px solid var(--line)}
+.btn{height:40px;padding:0 16px;border-radius:10px;border:1px solid var(--line-strong);background:var(--tile);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;transition:transform .1s,background .15s}
+.btn:hover{background:var(--tile-hover)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.block{width:100%;height:44px}
+.kbd{font:500 11px var(--mono);opacity:.7;padding:1px 5px;border-radius:4px;border:1px solid currentColor}
+
+/* Main */
+.main{grid-area:main;overflow:auto;padding:22px 26px 40px;scrollbar-width:thin}
+.view{display:none;max-width:1400px;margin:0 auto}
+.view.on{display:block}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.head h1{margin:0;font:600 28px/1.1 var(--font-display);letter-spacing:-.01em;display:flex;align-items:center;gap:12px}
+.head h1 .arrow{color:var(--text-3);font-weight:400}
+.head .sub{margin-top:6px;color:var(--text-2);font-size:13px;display:flex;gap:10px;flex-wrap:wrap}
+.head .sub i{font-style:normal;color:var(--text-3)}
+.actions{display:flex;gap:8px}
+
+.callout{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:var(--r);margin-bottom:16px;
+  background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);color:var(--text)}
+.callout svg{color:var(--warn);flex:none;margin-top:1px}
+.callout b{font-weight:600}
+.callout p{margin:2px 0 0;color:var(--text-2);font-size:13px}
+.callout .more{margin-left:auto;color:var(--warn);font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer}
+
+/* Bento */
+.bento{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:minmax(132px,auto);gap:14px}
+.tile{position:relative;grid-column:span 3;border-radius:var(--r-lg);background:var(--tile);background-image:var(--tile-hi);
+  border:1px solid var(--line);box-shadow:var(--shadow);padding:16px 18px;overflow:hidden;
+  transition:transform .25s var(--ease),border-color .2s, background-color .2s;
+  animation:rise .5s var(--ease) both}
+.tile:hover{border-color:var(--line-strong)}
+.tile.click{cursor:pointer}
+.tile.click:hover{transform:translateY(-2px)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.tl{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text-2);letter-spacing:.01em}
+.tl svg{color:var(--text-3)}
+.tl .r{margin-left:auto;font-weight:500;color:var(--text-3)}
+.big{font:600 40px/1 var(--font-display);letter-spacing:-.02em;margin-top:14px;font-variant-numeric:tabular-nums}
+.big small{font-size:16px;font-weight:500;color:var(--text-2);letter-spacing:0;margin-left:4px}
+.cap{margin-top:8px;color:var(--text-2);font-size:12.5px}
+.cap b{color:var(--text);font-weight:600}
+.good{color:var(--good)} .warn{color:var(--warn)} .acc{color:var(--accent)}
+
+.span-7{grid-column:span 7}.span-5{grid-column:span 5}.span-4{grid-column:span 4}.span-6{grid-column:span 6}
+.span-8{grid-column:span 8}.span-12{grid-column:span 12}.span-3{grid-column:span 3}.span-2{grid-column:span 2}
+.rows-2{grid-row:span 2}.rows-3{grid-row:span 3}
+
+/* Map tile */
+.map{padding:0}
+.map>svg{width:100%;height:100%;position:absolute;inset:0}
+.map .overlay{position:absolute;left:16px;top:14px;right:16px;display:flex;justify-content:space-between;pointer-events:none}
+.map .glass{pointer-events:auto;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;font-size:12px;
+  background:var(--chrome);backdrop-filter:blur(14px);border:1px solid var(--line);color:var(--text-2)}
+.map .legend{position:absolute;left:16px;bottom:14px;display:flex;gap:12px}
+.map .legend span{display:flex;align-items:center;gap:6px}
+.map .legend i{width:10px;height:10px;border-radius:50%}
+.map .ctrls{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:6px}
+.map .ctrls button{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--chrome);backdrop-filter:blur(14px);
+  color:var(--text-2);cursor:pointer;display:grid;place-items:center}
+
+/* Level bars */
+.levels{margin-top:14px;display:grid;gap:7px}
+.lv{display:grid;grid-template-columns:56px 1fr 64px;align-items:center;gap:10px;font-size:12px;color:var(--text-2)}
+.lv .bar{height:8px;border-radius:999px;background:var(--field);overflow:hidden}
+.lv .bar i{display:block;height:100%;border-radius:inherit;background:var(--text-3);opacity:.5}
+.lv.best{color:var(--text)}
+.lv.best .bar i{background:var(--accent);opacity:1}
+
+/* Fuel stack */
+.fuelbar{margin-top:16px;height:14px;border-radius:999px;display:flex;overflow:hidden;background:var(--field);gap:2px}
+.fuelbar i{display:block;height:100%}
+.fuelkey{margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px;color:var(--text-2)}
+.fuelkey b{display:block;font:600 16px var(--font-display);color:var(--text);font-variant-numeric:tabular-nums}
+.fuelkey span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;background:var(--c)}
+
+/* Weather tiles */
+.wx-head{display:flex;align-items:center;gap:10px}
+.wx-head b{font:600 18px var(--font-display);letter-spacing:.03em}
+.wx-head .name{color:var(--text-3);font-size:12px}
+.cat{margin-left:auto;font:700 11px var(--font);letter-spacing:.08em;padding:3px 8px;border-radius:6px;color:#fff}
+.cat.vfr{background:var(--vfr)} .cat.mvfr{background:var(--mvfr)}
+[data-theme="dark"] .cat.vfr{color:#03140c}
+.wx-grid{margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.wx-grid div{font-size:11.5px;color:var(--text-3)}
+.wx-grid b{display:block;font:600 17px var(--font-display);color:var(--text);margin-top:2px;font-variant-numeric:tabular-nums}
+.metar{margin-top:12px;padding:8px 10px;border-radius:8px;background:var(--field);font:12px/1.5 var(--mono);color:var(--text-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rwy{margin-top:10px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-2)}
+.rwy .tag{font:600 12px var(--mono);padding:2px 7px;border-radius:6px;background:var(--accent-soft);color:var(--accent)}
+
+/* Phase table */
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);
+  padding:0 10px 10px;border-bottom:1px solid var(--line)}
+.table td{padding:11px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.table tr:last-child td{border-bottom:0}
+.table td:not(:first-child),.table th:not(:first-child){text-align:right}
+.phase{display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.phase i{width:8px;height:8px;border-radius:2px;background:var(--c)}
+
+/* Profile chart */
+.chart-wrap{position:relative;height:360px;margin-top:10px}
+.chart-wrap svg{width:100%;height:100%}
+.seg-sm{display:inline-grid;grid-auto-flow:column;padding:2px;border-radius:8px;background:var(--field);border:1px solid var(--line)}
+.seg-sm button{height:26px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--text-2);font-size:12px;cursor:pointer}
+.seg-sm button.on{background:var(--tile);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.statlist{display:grid;gap:0}
+.statlist div{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--text-2)}
+.statlist div:last-child{border:0}
+.statlist b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
+
+.mock-note{position:fixed;right:16px;bottom:16px;font-size:12px;color:var(--text-3);background:var(--chrome);backdrop-filter:blur(12px);
+  border:1px solid var(--line);padding:6px 10px;border-radius:8px}
+
+@media (max-width:1280px){
+  .app{grid-template-columns:60px 0 1fr}
+  .setup{display:none}
+  .span-7,.span-5{grid-column:span 6}
+}
+@media (max-width:900px){
+  .bento>.tile{grid-column:span 12 !important}
+  .main{padding:16px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-plane" viewBox="0 0 24 24"><path fill="currentColor" d="M21 15.5v-1.7l-8-5V3.6a1.5 1.5 0 0 0-3 0v5.2l-8 5v1.7l8-2.5v5.4l-2 1.5v1.3l3.5-1 3.5 1v-1.3l-2-1.5V13z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="7" height="9" rx="2"/><rect x="13.5" y="3.5" width="7" height="5" rx="2"/><rect x="13.5" y="11.5" width="7" height="9" rx="2"/><rect x="3.5" y="15.5" width="7" height="5" rx="2"/></g></symbol>
+    <symbol id="i-route" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/></g></symbol>
+    <symbol id="i-tower" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M7 4h10l-1.5 5h-7z"/><path d="M9 9l-1 11h8l-1-11"/><path d="M5 20h14"/></g></symbol>
+    <symbol id="i-profile" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 19h18M4 17l5-8h7l4 8"/></symbol>
+    <symbol id="i-fuel" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 20V5a1.5 1.5 0 0 1 1.5-1.5h6A1.5 1.5 0 0 1 14 5v15M3.5 20h12M14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V8l-3-3"/><path d="M7.5 7h4"/></g></symbol>
+    <symbol id="i-sim" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M8 21h8M12 17v4" stroke-linecap="round"/></g></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></g></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/></g></symbol>
+    <symbol id="i-alt" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 20V5M7 9.5 12 4.5l5 5"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></g></symbol>
+    <symbol id="i-wind" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 2.4 17.6A2 2 0 0 0 4.1 20.6h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/></g></symbol>
+    <symbol id="i-dl" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></g></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 4v16m0 0-3.5-3.5M8 20l3.5-3.5M16 20V4m0 0-3.5 3.5M16 4l3.5 3.5"/></symbol>
+    <symbol id="i-dist" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 12h16M7 8l-3 4 3 4M17 8l3 4-3 4"/></g></symbol>
+    <symbol id="i-climb" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3 18 9 12l4 3 8-9M15 6h6v6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 12h14"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></g></symbol>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+  <!-- Title bar -->
+  <header class="titlebar">
+    <div class="brand"><span class="brand-mark"><svg width="14" height="14"><use href="#i-plane"/></svg></span>XPerf</div>
+    <div class="crumb"><span class="sep">/</span><span>KPAO → KTRK</span><span class="sep">·</span><span>Cessna 172</span></div>
+    <div class="spacer"></div>
+    <div class="status">
+      <span class="pill"><span class="dot"></span>Live data</span>
+      <span class="pill mono">AIRAC 2610</span>
+      <span class="pill">Winds 17 Oct 06Z</span>
+    </div>
+    <button class="iconbtn" id="themeBtn" title="Toggle theme"><svg width="18" height="18"><use href="#i-sun"/></svg></button>
+    <div class="winctl" aria-hidden="true">
+      <span><svg width="10" height="10" viewBox="0 0 10 10"><path d="M0 5h10" stroke="currentColor"/></svg></span>
+      <span><svg width="10" height="10" viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" fill="none" stroke="currentColor"/></svg></span>
+      <span><svg width="10" height="10" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0 0 10" stroke="currentColor"/></svg></span>
+    </div>
+  </header>
+
+  <!-- Rail -->
+  <nav class="rail">
+    <a id="togglePanel"><svg width="20" height="20"><use href="#i-panel"/></svg><span class="tip">Flight setup</span></a>
+    <div style="height:8px"></div>
+    <a class="on" data-view="overview"><svg width="21" height="21"><use href="#i-grid"/></svg><span class="tip">Overview</span></a>
+    <a data-view="route"><svg width="21" height="21"><use href="#i-route"/></svg><span class="tip">Route &amp; nav log</span></a>
+    <a data-view="airports"><svg width="21" height="21"><use href="#i-tower"/></svg><span class="tip">Airports &amp; weather</span></a>
+    <a data-view="profile"><svg width="21" height="21"><use href="#i-profile"/></svg><span class="tip">Vertical profile</span></a>
+    <a data-view="fuel"><svg width="21" height="21"><use href="#i-fuel"/></svg><span class="tip">Fuel &amp; levels</span></a>
+    <a data-view="sim"><svg width="21" height="21"><use href="#i-sim"/></svg><span class="tip">FS2024 setup</span></a>
+    <div class="grow"></div>
+    <a><svg width="20" height="20"><use href="#i-gear"/></svg><span class="tip">Settings</span></a>
+  </nav>
+
+  <!-- Flight setup -->
+  <aside class="setup">
+    <div class="setup-scroll">
+      <h2>Flight setup</h2>
+
+      <div class="group">
+        <p class="glabel">Aircraft</p>
+        <div class="aircraft">
+          <div class="ac-badge">C172</div>
+          <div style="flex:1;min-width:0">
+            <div class="ac-name">Cessna 172 Skyhawk</div>
+            <div class="ac-meta">1 × 160 hp piston · MTOW 1,090 kg</div>
+          </div>
+          <svg width="16" height="16" style="color:var(--text-3)"><use href="#i-swap" transform="rotate(90 8 8)"/></svg>
+        </div>
+        <div class="chips"><span class="chip ok">EUROCONTROL APM</span><span class="chip">piston</span><span class="chip">fuel est.</span></div>
+      </div>
+
+      <div class="group">
+        <p class="glabel">Route</p>
+        <div class="route-fields">
+          <div class="icao"><b>KPAO</b><span>Palo Alto<small>7 ft · CA, US</small></span></div>
+          <div class="icao"><b>KTRK</b><span>Truckee Tahoe<small>5,901 ft · CA, US</small></span></div>
+          <button class="swap" title="Swap"><svg width="15" height="15"><use href="#i-swap"/></svg></button>
+        </div>
+        <div style="margin-top:8px" class="field"><input placeholder="Alternate (optional)"><span class="unit">ICAO</span></div>
+      </div>
+
+      <div class="group">
+        <p class="glabel">Navigation</p>
+        <div class="seg" style="grid-template-columns:repeat(3,1fr)">
+          <button class="on">Direct</button><button>VOR</button><button>Airways</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="glabel">Load &amp; time</p>
+        <div class="row2">
+          <div><p class="lbl">Takeoff weight</p><div class="field"><input value="970" class="num"><span class="unit">kg</span></div></div>
+          <div><p class="lbl">Extra fuel</p><div class="field"><input value="0" class="num"><span class="unit">kg</span></div></div>
+        </div>
+        <p class="lbl" style="margin-top:10px">Departure (UTC)</p>
+        <div class="field"><input value="17 Oct 2026 · 12:00Z"></div>
+      </div>
+
+      <div class="group">
+        <p class="glabel">Cruise level</p>
+        <p class="lbl">Rules</p>
+        <div class="seg"><button>IFR</button><button class="on">VFR</button><button>Any</button></div>
+        <p class="lbl" style="margin-top:10px">Optimise for</p>
+        <div class="seg"><button class="on">Fuel</button><button>Time</button></div>
+        <p class="lbl" style="margin-top:10px">Level</p>
+        <div class="field"><select><option>Auto — optimum</option></select></div>
+        <div class="switch" style="margin-top:12px">No supplemental O₂ (≤ 12,500 ft)<span class="toggle"></span></div>
+      </div>
+    </div>
+    <div class="setup-foot">
+      <button class="btn primary block">Plan flight <span class="kbd">Ctrl ↵</span></button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- ═════════ OVERVIEW ═════════ -->
+    <section class="view on" id="v-overview">
+      <div class="head">
+        <div>
+          <h1>KPAO <span class="arrow">→</span> KTRK</h1>
+          <div class="sub"><span>Palo Alto → Truckee Tahoe</span><i>·</i><span>C172</span><i>·</i><span>Direct</span><i>·</i><span>ETD 17 Oct 12:00Z</span></div>
+        </div>
+        <div class="actions">
+          <button class="btn"><svg width="16" height="16"><use href="#i-copy"/></svg>Copy route</button>
+          <button class="btn primary"><svg width="16" height="16"><use href="#i-dl"/></svg>Export .PLN</button>
+        </div>
+      </div>
+
+      <div class="callout">
+        <svg width="18" height="18"><use href="#i-warn"/></svg>
+        <div><b>Terrain compromise on descent.</b>
+          <p>No level clears every limit; 9,500 ft is the best fit. Descent clips terrain 7.6 NM before KTRK (451 ft &lt; 756 ft) — circle down over the field or route via the valley.</p></div>
+        <span class="more">Show on profile →</span>
+      </div>
+
+      <div class="bento">
+        <!-- Map hero -->
+        <div class="tile map span-7 rows-3 click" style="animation-delay:.02s">
+          <svg viewBox="0 0 700 430" preserveAspectRatio="xMidYMid slice" aria-label="Route map">
+            <defs>
+              <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 8 8 0" stroke="var(--terrain-line)" stroke-width=".6" opacity=".35"/></pattern>
+              <linearGradient id="routeG" x1="0" x2="1"><stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--violet)"/></linearGradient>
+              <filter id="glow"><feGaussianBlur stdDeviation="3"/></filter>
+            </defs>
+            <rect width="700" height="430" fill="var(--map-land)"/>
+            <path d="M0 250 C40 240 70 300 90 330 C110 360 95 430 95 430 L0 430Z" fill="var(--map-water)"/>
+            <path d="M60 300 C90 285 120 300 135 320 C150 345 130 380 110 370 C95 360 85 330 60 300Z" fill="var(--map-water)"/>
+            <!-- terrain contours -->
+            <g fill="none" stroke="var(--terrain-line)" stroke-width="1" opacity=".55">
+              <path d="M420 0 C470 80 520 120 560 210 C590 280 640 330 700 360"/>
+              <path d="M450 0 C500 70 545 115 585 200 C615 265 660 310 700 330"/>
+              <path d="M485 0 C530 60 570 110 608 185 C640 245 675 285 700 300"/>
+              <path d="M520 0 C560 55 600 100 632 170 C660 225 690 255 700 262"/>
+              <path d="M380 0 C430 90 480 140 520 230 C550 300 610 360 700 400"/>
+            </g>
+            <path d="M520 0 C560 55 600 100 632 170 C660 225 690 255 700 262 L700 0Z" fill="url(#hatch)"/>
+            <ellipse cx="640" cy="70" rx="26" ry="38" fill="var(--map-water)" opacity=".9"/>
+            <!-- route -->
+            <path d="M118 318 L612 92" stroke="url(#routeG)" stroke-width="7" opacity=".25" filter="url(#glow)"/>
+            <path d="M118 318 L612 92" stroke="url(#routeG)" stroke-width="3" stroke-linecap="round"/>
+            <!-- TOC / TOD -->
+            <g font-family="var(--font)" font-size="11" font-weight="600">
+              <circle cx="300" cy="235" r="6" fill="var(--tile)" stroke="var(--accent)" stroke-width="2.5"/>
+              <text x="300" y="258" text-anchor="middle" fill="var(--text-2)">TOC</text>
+              <circle cx="570" cy="111" r="6" fill="var(--tile)" stroke="var(--violet)" stroke-width="2.5"/>
+              <text x="570" y="134" text-anchor="middle" fill="var(--text-2)">TOD</text>
+            </g>
+            <!-- airports -->
+            <g font-family="var(--font)">
+              <circle cx="118" cy="318" r="9" fill="var(--good)" opacity=".2"/><circle cx="118" cy="318" r="5" fill="var(--good)"/>
+              <rect x="132" y="322" width="54" height="22" rx="6" fill="var(--chrome)" stroke="var(--line-strong)"/>
+              <text x="159" y="337" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">KPAO</text>
+              <circle cx="612" cy="92" r="9" fill="var(--good)" opacity=".2"/><circle cx="612" cy="92" r="5" fill="var(--good)"/>
+              <rect x="560" y="56" width="54" height="22" rx="6" fill="var(--chrome)" stroke="var(--line-strong)"/>
+              <text x="587" y="71" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">KTRK</text>
+            </g>
+            <g font-family="var(--font)" font-size="10.5" fill="var(--text-3)" letter-spacing=".08em">
+              <text x="610" y="40">SIERRA NEVADA</text><text x="40" y="250">PACIFIC</text><text x="250" y="140">SACRAMENTO VALLEY</text>
+            </g>
+          </svg>
+          <div class="overlay">
+            <span class="glass"><svg width="14" height="14"><use href="#i-route"/></svg>Direct · 145 NM · TC 039°</span>
+            <span class="glass">OpenTopoMap</span>
+          </div>
+          <div class="legend"><span class="glass"><i style="background:var(--accent)"></i>Climb</span><span class="glass"><i style="background:var(--violet)"></i>Descent</span></div>
+          <div class="ctrls"><button><svg width="15" height="15"><use href="#i-plus"/></svg></button><button><svg width="15" height="15"><use href="#i-minus"/></svg></button><button><svg width="15" height="15"><use href="#i-layers"/></svg></button></div>
+        </div>
+
+        <!-- Cruise level -->
+        <div class="tile span-5 rows-2 click" style="animation-delay:.06s">
+          <div class="tl"><svg width="15" height="15"><use href="#i-alt"/></svg>Optimum cruise<span class="r">VFR · fuel</span></div>
+          <div class="big num">9,500<small>ft</small></div>
+          <div class="cap">Lowest fuel <b>9,500 ft</b> · fastest <b>9,500 ft</b> · O₂ limit respected</div>
+          <div class="levels">
+            <div class="lv"><span class="mono">11,500</span><div class="bar"><i style="width:86%"></i></div><span class="mono">11.4 gal</span></div>
+            <div class="lv best"><span class="mono">9,500</span><div class="bar"><i style="width:78%"></i></div><span class="mono">11.0 gal</span></div>
+            <div class="lv"><span class="mono">7,500</span><div class="bar"><i style="width:82%"></i></div><span class="mono">11.2 gal</span></div>
+          </div>
+        </div>
+
+        <!-- Time / distance -->
+        <div class="tile span-5 click" style="animation-delay:.1s;display:grid;grid-template-columns:1fr 1fr;gap:18px">
+          <div><div class="tl"><svg width="15" height="15"><use href="#i-clock"/></svg>Flight time</div>
+            <div class="big num">1:17</div><div class="cap">ETA <b>13:17Z</b></div></div>
+          <div style="border-left:1px solid var(--line);padding-left:18px"><div class="tl"><svg width="15" height="15"><use href="#i-dist"/></svg>Distance</div>
+            <div class="big num">145<small>NM</small></div><div class="cap">great circle · TC 039°</div></div>
+        </div>
+
+        <!-- Fuel -->
+        <div class="tile span-4 click" style="animation-delay:.14s">
+          <div class="tl"><svg width="15" height="15"><use href="#i-fuel"/></svg>Fuel<span class="r">avgas</span></div>
+          <div class="big num">16<small>gal block</small></div>
+          <div class="fuelbar"><i style="width:62%;background:var(--accent)"></i><i style="width:32%;background:var(--warn)"></i><i style="width:6%;background:var(--text-3)"></i></div>
+          <div class="fuelkey">
+            <span style="--c:var(--accent)">Trip<b>11 gal</b></span>
+            <span style="--c:var(--warn)">Reserve<b>6 gal</b></span>
+            <span style="--c:var(--good)">Landing<b class="good">6 gal</b></span>
+          </div>
+        </div>
+
+        <!-- Wind -->
+        <div class="tile span-3 click" style="animation-delay:.18s">
+          <div class="tl"><svg width="15" height="15"><use href="#i-wind"/></svg>Cruise wind</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
+            <div class="big num good" style="margin:0">+3<small>kt</small></div>
+            <svg width="54" height="54" viewBox="0 0 54 54"><circle cx="27" cy="27" r="24" fill="none" stroke="var(--line-strong)"/>
+              <path d="M27 9v36M27 45l-6-7M27 45l6-7" stroke="var(--good)" stroke-width="2.5" fill="none" stroke-linecap="round" transform="rotate(219 27 27)"/>
+              <text x="27" y="8" text-anchor="middle" font-size="7" fill="var(--text-3)" font-family="var(--font)">N</text></svg>
+          </div>
+          <div class="cap">Tailwind · 260° / 5 kt · <b>ISA +15</b></div>
+        </div>
+
+        <!-- Climb/descent mini profile -->
+        <div class="tile span-5 click" style="animation-delay:.22s">
+          <div class="tl"><svg width="15" height="15"><use href="#i-climb"/></svg>Climb &amp; descent<span class="r">+280 / −500 fpm</span></div>
+          <svg viewBox="0 0 400 92" style="width:100%;height:92px;margin-top:10px" preserveAspectRatio="none">
+            <path d="M0 92 L0 84 C40 82 60 70 90 78 C120 86 150 60 190 62 C230 64 260 40 300 36 C330 32 350 52 372 50 L400 52 L400 92Z" fill="var(--terrain)" opacity=".8"/>
+            <path d="M0 86 L163 22 L360 22 L400 56" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M360 22 L400 56" stroke="var(--violet)" stroke-width="2.5"/>
+            <circle cx="163" cy="22" r="4" fill="var(--tile)" stroke="var(--accent)" stroke-width="2"/>
+            <circle cx="360" cy="22" r="4" fill="var(--tile)" stroke="var(--violet)" stroke-width="2"/>
+            <circle cx="372" cy="47" r="5" fill="var(--warn)" opacity=".9"/>
+          </svg>
+          <div class="cap" style="display:flex;justify-content:space-between"><span>TOC <b>59 NM</b> · 0:34</span><span>TOD <b>16.4 NM</b> out</span></div>
+        </div>
+
+        <!-- Weather tiles -->
+        <div class="tile span-6 click" style="animation-delay:.26s">
+          <div class="wx-head"><b>KPAO</b><span class="name">Departure · METAR 11:47Z</span><span class="cat vfr">VFR</span></div>
+          <div class="wx-grid">
+            <div>Wind<b>310° 8 kt</b></div><div>Visibility<b>10 SM</b></div><div>Ceiling<b>None</b></div><div>Temp / QNH<b>18° · 30.02</b></div>
+          </div>
+          <div class="rwy"><span class="tag">RWY 31</span>Headwind 8 kt · crosswind 0 kt · TODR 1,620 ft of 2,443 ft</div>
+        </div>
+        <div class="tile span-6 click" style="animation-delay:.3s">
+          <div class="wx-head"><b>KTRK</b><span class="name">Arrival · METAR 11:55Z</span><span class="cat vfr">VFR</span></div>
+          <div class="wx-grid">
+            <div>Wind<b>200° 6 kt</b></div><div>Visibility<b>10 SM</b></div><div>Ceiling<b>FEW 120</b></div><div>Temp / QNH<b>9° · 30.11</b></div>
+          </div>
+          <div class="rwy"><span class="tag">RWY 20</span>Headwind 6 kt · density alt 7,350 ft · LDR 1,480 ft of 7,001 ft</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ PROFILE (detail) ═════════ -->
+    <section class="view" id="v-profile">
+      <div class="head">
+        <div>
+          <h1>Vertical profile</h1>
+          <div class="sub"><span>KPAO → KTRK</span><i>·</i><span>9,500 ft</span><i>·</i><span>terrain + winds aloft along track</span></div>
+        </div>
+        <div class="actions">
+          <div class="seg-sm"><button class="on">Altitude</button><button>Winds</button><button>Temperature</button></div>
+        </div>
+      </div>
+
+      <div class="bento">
+        <div class="tile span-12" style="animation-delay:.02s">
+          <div class="tl">Profile along track<span class="r">ft MSL · NM from KPAO</span></div>
+          <div class="chart-wrap">
+            <svg viewBox="0 0 1000 360" preserveAspectRatio="none" id="profileSvg">
+              <defs>
+                <linearGradient id="terrG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--terrain-line)"/><stop offset="1" stop-color="var(--terrain)" stop-opacity=".4"/></linearGradient>
+                <linearGradient id="altG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient>
+              </defs>
+              <!-- grid -->
+              <g stroke="var(--line)" stroke-width="1">
+                <line x1="60" x2="990" y1="40" y2="40"/><line x1="60" x2="990" y1="110" y2="110"/><line x1="60" x2="990" y1="180" y2="180"/><line x1="60" x2="990" y1="250" y2="250"/><line x1="60" x2="990" y1="320" y2="320"/>
+              </g>
+              <g font-family="var(--mono)" font-size="11" fill="var(--text-3)" text-anchor="end">
+                <text x="52" y="44">12,000</text><text x="52" y="114">9,000</text><text x="52" y="184">6,000</text><text x="52" y="254">3,000</text><text x="52" y="324">0</text>
+              </g>
+              <g font-family="var(--mono)" font-size="11" fill="var(--text-3)" text-anchor="middle">
+                <text x="60" y="344">0</text><text x="292" y="344">36</text><text x="525" y="344">72</text><text x="757" y="344">109</text><text x="990" y="344">145</text>
+              </g>
+              <!-- terrain -->
+              <path d="M60 320 L60 318 C110 316 140 300 180 306 C230 314 270 286 330 290 C390 294 430 270 480 272 C540 274 580 240 640 230 C700 220 740 190 790 176 C830 166 860 190 890 172 C920 156 945 186 960 184 C975 182 985 185 990 183 L990 320Z" fill="url(#terrG)"/>
+              <!-- clearance band -->
+              <path d="M60 320 L60 318 C110 316 140 300 180 306 C230 314 270 286 330 290 C390 294 430 270 480 272 C540 274 580 240 640 230 C700 220 740 190 790 176 C830 166 860 190 890 172 C920 156 945 186 960 184 C975 182 985 185 990 183" transform="translate(0,-23)" fill="none" stroke="var(--warn)" stroke-dasharray="4 5" stroke-width="1.2" opacity=".7"/>
+              <!-- altitude -->
+              <path d="M60 318 L440 98 L885 98 L990 183 L990 320 L60 320Z" fill="url(#altG)"/>
+              <path d="M60 318 L440 98" stroke="var(--accent)" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <path d="M440 98 L885 98" stroke="var(--accent)" stroke-width="3" fill="none"/>
+              <path d="M885 98 L990 183" stroke="var(--violet)" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <!-- conflict -->
+              <circle cx="940" cy="158" r="14" fill="var(--warn)" opacity=".18"/><circle cx="940" cy="158" r="5" fill="var(--warn)"/>
+              <!-- markers -->
+              <g font-family="var(--font)" font-size="12" font-weight="600">
+                <line x1="440" x2="440" y1="98" y2="320" stroke="var(--accent)" stroke-dasharray="3 4" opacity=".5"/>
+                <circle cx="440" cy="98" r="6" fill="var(--tile)" stroke="var(--accent)" stroke-width="2.5"/>
+                <rect x="400" y="62" width="80" height="24" rx="7" fill="var(--chrome)" stroke="var(--line-strong)"/>
+                <text x="440" y="78" text-anchor="middle" fill="var(--text)">TOC · 59 NM</text>
+                <line x1="885" x2="885" y1="98" y2="320" stroke="var(--violet)" stroke-dasharray="3 4" opacity=".5"/>
+                <circle cx="885" cy="98" r="6" fill="var(--tile)" stroke="var(--violet)" stroke-width="2.5"/>
+                <rect x="835" y="62" width="100" height="24" rx="7" fill="var(--chrome)" stroke="var(--line-strong)"/>
+                <text x="885" y="78" text-anchor="middle" fill="var(--text)">TOD · 129 NM</text>
+                <text x="660" y="90" text-anchor="middle" fill="var(--text-2)" font-weight="500">9,500 ft · 118 KTAS</text>
+              </g>
+              <!-- wind barbs strip -->
+              <g stroke="var(--text-3)" stroke-width="1.5" fill="none" stroke-linecap="round">
+                <g transform="translate(200 20) rotate(260)"><path d="M0 0v14M0 14l5 -3"/></g>
+                <g transform="translate(400 20) rotate(255)"><path d="M0 0v14M0 14l5 -3"/></g>
+                <g transform="translate(600 20) rotate(250)"><path d="M0 0v14M0 14l7 -4M0 10l7 -4"/></g>
+                <g transform="translate(800 20) rotate(240)"><path d="M0 0v14M0 14l7 -4M0 10l4 -2"/></g>
+              </g>
+            </svg>
+          </div>
+          <div class="cap" style="display:flex;gap:18px;flex-wrap:wrap;margin-top:4px">
+            <span><i style="display:inline-block;width:14px;height:3px;background:var(--accent);vertical-align:middle;margin-right:6px;border-radius:2px"></i>Climb / cruise</span>
+            <span><i style="display:inline-block;width:14px;height:3px;background:var(--violet);vertical-align:middle;margin-right:6px;border-radius:2px"></i>Descent</span>
+            <span><i style="display:inline-block;width:14px;border-top:2px dashed var(--warn);vertical-align:middle;margin-right:6px"></i>Required clearance (1,000 ft VFR)</span>
+            <span class="warn">● Conflict 7.6 NM before KTRK</span>
+          </div>
+        </div>
+
+        <div class="tile span-8" style="animation-delay:.08s">
+          <div class="tl">Phases</div>
+          <table class="table" style="margin-top:12px">
+            <thead><tr><th>Phase</th><th>Distance</th><th>Time</th><th>Rate</th><th>Avg GS</th><th>Fuel</th></tr></thead>
+            <tbody>
+              <tr><td><span class="phase" style="--c:var(--accent)"><i></i>Climb</span></td><td>59 NM</td><td>0:34</td><td>+280 fpm</td><td>104 kt</td><td>4.6 gal</td></tr>
+              <tr><td><span class="phase" style="--c:var(--accent)"><i></i>Cruise</span></td><td>70 NM</td><td>0:35</td><td>—</td><td>120 kt</td><td>4.4 gal</td></tr>
+              <tr><td><span class="phase" style="--c:var(--violet)"><i></i>Descent</span></td><td>16 NM</td><td>0:08</td><td>−500 fpm</td><td>124 kt</td><td>1.0 gal</td></tr>
+              <tr><td><b>Total</b></td><td><b>145 NM</b></td><td><b>1:17</b></td><td></td><td><b>113 kt</b></td><td><b>11.0 gal</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tile span-4" style="animation-delay:.12s">
+          <div class="tl">Cruise conditions</div>
+          <div class="statlist" style="margin-top:8px">
+            <div>True airspeed<b>118 kt</b></div>
+            <div>Ground speed<b class="good">120 kt</b></div>
+            <div>OAT at 9,500 ft<b>+12 °C · ISA +15</b></div>
+            <div>Fuel flow<b>7.5 gal/h</b></div>
+            <div>Min terrain clearance<b class="warn">451 ft</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="v-placeholder">
+      <div class="head"><div><h1 id="phTitle">—</h1><div class="sub">Not part of this mockup — Overview and Profile are.</div></div></div>
+    </section>
+  </main>
+</div>
+
+<div class="mock-note">Design mockup · static sample data</div>
+
+<script>
+const root=document.documentElement;
+const stored=(()=>{try{return localStorage.getItem('xperf.mock.theme')}catch(e){return null}})();
+const sys=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+function setTheme(t){root.dataset.theme=t;document.querySelector('#themeBtn use').setAttribute('href',t==='dark'?'#i-sun':'#i-moon');
+  try{localStorage.setItem('xperf.mock.theme',t)}catch(e){}}
+setTheme(stored||sys);
+document.getElementById('themeBtn').onclick=()=>setTheme(root.dataset.theme==='dark'?'light':'dark');
+document.getElementById('togglePanel').onclick=()=>document.getElementById('app').classList.toggle('setup-collapsed');
+const names={route:'Route & nav log',airports:'Airports & weather',fuel:'Fuel & levels',sim:'FS2024 setup'};
+document.querySelectorAll('.rail a[data-view]').forEach(a=>a.onclick=()=>{
+  document.querySelectorAll('.rail a[data-view]').forEach(x=>x.classList.toggle('on',x===a));
+  const v=a.dataset.view;
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
+  const el=document.getElementById('v-'+v);
+  if(el){el.classList.add('on')} else {document.getElementById('phTitle').textContent=names[v];document.getElementById('v-placeholder').classList.add('on')}
+  el&&el.querySelectorAll('.tile').forEach(t=>{t.style.animation='none';t.offsetHeight;t.style.animation=''});
+});
+document.querySelector('.callout .more').onclick=()=>document.querySelector('.rail a[data-view=profile]').click();
+</script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+/* XPerf — first-pass tokens in a Linear-like spirit (calm near-black, hairlines, one indigo accent).
+   Drop-in replacement for the :root token blocks in design/mockup.html; tune by eye.
+   Inter Variable must be bundled locally (OFL) — see HANDOFF_WINDOWS_APP.md. */
+
+@font-face{font-family:"Inter Var";src:url("../vendor/inter/InterVariable.woff2") format("woff2");font-weight:100 900;font-display:swap}
+
+:root{
+  --font:"Inter Var","Inter",system-ui,"Segoe UI",sans-serif;
+  --font-display:var(--font);
+  --mono:"JetBrains Mono","Cascadia Mono",Consolas,ui-monospace,monospace;
+  --font-features:"cv01","ss03","tnum";
+  --fs-xs:11px; --fs-sm:12px; --fs:13px; --fs-md:14px; --fs-lg:16px; --fs-xl:22px; --fs-num:36px;
+  --w-regular:400; --w-medium:510; --w-semibold:590;
+  --r-xs:4px; --r-sm:6px; --r:8px; --r-lg:12px;
+  --h-control:30px; --h-control-lg:36px;
+  --ease:cubic-bezier(.16,1,.3,1); --dur:160ms;
+}
+
+:root,[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:            oklch(0.145 0.004 260);   /* ≈ #08090a canvas */
+  --bg-tint:       none;
+  --chrome:        oklch(0.165 0.004 260);   /* rail / title / setup */
+  --panel:         oklch(0.165 0.004 260);
+  --tile:          oklch(0.185 0.005 260);
+  --tile-hi:       linear-gradient(180deg,rgba(255,255,255,.03),transparent 30%);
+  --tile-hover:    oklch(0.205 0.006 260);
+  --field:         oklch(0.16 0.004 260);
+  --line:          rgba(255,255,255,.06);
+  --line-strong:   rgba(255,255,255,.10);
+  --text:          oklch(0.975 0.002 260);   /* ≈ #f7f8f8 */
+  --text-2:        oklch(0.78 0.008 260);
+  --text-3:        oklch(0.60 0.010 260);    /* meta only — keep ≥ 4.5:1 for body text */
+  --accent:        oklch(0.62 0.17 277);     /* indigo */
+  --accent-ink:    #ffffff;
+  --accent-soft:   color-mix(in oklch,var(--accent) 16%,transparent);
+  --good:          oklch(0.74 0.15 158);  --good-soft:color-mix(in oklch,var(--good) 14%,transparent);
+  --warn:          oklch(0.80 0.14 75);   --warn-soft:color-mix(in oklch,var(--warn) 12%,transparent);
+  --bad:           oklch(0.68 0.19 25);
+  --violet:        oklch(0.72 0.14 300);
+  --vfr:var(--good); --mvfr:oklch(0.68 0.15 255); --ifr:var(--bad); --lifr:oklch(0.70 0.20 330);
+  --terrain:       oklch(0.30 0.03 150);  --terrain-line:oklch(0.40 0.04 150);
+  --map-water:     oklch(0.19 0.02 240);  --map-land:oklch(0.17 0.006 260);
+  --shadow:        0 0 0 1px var(--line);
+}
+
+[data-theme="light"]{
+  color-scheme:light;
+  --bg:            oklch(0.985 0.002 260);
+  --chrome:        oklch(0.97 0.003 260);
+  --panel:         oklch(0.97 0.003 260);
+  --tile:          #ffffff;
+  --tile-hi:       none;
+  --tile-hover:    oklch(0.985 0.002 260);
+  --field:         oklch(0.965 0.003 260);
+  --line:          rgba(15,15,30,.08);
+  --line-strong:   rgba(15,15,30,.13);
+  --text:          oklch(0.22 0.01 260);
+  --text-2:        oklch(0.45 0.012 260);
+  --text-3:        oklch(0.58 0.012 260);
+  --accent:        oklch(0.55 0.19 277);
+  --good:          oklch(0.55 0.14 158);
+  --warn:          oklch(0.62 0.15 65);
+  --bad:           oklch(0.56 0.20 25);
+  --violet:        oklch(0.55 0.18 300);
+  --mvfr:oklch(0.52 0.17 255); --lifr:oklch(0.52 0.22 330);
+  --terrain:       oklch(0.92 0.03 140);  --terrain-line:oklch(0.80 0.05 140);
+  --map-water:     oklch(0.93 0.02 240);  --map-land:oklch(0.97 0.006 120);
+  --shadow:        0 1px 2px rgba(15,15,30,.04),0 4px 16px -8px rgba(15,15,30,.12);
+}
+
+body{font-family:var(--font);font-size:var(--fs);font-weight:var(--w-regular);font-feature-settings:var(--font-features);
+  letter-spacing:-.005em;background:var(--bg);color:var(--text)}
