@@ -72,6 +72,7 @@ const Shell=(()=>{
     if(chord==="g"){ chord=null; if(CHORDS[k]){ e.preventDefault(); showView(CHORDS[k]); } return; }
     if(k==="g"){ chord="g"; clearTimeout(chordT); chordT=setTimeout(()=>chord=null,1200); return; }
     if(k===","){ e.preventDefault(); showView("settings"); }
+    else if(k==="e"&&window.LAST_X){ e.preventDefault(); document.querySelector("[data-pln]")?.click(); }
     else if(k==="["){ e.preventDefault(); toggleSidebar(); }
   });
 
@@ -189,9 +190,10 @@ const Palette=(()=>{
       else if(e.key==="Escape"){ e.preventDefault(); e.stopPropagation(); close(); }
     });
     $("pList").addEventListener("mousemove",e=>{ const it=e.target.closest(".p-item"); if(it&&+it.dataset.i!==selI&&!items[+it.dataset.i].disabled) select(+it.dataset.i); });
-    $("pList").addEventListener("click",e=>{ const it=e.target.closest(".p-item"); if(it){ select(+it.dataset.i); run(); } });
+    // stopPropagation: a command may open a chip menu, which the same click would otherwise close again
+    $("pList").addEventListener("click",e=>{ const it=e.target.closest(".p-item"); if(it){ e.stopPropagation(); select(+it.dataset.i); run(); } });
   }
-  function open(){ if(!root) build(); root.hidden=false; $("pInput").value=""; render(); $("pInput").focus(); }
+  function open(){ if(typeof Chips!=="undefined") Chips.closeMenu(); if(!root) build(); root.hidden=false; $("pInput").value=""; render(); $("pInput").focus(); }
   function close(){ if(root) root.hidden=true; }
   const isOpen=()=>!!root&&!root.hidden;
   document.addEventListener("keydown",e=>{

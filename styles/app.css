@@ -476,3 +476,5 @@ dl.keys dt{color:var(--text-2);white-space:nowrap}
 dl.keys dd{text-align:left;color:var(--text-2);font-family:var(--font)}
 #srcHost .srcnote{margin:0}
 .simonly{margin:12px 0 0;color:var(--text-3);font-size:var(--fs-mini)}
+button.pchip.bad{border-color:color-mix(in oklch,var(--bad) 55%,transparent);color:var(--bad)}
+button.pchip.bad b{color:var(--bad)}

@@ -366,6 +366,86 @@ check("first-visit", async () => {
   } finally { await page.close(); }
 });
 
+/* ---------- final-review fixes (each written to fail first) ---------- */
+check("ac-chip", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.click('[data-chip="ac"]'); await settle(page);
+    await page.type("#acSearch", "SR22"); await settle(page);
+    await page.key("Enter"); await idle(page);
+    expect(await page.eval(`String(LAST_X.m.code).toUpperCase()`) === "SR22", "aircraft chip did not re-plan with SR22: " + await page.eval(`LAST_X.m.code`));
+    expect(await page.eval(`document.getElementById('chipMenu').hidden`), "aircraft menu stayed open");
+    expect(/SR22/.test(await page.eval(`document.querySelector('[data-chip="ac"]').textContent`)), "ac chip does not show SR22");
+  } finally { await page.close(); }
+});
+
+check("menu-then-palette", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.click('[data-chip="nav"]'); await settle(page);
+    await page.key("k", { ctrl: true }); await settle(page);
+    await page.type("#pInput", "d"); await settle(page);
+    expect(await page.eval(`document.getElementById('pInput').value`) === "d", "palette input did not get the letter");
+    expect(await page.eval(`document.getElementById('chipMenu').hidden`), "chip menu still open behind the palette");
+    expect(!(await page.eval(`document.body.classList.contains('replanning')`)), "a re-plan was triggered by typing");
+  } finally { await page.close(); }
+});
+
+check("pubsel-replan", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    const r = await page.eval(`(()=>{ let rp=0, calc=0; const oR=Chips.replan, oC=window.calculate;
+      Chips.replan=()=>{ rp++; return Promise.resolve(); }; window.calculate=()=>{ calc++; return Promise.resolve(); };
+      const s=document.createElement('select'); s.id='pubSel'; s.dataset.key='KPAO-KTRK'; s.innerHTML='<option value="0">r</option>'; document.body.appendChild(s);
+      s.dispatchEvent(new Event('change',{bubbles:true})); s.remove(); Chips.replan=oR; window.calculate=oC; return {rp,calc}; })()`);
+    expect(r.rp === 1 && r.calc === 0, `published-route change: replan ${r.rp}×, direct calculate ${r.calc}×`);
+  } finally { await page.close(); }
+});
+
+check("chips-after-error", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.click('[data-chip="route"]'); await settle(page);
+    await page.eval(`document.getElementById('chipArr').value='ZZZZ'`);
+    await page.click("#chipRouteGo"); await idle(page);
+    const chip = await page.eval(`(()=>{const c=document.querySelector('[data-chip="route"]'); return {t:c.textContent, bad:c.classList.contains('bad')};})()`);
+    expect(/ZZZZ/.test(chip.t) && chip.bad, "route chip after a failed plan: " + JSON.stringify(chip));
+  } finally { await page.close(); }
+});
+
+check("palette-click", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.eval(`document.activeElement?.blur()`); await page.key("k", { ctrl: true }); await settle(page);
+    await page.type("#pInput", "Navigation"); await settle(page);
+    await page.click("#pList .p-item"); await settle(page);
+    expect(!(await page.eval(`document.getElementById('chipMenu').hidden`)), "clicking 'Navigation…' did not open the menu");
+  } finally { await page.close(); }
+});
+
+check("e-export", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.eval(`window._pln=0; window.downloadPLN=()=>{ window._pln++; }; document.activeElement?.blur()`);
+    await page.key("e"); await settle(page);
+    expect(await page.eval(`window._pln`) === 1, "E did not export the .PLN");
+    await page.click('[data-chip="route"]'); await settle(page);   // a visible text field (the drawer's are hidden)
+    await page.eval(`document.getElementById('chipDep').focus()`); await page.key("e"); await settle(page);
+    expect(await page.eval(`window._pln`) === 1, "E exported while typing in a field");
+  } finally { await page.close(); }
+});
+
+check("drawer-error-phone", async () => {
+  const page = await open("c172", { plan: true, width: 390, height: 844, mobile: true });
+  try {
+    await page.click('[data-chip="all"]'); await settle(page);
+    await page.eval(`document.getElementById('arr').value='ZZZZ'`);
+    await page.click("#allSettings #go"); await idle(page);
+    expect(await visible(page, "#err"), "plan error hidden on phone");
+    expect(await page.eval(`document.getElementById('allSettings').hidden`), "full-screen drawer still covers the error");
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {

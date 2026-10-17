@@ -22,18 +22,26 @@ const Chips=(()=>{
   let running=null, again=false;
   function replan(){
     if(running){ again=true; return running; }
+    // on phones the drawer is full-screen: close it so the result (or the error) is visible
+    if(!$("allSettings").hidden&&matchMedia("(max-width:767px)").matches) closeDrawer();
     body.classList.add("replanning"); $("results")?.setAttribute("aria-busy","true");
     running=(async()=>{ try{ do{ again=false; await calculate(); }while(again); }
-      finally{ running=null; body.classList.remove("replanning"); $("results")?.removeAttribute("aria-busy"); } })();
+      finally{ running=null; body.classList.remove("replanning"); $("results")?.removeAttribute("aria-busy");
+        // chips show the form as it is now (also after a failed plan), so a bad value stays visible
+        if(body.classList.contains("planned")&&window.LAST_X) $("chipbar").innerHTML=render(window.LAST_X); } })();
     return running;
   }
 
   /* ---------- summary line */
   function render(X){
-    const ac=String(X.m.code).toUpperCase(), alt=X.altApt?` · alt ${X.altApt.icao}`:"";
-    const chip=(k,txt,tip)=>`<button type="button" class="pchip" data-chip="${k}" aria-haspopup="true"${tip?` data-tip="${esc(tip)}"`:""}>${txt}<svg class="i caret"><use href="#i-caret"/></svg></button>`;
+    // read the form, not the last result: after a failed plan the chips must show what will be planned next
+    const code=s=>String(s||"").trim().toUpperCase().split(/\s/)[0];
+    const acOpt=$("ac").selectedOptions[0], ac=(acOpt&&(acOpt.textContent.match(/\(([^)]+)\)\s*$/)||[])[1])||String(X.m.code).toUpperCase();
+    const dep=code($("dep").value), arr=code($("arr").value), altV=code($("alt").value);
+    const routeBad=!resolveApt("dep")||!resolveApt("arr")||(altV&&!resolveApt("alt")), alt=altV?` · alt ${altV}`:"";
+    const chip=(k,txt,tip,bad)=>`<button type="button" class="pchip${bad?" bad":""}" data-chip="${k}" aria-haspopup="true"${tip?` data-tip="${esc(tip)}"`:""}>${txt}<svg class="i caret"><use href="#i-caret"/></svg></button>`;
     return chip("ac",`<b>${esc(ac)}</b>`,X.m.label)+
-      chip("route",`<b>${esc(X.dep.icao)}</b> → <b>${esc(X.arr.icao)}</b>${esc(alt)}`,"Departure and arrival")+
+      chip("route",`<b>${esc(dep)}</b> → <b>${esc(arr)}</b>${esc(alt)}`,routeBad?"Unknown airport code":"Departure and arrival",routeBad)+
       chip("nav",esc(short("nav",$("nav").value)),"Navigation")+
       chip("rules",esc(short("rules",$("rules").value)),"Level rules")+
       chip("opt",esc(short("opt",$("opt").value)),"Optimise for")+
@@ -144,16 +152,19 @@ const Chips=(()=>{
   document.addEventListener("change",e=>{
     if(["nav","rules","opt","fl","oxy"].includes(e.target.id)) syncForm();
     // aircraft picked from the chip's search box: re-plan with it straight away
-    if(e.target.id==="ac"&&menuChip==="ac"){ closeMenu(); replan(); }
-  });
+    // (capture phase: AcPicker dispatches a non-bubbling change event on #ac)
+    // replan on the next task, after the app's own #ac handler (onAircraft) has started loading the new model
+    if(e.target.id==="ac"&&menuChip==="ac"){ closeMenu(); setTimeout(replan,0); }
+  },true);
   document.addEventListener("keydown",e=>{
     if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){ e.preventDefault();
       if(body.classList.contains("planned")) replan(); else if(!$("go").disabled) $("go").click(); return; }
     if(e.key==="Escape"){ if(!$("chipMenu").hidden){ closeMenu(); e.preventDefault(); } else if(!$("allSettings").hidden){ closeDrawer(); e.preventDefault(); } return; }
     if(e.key==="Enter"&&(e.target.id==="chipDep"||e.target.id==="chipArr")){ e.preventDefault(); applyRoute(); return; }
     if(e.key==="Enter"&&e.target.id==="chipEtd"){ e.preventDefault(); applyEtd(); return; }
-    // single-letter keys inside an open option menu
-    if(menuChip&&OPTS[menuChip]&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
+    // single-letter keys inside an open option menu (never while typing in a field elsewhere)
+    const typing=e.target.closest&&e.target.closest("input,textarea,select,[contenteditable]")&&!e.target.closest("#chipMenu");
+    if(menuChip&&OPTS[menuChip]&&!typing&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
       const hit=OPTS[menuChip].find(o=>o[2].toLowerCase()===e.key.toLowerCase());
       if(hit){ e.preventDefault(); e.stopPropagation(); pick(hit[0]); }
     }

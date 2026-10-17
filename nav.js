@@ -924,7 +924,7 @@ function publishedPicker(X){
 }
 document.addEventListener("change",e=>{ if(e.target?.id!=="pubSel") return;
   try{ localStorage.setItem(PUB_KEY+e.target.dataset.key,e.target.value); }catch(_){}
-  if(typeof calculate==="function") calculate(); });
+  if(document.body.classList.contains("planned")&&typeof Chips!=="undefined") Chips.replan(); else if(typeof calculate==="function") calculate(); });
 
 /* ---------------------------------------------------------------- Airports view: list → detail */
 // cards: the airportCard() HTML render() builds for each role (it owns the ETD/ETA arguments).
