@@ -1,5 +1,9 @@
-/* XPerf — first-pass tokens in a Linear-like spirit (calm near-black, hairlines, one indigo accent).
-   Drop-in replacement for the :root token blocks in design/mockup.html; tune by eye.
+/* XPerf — tokens in a Linear-like spirit (calm near-black, hairlines, one indigo accent).
+   Drop-in replacement for the :root token blocks in design/mockup.html.
+   Values marked "measured" were read from the Linear desktop app (1.32.4, dark theme) via CDP computed
+   styles on 2026-10-16; "derived" values are XPerf choices built on them. Aviation colours are XPerf's own.
+   Depth model (measured): chrome (title bar + sidebar) is the DARKEST layer; work surfaces are raised
+   above it with an opaque hairline border and a soft drop shadow.
    Inter Variable must be bundled locally (OFL) — see HANDOFF_WINDOWS_APP.md. */
 
 @font-face{font-family:"Inter Var";src:url("../vendor/inter/InterVariable.woff2") format("woff2");font-weight:100 900;font-display:swap}
@@ -7,33 +11,52 @@
 :root{
   --font:"Inter Var","Inter",system-ui,"Segoe UI",sans-serif;
   --font-display:var(--font);
-  --mono:"JetBrains Mono","Cascadia Mono",Consolas,ui-monospace,monospace;
-  --font-features:"cv01","ss03","tnum";
-  --fs-xs:11px; --fs-sm:12px; --fs:13px; --fs-md:14px; --fs-lg:16px; --fs-xl:22px; --fs-num:36px;
-  --w-regular:400; --w-medium:510; --w-semibold:590;
-  --r-xs:4px; --r-sm:6px; --r:8px; --r-lg:12px;
-  --h-control:30px; --h-control-lg:36px;
-  --ease:cubic-bezier(.16,1,.3,1); --dur:160ms;
+  --mono:"JetBrains Mono","Cascadia Mono",Consolas,ui-monospace,monospace;  /* Linear uses Berkeley Mono (commercial) */
+  --font-features:"calt","tnum";              /* measured "calt"; tnum added — XPerf is figure-heavy */
+  --tracking:-.1px;                           /* measured on 15px text */
+
+  /* Type scale (measured: Linear micro/mini/small/regular/large/title3/title2/title1) */
+  --fs-micro:11px; --fs-mini:12px; --fs-small:13px; --fs-regular:15px;
+  --fs-large:18px; --fs-title:24px; --fs-num:36px;
+  --w-regular:450; --w-medium:500; --w-semibold:600;   /* measured (variable-font 450 body) */
+
+  /* Shape & size */
+  --r-xs:4px; --r-sm:6px; --r:8px; --r-lg:12px; --r-full:9999px;   /* --r measured; --r-lg derived for tiles */
+  --hairline:.5px;              /* Chromium rounds up to exactly 1 device pixel at any DPR */
+  --h-control:28px;             /* measured: nav rows, icon buttons */
+  --h-control-lg:32px;          /* derived */
+  --h-titlebar:42px;            /* measured: title/tab bar */
+  --w-sidebar:244px;            /* measured */
+
+  /* Motion (measured durations; ease = Linear's ease-out-quint) */
+  --ease:cubic-bezier(.23,1,.32,1);
+  --dur-quick:100ms; --dur:150ms; --dur-regular:250ms; --dur-slow:350ms;
 }
 
 :root,[data-theme="dark"]{
   color-scheme:dark;
-  --bg:            oklch(0.145 0.004 260);   /* ≈ #08090a canvas */
+  --bg:            lch(2.6% 0.4 272);      /* measured: base/sidebar ≈ #09090a */
   --bg-tint:       none;
-  --chrome:        oklch(0.165 0.004 260);   /* rail / title / setup */
-  --panel:         oklch(0.165 0.004 260);
-  --tile:          oklch(0.185 0.005 260);
-  --tile-hi:       linear-gradient(180deg,rgba(255,255,255,.03),transparent 30%);
-  --tile-hover:    oklch(0.205 0.006 260);
-  --field:         oklch(0.16 0.004 260);
-  --line:          rgba(255,255,255,.06);
-  --line-strong:   rgba(255,255,255,.10);
-  --text:          oklch(0.975 0.002 260);   /* ≈ #f7f8f8 */
-  --text-2:        oklch(0.78 0.008 260);
-  --text-3:        oklch(0.60 0.010 260);    /* meta only — keep ≥ 4.5:1 for body text */
-  --accent:        oklch(0.62 0.17 277);     /* indigo */
+  --chrome:        lch(2.6% 0.4 272);      /* measured: title bar + rail sit on the base */
+  --panel:         lch(5.52% 0.4 272);     /* measured: raised work surface ≈ #121213 */
+  --field:         lch(7.32% 0.85 272);    /* measured: bg-secondary */
+  --tile:          lch(8.22% 1.3 272);     /* measured: bg-tertiary */
+  --tile-hi:       none;                   /* Linear raises with border + shadow, no gradient */
+  --tile-hover:    lch(9.35% 0.85 272);    /* measured: bg-quaternary */
+  --active:        lch(13.85% 1.3 272);    /* measured: selected nav pill */
+  --line-soft:     lch(9.84% 1.48 272);    /* measured: border-primary (panel edge on base) */
+  --line:          lch(14.16% 1.48 272);   /* measured: border-secondary ≈ #212224 */
+  --line-strong:   lch(16.32% 1.48 272);   /* measured: border-tertiary */
+  --text:          lch(100% 0 272);        /* measured: text-primary */
+  --text-2:        lch(90.45% 1.2 272);    /* measured: text-secondary */
+  --text-3:        lch(61.8% 1.2 272);     /* measured: text-tertiary (meta) */
+  --text-4:        lch(36.98% 1.2 272);    /* measured: text-quaternary (disabled/placeholder only) */
+  --accent:        #5e69d1;                /* measured: focus ring */
   --accent-ink:    #ffffff;
-  --accent-soft:   color-mix(in oklch,var(--accent) 16%,transparent);
+  --accent-soft:   color-mix(in srgb,var(--accent) 16%,transparent);
+  --selection:     color-mix(in srgb,var(--accent) 40%,transparent);   /* measured */
+  --focus-ring:    1px solid var(--accent);                            /* measured */
+  --link:          lch(80% 80 288.43);     /* measured: in-content link */
   --good:          oklch(0.74 0.15 158);  --good-soft:color-mix(in oklch,var(--good) 14%,transparent);
   --warn:          oklch(0.80 0.14 75);   --warn-soft:color-mix(in oklch,var(--warn) 12%,transparent);
   --bad:           oklch(0.68 0.19 25);
@@ -41,24 +64,29 @@
   --vfr:var(--good); --mvfr:oklch(0.68 0.15 255); --ifr:var(--bad); --lifr:oklch(0.70 0.20 330);
   --terrain:       oklch(0.30 0.03 150);  --terrain-line:oklch(0.40 0.04 150);
   --map-water:     oklch(0.19 0.02 240);  --map-land:oklch(0.17 0.006 260);
-  --shadow:        0 0 0 1px var(--line);
+  --shadow:        0 .5px 1px 1px lch(0% 0 0 / .3);   /* measured: work-surface drop shadow */
 }
 
 [data-theme="light"]{
   color-scheme:light;
-  --bg:            oklch(0.985 0.002 260);
-  --chrome:        oklch(0.97 0.003 260);
-  --panel:         oklch(0.97 0.003 260);
-  --tile:          #ffffff;
+  /* Light values are Linear's *-light custom properties (read, not observed rendered) plus derived steps. */
+  --bg:            #efeff0;                /* sidebar-light */
+  --chrome:        #efeff0;
+  --panel:         #f9f9fa;                /* bg-base-color-light */
+  --field:         #f4f4f5;                /* derived */
+  --tile:          #ffffff;                /* derived */
   --tile-hi:       none;
-  --tile-hover:    oklch(0.985 0.002 260);
-  --field:         oklch(0.965 0.003 260);
-  --line:          rgba(15,15,30,.08);
-  --line-strong:   rgba(15,15,30,.13);
-  --text:          oklch(0.22 0.01 260);
+  --tile-hover:    #f9f9fa;                /* derived */
+  --active:        #e4e4e6;                /* derived */
+  --line-soft:     #ebebec;                /* derived */
+  --line:          #e2e2e2;                /* bg-border-color-light */
+  --line-strong:   #d4d4d6;                /* derived */
+  --text:          #23252a;                /* content-highlight-color-light */
   --text-2:        oklch(0.45 0.012 260);
   --text-3:        oklch(0.58 0.012 260);
-  --accent:        oklch(0.55 0.19 277);
+  --text-4:        oklch(0.72 0.008 260);
+  --accent:        #5e69d1;
+  --link:          #5e69d1;
   --good:          oklch(0.55 0.14 158);
   --warn:          oklch(0.62 0.15 65);
   --bad:           oklch(0.56 0.20 25);
@@ -69,5 +97,7 @@
   --shadow:        0 1px 2px rgba(15,15,30,.04),0 4px 16px -8px rgba(15,15,30,.12);
 }
 
-body{font-family:var(--font);font-size:var(--fs);font-weight:var(--w-regular);font-feature-settings:var(--font-features);
-  letter-spacing:-.005em;background:var(--bg);color:var(--text)}
+body{font-family:var(--font);font-size:var(--fs-regular);font-weight:var(--w-regular);font-feature-settings:var(--font-features);
+  letter-spacing:var(--tracking);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+::selection{background:var(--selection)}
+:focus-visible{outline:var(--focus-ring);outline-offset:1px}
