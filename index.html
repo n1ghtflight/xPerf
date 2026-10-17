@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.17a">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.17d">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.17e">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
@@ -24,6 +24,9 @@
   <symbol id="i-settings" viewBox="0 0 16 16"><path d="M3 4.5h6M12 4.5h1M3 11.5h1M7 11.5h6"/><circle cx="10.5" cy="4.5" r="1.5"/><circle cx="5.5" cy="11.5" r="1.5"/></symbol>
   <symbol id="i-caret" viewBox="0 0 16 16"><path d="M4.5 6.5 8 10l3.5-3.5"/></symbol>
   <symbol id="i-swap" viewBox="0 0 16 16"><path d="M5 2.5v11M5 13.5l-2.5-2.5M5 13.5 7.5 11M11 13.5v-11M11 2.5 8.5 5M11 2.5 13.5 5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 16 16"><path d="M8 2.5 14 13H2z"/><path d="M8 6.5v3M8 11.2h.01"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1.5"/></symbol>
+  <symbol id="i-wind" viewBox="0 0 16 16"><path d="M2 6h8.5a2 2 0 1 0-2-2M2 10h11a2 2 0 1 1-2 2"/></symbol>
   <symbol id="i-more" viewBox="0 0 16 16"><path d="M3.5 8h.01M8 8h.01M12.5 8h.01" stroke-width="2.2"/></symbol>
 </svg>
 <div class="app" id="app">
@@ -138,6 +141,7 @@
 <script src="charts.js?v=2026.10.16c"></script>
 <script src="pln.js?v=2026.10.16c"></script>
 <script src="chips.js?v=2026.10.17a"></script>
+<script src="overview.js?v=2026.10.17a"></script>
 <script>
 "use strict";
 /* ====================== Data sources ====================== */
@@ -982,17 +986,7 @@ function render(X){
   const climbFpm=Math.round(fpm((crzFt-dep.alt)*FT/c.t)/10)*10, descFpm=Math.round(fpm((crzFt-arr.alt)*FT/d.t)/10)*10;
   const html=`
   <div class="tabpanel" data-tab="overview">
-  ${warn.length?`<div class="warnbox">${warn.map(w=>"⚠ "+w).join("<br>")}</div>`:""}
-  <div class="kpis">
-    <div class="kpi hl"><div class="k">${$("fl").value==="auto"?"Optimum cruise":"Cruise level"}</div><div class="v">${lvl(crzFt)}</div><div class="s">lowest fuel ${lvl(X.minFuel.ft)} · fastest ${lvl(X.minTime.ft)}</div></div>
-    <div class="kpi"><div class="k">Distance</div><div class="v">${Math.round(nm(total))} NM</div><div class="s">${X.route.plan?.mode==="pub"?`via published route · direct ${Math.round(nm(gcDist(dep,arr)))} NM`:X.route.plan?.mode==="awy"?`via airways · direct ${Math.round(nm(gcDist(dep,arr)))} NM`:X.route.nav?`via ${X.route.points.length-2} station${X.route.points.length===3?"":"s"} · direct ${Math.round(nm(gcDist(dep,arr)))} NM`:"great circle · TC "+String(Math.round(X.route.trk)).padStart(3,"0")+"°T"}</div></div>
-    <div class="kpi"><div class="k">Top of climb</div><div class="v">${nm(c.d)<20?nm(c.d).toFixed(1):Math.round(nm(c.d))} NM</div><div class="s">from ${dep.icao} · ${hhmm(c.t)} after T/O</div></div>
-    <div class="kpi"><div class="k">Top of descent</div><div class="v">${nm(d.d)<20?nm(d.d).toFixed(1):Math.round(nm(d.d))} NM</div><div class="s">before ${arr.icao} · ${hhmm(d.t)} to land · 3:1 rule ${rule3} NM</div></div>
-    <div class="kpi"><div class="k">Flight time</div><div class="v">${hhmm(sel.time)}</div><div class="s">air time · ${X.route.nav?msfsRouteType(X).toLowerCase():"direct route"}</div></div>
-    <div class="kpi"><div class="k">Trip fuel</div><div class="v">${apm?fmtK(gal(sel.trip))+" gal":fmtK(sel.trip)}</div><div class="s">${apm?fmtK(sel.trip)+" kg "+m.fuelName+" (est.)":"kg"} · block ${apm?fmtK(gal(sel.block))+" gal":fmtK(sel.block)+" kg"}</div></div>
-    <div class="kpi"><div class="k">Cruise wind</div><div class="v" style="color:${avgTail>=0?"var(--green)":"var(--amber)"}">${avgTail>=0?"+":""}${avgTail} kt</div><div class="s">${avgTail>=0?"tailwind":"headwind"} · ISA ${cr.dT>=0?"+":""}${Math.round(cr.dT)}°C</div></div>
-    <div class="kpi"><div class="k">Climb / descent</div><div class="v">+${fmtK(climbFpm)} / −${fmtK(descFpm)}</div><div class="s">fpm average</div></div>
-  </div>
+  ${renderOverview(X)}
   </div>
   <div class="tabpanel" data-tab="setup">${setupCard(X)}</div>
   <div class="tabpanel" data-tab="route">
@@ -1012,6 +1006,7 @@ function render(X){
 
   </div>
   <div class="tabpanel" data-tab="profile">
+  ${warn.length?`<div class="warnbox" id="warnlist">${warn.map(w=>"⚠ "+w).join("<br>")}</div>`:""}
   <div class="card ${X.wx&&localStorage.getItem("xperf.winds")!=="0"?"":"nowinds"}" id="profcard"><div class="cardhead"><h2>Vertical profile${X.terrain?" & terrain":""}${X.wx?" · winds aloft":""}</h2>
     ${X.wx?`<label class="chk" style="margin:0"><input type="checkbox" id="windTgl" ${localStorage.getItem("xperf.winds")!=="0"?"checked":""}> Show winds aloft</label>`:""}</div>${profileSVG(X)}${X.wx?windLegend():""}
     ${X.maxTerrain!=null?`<p class="note">Highest terrain on the direct track: <b>${fmtK(X.maxTerrain)} ft</b>. Required clearance ${fmtK(X.margin)} ft (${$("rules").value==="vfr"?"VFR":"IFR"}), checked along the whole profile, tapering to 300 ft within 10 NM of each airport.

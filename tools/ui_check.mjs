@@ -191,6 +191,34 @@ check("all-settings", async () => {
   } finally { await page.close(); }
 });
 
+const TILES = ["map", "cruise", "time-distance", "fuel", "wind", "profile", "dep-wx", "arr-wx"];
+
+check("overview", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.click('.sidebar [data-view="overview"]'); await settle(page);
+    const tiles = await page.eval(`[...document.querySelectorAll('.tabpanel[data-tab="overview"] [data-tile]')].map(t=>t.dataset.tile)`);
+    for (const t of TILES) expect(tiles.includes(t), `missing tile ${t} (have ${tiles.join(",")})`);
+    await page.click('[data-tile="map"]'); await settle(page);
+    const vis = await page.eval(VISIBLE_VIEWS);
+    expect(vis.length === 1 && vis[0] === "route", "map tile opened " + JSON.stringify(vis));
+  } finally { await page.close(); }
+});
+
+check("overview-values", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    const r = await page.eval(`(()=>{ const t=n=>document.querySelector('[data-tile="'+n+'"]')?.textContent||'';
+      return { cruise:t('cruise').includes(lvl(LAST_X.sel.ft)), time:t('time-distance').includes(hhmm(LAST_X.sel.time)),
+        dist:t('time-distance').includes(String(Math.round(nm(LAST_X.total)))),
+        count:+(document.querySelector('[data-callout]')?.dataset.count??-1), warnings:planWarnings(LAST_X).length }; })()`);
+    expect(r.cruise, "cruise tile lacks the cruise level");
+    expect(r.time, "time tile lacks the flight time");
+    expect(r.dist, "distance tile lacks the distance");
+    expect(r.count === r.warnings, `callout count ${r.count} ≠ ${r.warnings} warnings`);
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {
