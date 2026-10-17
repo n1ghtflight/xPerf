@@ -392,3 +392,49 @@ button.planbtn kbd{background:color-mix(in srgb,#fff 18%,transparent);border-col
 @media (max-width:1100px){ .span-3,.span-4,.span-5{grid-column:span 6} .span-7{grid-column:span 12} }
 @media (max-width:767px){ .bento{grid-template-columns:minmax(0,1fr)} .bento .tile{grid-column:1/-1;grid-row:auto} .ovmap{min-height:180px}
   .wxgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+
+/* ================= Detail views ================= */
+/* cards in every view read as tiles: raised, hairline, sentence-case headings */
+.card{background:var(--tile);border:var(--hairline) solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);padding:16px}
+.card h2{margin:0 0 12px;color:var(--text-2);font-size:var(--fs-small);font-weight:var(--w-medium);text-transform:none;letter-spacing:0}
+.formcol .card,.drawer-body .card{box-shadow:none}
+table{font-family:var(--font);font-feature-settings:var(--num-features);font-size:var(--fs-small)}
+th{color:var(--text-3);font-size:var(--fs-mini);font-weight:var(--w-medium);border-bottom:var(--hairline) solid var(--line)}
+td{border-bottom:var(--hairline) solid var(--line-soft)}
+tr:hover td{background:var(--tile-hover)}
+dd{font-family:var(--font);font-feature-settings:var(--num-features)}
+.routestr,.raw,.awylbl,.maplbl{font-family:var(--mono)}
+.tabpanel>.warnbox{border-radius:var(--r)}
+#map{border-radius:var(--r);border:var(--hairline) solid var(--line-soft)}
+.leaflet-container{background:var(--map-land);font-family:var(--font)}
+
+/* Airports & weather: list → detail */
+.aptsplit{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
+.aptlist{position:sticky;top:64px;display:flex;flex-direction:column;gap:4px}
+button.aptrow{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"cat name" "cat meta";column-gap:10px;row-gap:2px;align-items:center;
+  margin:0;width:100%;padding:10px 12px;border:var(--hairline) solid transparent;border-radius:var(--r);background:none;color:var(--text);
+  font-size:var(--fs-small);font-weight:var(--w-regular);text-align:left;cursor:pointer;transition:background var(--dur) var(--ease)}
+button.aptrow:hover{background:var(--tile-hover)}
+button.aptrow[aria-selected="true"]{background:var(--active);border-color:var(--line)}
+.aptrow .fcat{grid-area:cat}
+.aptrow .aptname{grid-area:name;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aptrow .aptname b{font-weight:var(--w-semibold)}
+.aptrow .aptname span{color:var(--text-3)}
+.aptrow .aptmeta{grid-area:meta;color:var(--text-3);font-size:var(--fs-mini);font-feature-settings:var(--num-features)}
+button.aptback{display:none;margin:0 0 10px;width:auto;padding:0 10px;height:var(--h-control);border:var(--hairline) solid var(--line);
+  border-radius:var(--r-sm);background:var(--field);color:var(--text-2);font-size:var(--fs-small);font-weight:var(--w-medium)}
+@media (max-width:1100px){ .aptsplit{grid-template-columns:minmax(0,1fr)} .aptlist{position:static} }
+@media (max-width:767px){
+  .aptsplit:not(.detail-open) .aptdetail{display:none}
+  .aptsplit.detail-open .aptlist{display:none}
+  button.aptback{display:inline-flex;align-items:center}
+}
+/* Leaflet controls on tokens (zoom, layers, attribution) */
+.leaflet-bar,.leaflet-control-layers{border:var(--hairline) solid var(--line)!important;border-radius:var(--r-sm)!important;box-shadow:var(--shadow)!important;overflow:hidden}
+.leaflet-bar a,.leaflet-bar a:hover{background:var(--tile)!important;color:var(--text)!important;border-bottom:var(--hairline) solid var(--line-soft)!important}
+.leaflet-bar a:hover{background:var(--tile-hover)!important}
+.leaflet-control-layers-toggle{background-color:var(--tile)!important;filter:invert(var(--icon-invert,0))}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .leaflet-control-layers-toggle{--icon-invert:.85}}
+:root[data-theme="dark"] .leaflet-control-layers-toggle{--icon-invert:.85}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--panel) 80%,transparent)!important;color:var(--text-3)!important}
+.leaflet-control-attribution a{color:var(--text-2)!important}

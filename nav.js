@@ -228,28 +228,28 @@ function drawMap(X){
   MAP.on("baselayerchange",e=>{ try{ localStorage.setItem("xperf.map",e.layer===topo?"topo":"osm"); }catch(_){} });
   const {route,total,sel}=X, line=[];
   for(const Lg of route.legs){ const n=Math.max(2,Math.ceil(Lg.d/NM/20)); for(let k=0;k<=n;k++){ const p=gcInterp(Lg.a,Lg.b,k/n); line.push([p.lat,p.lon]); } }
-  L.polyline(line,{color:"#3fb8ff",weight:3}).addTo(MAP);
+  L.polyline(line,{color:"var(--accent)",weight:3}).addTo(MAP);
   const legsMeta=route.plan?.legs;
   if(legsMeta) legsMeta.forEach((Lm,i)=>{ if(!Lm||Lm.awy==="DCT"||(i>0&&legsMeta[i-1]?.awy===Lm.awy)) return;
     const a=route.points[i], b=route.points[i+1], mpt=gcInterp(a,b,0.5);
     L.marker([mpt.lat,mpt.lon],{icon:L.divIcon({className:"awylbl",html:Lm.awy,iconSize:null}),interactive:false}).addTo(MAP); });
   const first=route.points[0], lastP=route.points[route.points.length-1];
   for(const P of route.points){
-    if(P.kind==="fix"){ L.circleMarker([P.lat,P.lon],{radius:3,color:"#8b9bab",fillColor:"#8b9bab",fillOpacity:1,weight:1}).addTo(MAP).bindTooltip(P.id,{direction:"right",className:"maplbl"}); continue; }
+    if(P.kind==="fix"){ L.circleMarker([P.lat,P.lon],{radius:3,color:"var(--text-3)",fillColor:"var(--text-3)",fillOpacity:1,weight:1}).addTo(MAP).bindTooltip(P.id,{direction:"right",className:"maplbl"}); continue; }
     if(P.kind==="apt"){
       // airport labels sit on the outside of the route so they don't cover the first/last station
       const west=P===first?first.lon<=lastP.lon:lastP.lon<first.lon;
-      L.circleMarker([P.lat,P.lon],{radius:7,color:"#e6edf3",fillColor:"#38d39f",fillOpacity:1,weight:2}).addTo(MAP)
+      L.circleMarker([P.lat,P.lon],{radius:7,color:"var(--panel)",fillColor:"var(--good)",fillOpacity:1,weight:2}).addTo(MAP)
         .bindTooltip(P.apt.icao,{permanent:true,direction:west?"left":"right",offset:[west?-6:6,0],className:"maplbl apt"})
         .bindPopup(`<b>${P.apt.icao}</b> ${P.apt.name}<br>Elev ${fmtK(P.apt.alt)} ft`);
     } else { const ndb=NDB_TYPES.has(P.nav.type);
-      L.circle([P.lat,P.lon],{radius:(P.r||40)*NM,color:ndb?"#ffb547":"#3fb8ff",weight:1,opacity:.3,fill:false,dashArray:"4 6",interactive:false}).addTo(MAP);
-      L.circleMarker([P.lat,P.lon],{radius:6,color:ndb?"#ffb547":"#3fb8ff",fillColor:"#0b1118",fillOpacity:1,weight:3}).addTo(MAP)
+      L.circle([P.lat,P.lon],{radius:(P.r||40)*NM,color:ndb?"var(--warn)":"var(--accent)",weight:1,opacity:.3,fill:false,dashArray:"4 6",interactive:false}).addTo(MAP);
+      L.circleMarker([P.lat,P.lon],{radius:6,color:ndb?"var(--warn)":"var(--accent)",fillColor:"var(--panel)",fillOpacity:1,weight:3}).addTo(MAP)
         .bindTooltip(P.nav.ident,{permanent:true,direction:"right",offset:[6,0],className:"maplbl"})
         .bindPopup(`<b>${P.nav.ident}</b> ${P.nav.name} ${P.nav.type}<br>${fmtFreq(P.nav)} ${morse(P.nav.ident)}`); } }
-  for(const [k,x,c] of [["TOC",sel.climb.d,"#38d39f"],["TOD",total-sel.descent.d,"#e07bff"]]){
+  for(const [k,x,c] of [["TOC",sel.climb.d,"var(--good)"],["TOD",total-sel.descent.d,"var(--violet)"]]){
     const p=route.pointAt(x/total);
-    L.circleMarker([p.lat,p.lon],{radius:5,color:"#0b1118",fillColor:c,fillOpacity:1,weight:2}).addTo(MAP).bindTooltip(`${k} — ${nm(x).toFixed(1)} NM from ${X.dep.icao}`,{direction:"top",className:"maplbl"}); }
+    L.circleMarker([p.lat,p.lon],{radius:5,color:"var(--panel)",fillColor:c,fillOpacity:1,weight:2}).addTo(MAP).bindTooltip(`${k} — ${nm(x).toFixed(1)} NM from ${X.dep.icao}`,{direction:"top",className:"maplbl"}); }
   const fit=()=>{ MAP.invalidateSize(); MAP.fitBounds(L.latLngBounds(line),{padding:[36,36]}); };
   fit(); requestAnimationFrame(fit);
 }
@@ -322,10 +322,10 @@ function ilsMinimums(il,end,info){
 /* ---------------------------------------------------------------- airport brief (shared by airport cards and the setup card) */
 // runway ids differ between sources ("7L" in OurAirports, "07L" in FAA data and chart names)
 const rwyKey=id=>String(id||"").toUpperCase().replace(/^0+(?=\d)/,"");
-const CAT_COL={VFR:"#38d39f",MVFR:"#3fb8ff",IFR:"#ff6b6b",LIFR:"#e07bff"};
+const CAT_COL={VFR:"var(--vfr)",MVFR:"var(--mvfr)",IFR:"var(--ifr)",LIFR:"var(--lifr)"};
 // METAR flight category = current WEATHER at the field, not the flight rules being planned
 const CAT_TIP="Weather category from the latest METAR (not your flight rules). VFR: ceiling above 3,000 ft and visibility over 5 SM · MVFR: ceiling 1,000–3,000 ft or visibility 3–5 SM · IFR: ceiling 500–999 ft or visibility 1–3 SM · LIFR: ceiling below 500 ft or visibility under 1 SM.";
-function wxBadge(met,prefix=""){ return met?.cat?`<span class="cat" style="background:${CAT_COL[met.cat]||"#8b9bab"}" title="${CAT_TIP}">${prefix}<span class="catlbl">wx</span> ${met.cat}</span>`:""; }
+function wxBadge(met,prefix=""){ return met?.cat?`<span class="cat" style="background:${CAT_COL[met.cat]||"var(--text-3)"}" title="${CAT_TIP}">${prefix}<span class="catlbl">wx</span> ${met.cat}</span>`:""; }
 function flightRules(){ const r=$("rules").value; return r==="vfr"?"VFR":"IFR"; }
 const FREQ_ORDER=["ATIS","AWOS","ASOS","CTAF","UNIC","GND","CLD","DEL","TWR","APP","A/D","DEP","CNTR","CTR"];
 const fmtMHz=f=>f.mhz.toFixed(3).replace(/0$/,"");
@@ -925,3 +925,35 @@ function publishedPicker(X){
 document.addEventListener("change",e=>{ if(e.target?.id!=="pubSel") return;
   try{ localStorage.setItem(PUB_KEY+e.target.dataset.key,e.target.value); }catch(_){}
   if(typeof calculate==="function") calculate(); });
+
+/* ---------------------------------------------------------------- Airports view: list → detail */
+// cards: the airportCard() HTML render() builds for each role (it owns the ETD/ETA arguments).
+// All cards stay in the DOM (pickers, plates and briefings keep their hooks); only the selected one shows.
+function airportsView(X,cards){
+  const roles=[["dep","Departure",X.dep],["arr","Arrival",X.arr],["alt","Alternate",X.altApt]].filter(r=>r[2]&&cards[r[0]]);
+  let sel=null; try{ sel=localStorage.getItem("xperf.aptSel"); }catch(_){}
+  if(!roles.some(r=>r[0]===sel)) sel="dep";
+  const row=([k,label,a])=>{
+    const B=X.briefs?.[k], met=B&&!B.missing?B.met:null;
+    const end=B&&!B.missing?(k==="dep"&&typeof chosenDepRunway==="function"?chosenDepRunway(B):B.best):null;
+    const cat=met?.cat?`<span class="fcat ${met.cat.toLowerCase()}">${met.cat}</span>`:`<span class="fcat none">—</span>`;
+    return `<button type="button" class="aptrow" data-apt="${k}" aria-selected="${k===sel}">${cat}
+      <span class="aptname"><b>${a.icao}</b> <span>${label} · ${a.name}</span></span>
+      <span class="aptmeta">${met?windTxt(met):"no METAR"}${end?` · RWY ${end.e.id}`:""}</span></button>`;
+  };
+  return `<div class="aptsplit">
+    <div class="aptlist" role="listbox" aria-label="Airports">${roles.map(row).join("")}</div>
+    <div class="aptdetail">${roles.map(([k])=>`<div data-detail="${k}"${k===sel?"":" hidden"}>
+      <button type="button" class="aptback" data-aptback>‹ Airports</button>${cards[k]}</div>`).join("")}</div></div>`;
+}
+document.addEventListener("click",e=>{
+  const r=e.target.closest&&e.target.closest(".aptrow[data-apt]");
+  if(r){ const k=r.dataset.apt, root=r.closest(".aptsplit");
+    root.querySelectorAll(".aptrow").forEach(b=>b.setAttribute("aria-selected",String(b===r)));
+    root.querySelectorAll("[data-detail]").forEach(d=>d.hidden=d.dataset.detail!==k);
+    root.classList.add("detail-open");
+    try{ localStorage.setItem("xperf.aptSel",k); }catch(_){}
+    return; }
+  const back=e.target.closest&&e.target.closest("[data-aptback]");
+  if(back) back.closest(".aptsplit").classList.remove("detail-open");
+});

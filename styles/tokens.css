@@ -101,8 +101,10 @@ kbd,.kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;paddi
   border:var(--hairline) solid var(--line);border-radius:var(--r-xs);background:var(--field);
   color:var(--text-2);font:var(--w-medium) var(--fs-micro)/1 var(--font);letter-spacing:0}
 @media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
-    transition-duration:.01ms!important;scroll-behavior:auto!important}
+  /* 0s, not .01ms: a non-zero duration with the default transition-property "all" would turn on
+     a (tiny) transition for every property change on every element */
+  *,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;animation-iteration-count:1!important;
+    transition-duration:0s!important;transition-delay:0s!important;scroll-behavior:auto!important}
 }
 
 /* ── XPerf · aviation colours (XPerf's own, both themes) ─────────────────────── */

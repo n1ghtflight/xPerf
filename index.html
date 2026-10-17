@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Flight Performance Calculator</title>
-<link rel="stylesheet" href="styles/tokens.css?v=2026.10.17a">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.17e">
+<link rel="stylesheet" href="styles/tokens.css?v=2026.10.17b">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.17g">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
@@ -136,9 +136,9 @@
 
 <script src="shell.js?v=2026.10.17c"></script>
 <script src="data.js?v=2026.10.16a"></script>
-<script src="nav.js?v=2026.10.16s"></script>
+<script src="nav.js?v=2026.10.17a"></script>
 <script src="acpicker.js?v=2026.10.16b"></script>
-<script src="charts.js?v=2026.10.16c"></script>
+<script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.16c"></script>
 <script src="chips.js?v=2026.10.17a"></script>
 <script src="overview.js?v=2026.10.17a"></script>
@@ -1000,9 +1000,9 @@ function render(X){
 
   </div>
   <div class="tabpanel" data-tab="airports">
-  ${airportCard(X.briefs.dep,X,{eta:X.etd,label:"ETD"})}
-  ${airportCard(X.briefs.arr,X,{eta:new Date(X.etd.getTime()+sel.time*1000),label:"ETA"})}
-  ${X.briefs.alt?airportCard(X.briefs.alt,X,{collapsed:true,eta:new Date(X.etd.getTime()+(sel.time+gcDist(arr,X.altApt)/cr.tas+900)*1000),label:"ETA"}):""}
+  ${airportsView(X,{dep:airportCard(X.briefs.dep,X,{eta:X.etd,label:"ETD"}),
+    arr:airportCard(X.briefs.arr,X,{eta:new Date(X.etd.getTime()+sel.time*1000),label:"ETA"}),
+    alt:X.briefs.alt?airportCard(X.briefs.alt,X,{collapsed:true,eta:new Date(X.etd.getTime()+(sel.time+gcDist(arr,X.altApt)/cr.tas+900)*1000),label:"ETA"}):""})}
 
   </div>
   <div class="tabpanel" data-tab="profile">
@@ -1090,25 +1090,25 @@ function profileSVG(X){
   const line=pts.map(([a,b])=>`${x(a).toFixed(1)},${y(b).toFixed(1)}`).join(" ");
   let grid="";
   const gstep=[1000,2000,5000,10000].find(s=>top/s<=8)||10000;
-  for(let h=0;h<=top;h+=gstep) grid+=`<line x1="${pl}" x2="${W-pr}" y1="${y(h)}" y2="${y(h)}" stroke="#1d2a36"/><text x="${pl-8}" y="${y(h)+4}" fill="#8b9bab" font-size="11" text-anchor="end">${h>=18000?"FL"+h/100:fmtK(h)}</text>`;
+  for(let h=0;h<=top;h+=gstep) grid+=`<line x1="${pl}" x2="${W-pr}" y1="${y(h)}" y2="${y(h)}" class="c-grid" stroke="var(--line-soft)"/><text x="${pl-8}" y="${y(h)+4}" class="c-axis" fill="var(--text-3)" font-size="11" text-anchor="end">${h>=18000?"FL"+h/100:fmtK(h)}</text>`;
   const nmTot=nm(total), tick=[5,10,25,50,100,200,500,1000].find(s=>nmTot/s<=10)||1000;
-  for(let n=0;n<=nmTot;n+=tick) grid+=`<text x="${x(n*NM)}" y="${H-pb+18}" fill="#8b9bab" font-size="11" text-anchor="middle">${n}</text>`;
-  const terr=X.terrain?`<polygon points="${x(0)},${y(0)} ${X.terrain.map(t=>`${x(t.f*total).toFixed(1)},${y(t.ft).toFixed(1)}`).join(" ")} ${x(total)},${y(0)}" fill="#6b4f2a" fill-opacity=".85" stroke="#a07a45" stroke-width="1"/>`:"";
+  for(let n=0;n<=nmTot;n+=tick) grid+=`<text x="${x(n*NM)}" y="${H-pb+18}" class="c-axis" fill="var(--text-3)" font-size="11" text-anchor="middle">${n}</text>`;
+  const terr=X.terrain?`<polygon points="${x(0)},${y(0)} ${X.terrain.map(t=>`${x(t.f*total).toFixed(1)},${y(t.ft).toFixed(1)}`).join(" ")} ${x(total)},${y(0)}" class="c-terrain" fill="var(--terrain)" stroke="var(--terrain-line)" stroke-width="1"/>`:"";
   const toc=[x(c.d),y(crzFt)], tod=[x(total-d.d),y(crzFt)], close=tod[0]-toc[0]<330;
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Vertical flight profile">
-    <defs><linearGradient id="fillg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3fb8ff" stop-opacity=".30"/><stop offset="1" stop-color="#3fb8ff" stop-opacity="0"/></linearGradient></defs>
+    <defs><linearGradient id="fillg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".30"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
     ${grid}
     ${windLayer(X,x,y,top)}
-    <polygon points="${x(0)},${y(0)} ${line} ${x(total)},${y(0)}" fill="url(#fillg)"/>
+    <polygon class="c-profile-fill" points="${x(0)},${y(0)} ${line} ${x(total)},${y(0)}" fill="url(#fillg)"/>
     ${terr}
-    <polyline points="${line}" fill="none" stroke="#3fb8ff" stroke-width="2.2"/>
-    <circle cx="${toc[0]}" cy="${toc[1]}" r="5" fill="#38d39f"/><text x="${close?toc[0]-8:toc[0]+8}" y="${toc[1]-8}" fill="#38d39f" font-size="12" text-anchor="${close?"end":"start"}">TOC ${nm(c.d).toFixed(nm(c.d)<20?1:0)} NM</text>
-    <circle cx="${tod[0]}" cy="${tod[1]}" r="5" fill="#e07bff"/><text x="${close?tod[0]+8:tod[0]-8}" y="${tod[1]-8}" fill="#e07bff" font-size="12" text-anchor="${close?"start":"end"}">TOD ${nm(d.d).toFixed(nm(d.d)<20?1:0)} NM to go</text>
-    <text x="${(toc[0]+tod[0])/2}" y="${toc[1]+18}" fill="#e6edf3" font-size="12" text-anchor="middle">${lvl(crzFt)}</text>
-    <text x="${x(0)}" y="${H-4}" fill="#e6edf3" font-size="12">${dep.icao}</text>
-    <text x="${x(total)}" y="${H-4}" fill="#e6edf3" font-size="12" text-anchor="end">${arr.icao}</text>
-    <text x="${(W+pl)/2}" y="${H-4}" fill="#8b9bab" font-size="11" text-anchor="middle">distance (NM)</text>
-    <text x="12" y="${pt+4}" fill="#8b9bab" font-size="11">ft</text>
+    <polyline class="c-profile" points="${line}" fill="none" stroke="var(--accent)" stroke-width="2.2"/>
+    <circle cx="${toc[0]}" cy="${toc[1]}" r="5" class="c-toc" fill="var(--good)"/><text x="${close?toc[0]-8:toc[0]+8}" y="${toc[1]-8}" class="c-toc" fill="var(--good)" font-size="12" text-anchor="${close?"end":"start"}">TOC ${nm(c.d).toFixed(nm(c.d)<20?1:0)} NM</text>
+    <circle cx="${tod[0]}" cy="${tod[1]}" r="5" class="c-tod" fill="var(--violet)"/><text x="${close?tod[0]+8:tod[0]-8}" y="${tod[1]-8}" class="c-tod" fill="var(--violet)" font-size="12" text-anchor="${close?"start":"end"}">TOD ${nm(d.d).toFixed(nm(d.d)<20?1:0)} NM to go</text>
+    <text x="${(toc[0]+tod[0])/2}" y="${toc[1]+18}" class="c-label" fill="var(--text)" font-size="12" text-anchor="middle">${lvl(crzFt)}</text>
+    <text x="${x(0)}" y="${H-4}" class="c-label" fill="var(--text)" font-size="12">${dep.icao}</text>
+    <text x="${x(total)}" y="${H-4}" class="c-label" fill="var(--text)" font-size="12" text-anchor="end">${arr.icao}</text>
+    <text x="${(W+pl)/2}" y="${H-4}" class="c-axis" fill="var(--text-3)" font-size="11" text-anchor="middle">distance (NM)</text>
+    <text x="12" y="${pt+4}" class="c-axis" fill="var(--text-3)" font-size="11">ft</text>
   </svg>`;
 }
 

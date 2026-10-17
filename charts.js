@@ -8,13 +8,14 @@
      fuelChart      – fuel remaining along the route with reserve band
      tafTimeline    – flight category over the TAF period with ETD / ETA
    ===================================================================== */
-const CH={grid:"#1d2a36",axis:"#8b9bab",text:"#e6edf3",blue:"#3fb8ff",green:"#38d39f",amber:"#ffb547",red:"#ff6b6b",magenta:"#e07bff",dim:"#3a4653"};
+// chart colours are theme tokens (resolved by the browser, so charts follow light/dark without re-rendering)
+const CH={grid:"var(--line-soft)",axis:"var(--text-3)",text:"var(--text)",blue:"var(--accent)",green:"var(--good)",amber:"var(--warn)",red:"var(--bad)",magenta:"var(--violet)",dim:"var(--text-4)",halo:"var(--panel)"};
 const svgEsc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 /* ---------------------------------------------------------------- 1 · winds aloft cross-section */
 // tail > 0 = tailwind (green), < 0 = headwind (red); opacity grows with strength (full at 50 kt)
 function windColor(tailKt){ const t=Math.max(-1,Math.min(1,tailKt/50)), a=(0.10+0.55*Math.abs(t)).toFixed(2);
-  return t>=0?`rgba(56,211,159,${a})`:`rgba(255,107,107,${a})`; }
+  return `color-mix(in oklch, var(${t>=0?"--good":"--bad"}) ${(a*100).toFixed(0)}%, transparent)`; }
 function windLayer(X,x,y,top){
   if(!X.wx||!X.wxf) return "";
   const {total,wxf}=X, cols=48, rows=Math.min(24,Math.max(8,Math.round(top/1000)));
@@ -26,7 +27,7 @@ function windLayer(X,x,y,top){
   // label the wind on the cruise segment at 1/4 and 3/4 (clear of the TOC/TOD and level labels)
   const c0=X.sel.climb.d, c1=total-X.sel.descent.d;
   const lab=(c1-c0>total*0.15?[0.25,0.75]:[]).map(q=>{ const d=c0+(c1-c0)*q, w=wxf(d/total,X.sel.ft), t=Math.round(w.tail/KT);
-    return `<text x="${x(d)}" y="${y(X.sel.ft)-7}" font-size="10.5" text-anchor="middle" fill="${t>=0?CH.green:CH.red}" stroke="#0b1118" stroke-width="3" paint-order="stroke">${t>=0?"+":""}${t} kt</text>`; }).join("");
+    return `<text x="${x(d)}" y="${y(X.sel.ft)-7}" font-size="10.5" text-anchor="middle" fill="${t>=0?CH.green:CH.red}" stroke="${CH.halo}" stroke-width="3" paint-order="stroke">${t>=0?"+":""}${t} kt</text>`; }).join("");
   return `<g class="windlayer">${out}${lab}</g>`;
 }
 function windLegend(){
@@ -49,7 +50,7 @@ function levelChart(X){
   // bands: selected level, excluded levels
   rs.forEach((r,i)=>{ const [st,bad]=statusOf(r,X);
     if(bad) g+=`<rect x="${cx(i)-step/2}" y="${pt}" width="${step}" height="${ih}" fill="url(#hatch)"><title>${lvl(r.ft)}: ${svgEsc(st)}</title></rect>`;
-    if(r.ft===X.sel.ft) g+=`<rect x="${cx(i)-step/2+2}" y="${pt-18}" width="${step-4}" height="${ih+18}" rx="4" fill="#3fb8ff14" stroke="#3fb8ff66"/>
+    if(r.ft===X.sel.ft) g+=`<rect x="${cx(i)-step/2+2}" y="${pt-18}" width="${step-4}" height="${ih+18}" rx="4" fill="color-mix(in srgb, var(--accent) 8%, transparent)" stroke="color-mix(in srgb, var(--accent) 40%, transparent)"/>
       <text x="${cx(i)}" y="${pt-6}" font-size="11" fill="${CH.blue}" text-anchor="middle">${r===X.best?"optimum":"selected"}</text>`; });
   const dec=f1-f0<8?1:0;
   // when every level is within a few minutes, show seconds so the time axis doesn't repeat
@@ -62,7 +63,7 @@ function levelChart(X){
   g+=`<polyline points="${fl}" fill="none" stroke="${CH.blue}" stroke-width="2.4"/>`;
   rs.forEach((r,i)=>{ const [st,bad]=statusOf(r,X), tail=r.cruise.tail/KT, wy=H-pb+56, bh=Math.abs(tail)/maxW*14;
     g+=`<circle cx="${cx(i)}" cy="${yt(times[i])}" r="3.5" fill="${CH.amber}"><title>${lvl(r.ft)}: ${hhmm(r.time)}</title></circle>
-      <circle cx="${cx(i)}" cy="${yf(fuels[i])}" r="${r===X.best?6:4.5}" fill="${bad?CH.dim:r===X.best?CH.green:CH.blue}" stroke="#0b1118" stroke-width="1.5"><title>${lvl(r.ft)}: ${fmtK(fuels[i])} ${unit}, ${hhmm(r.time)}, wind ${tail>=0?"+":""}${Math.round(tail)} kt — ${svgEsc(st)}</title></circle>
+      <circle cx="${cx(i)}" cy="${yf(fuels[i])}" r="${r===X.best?6:4.5}" fill="${bad?CH.dim:r===X.best?CH.green:CH.blue}" stroke="${CH.halo}" stroke-width="1.5"><title>${lvl(r.ft)}: ${fmtK(fuels[i])} ${unit}, ${hhmm(r.time)}, wind ${tail>=0?"+":""}${Math.round(tail)} kt — ${svgEsc(st)}</title></circle>
       <text x="${cx(i)}" y="${H-pb+16}" font-size="11" fill="${bad?CH.axis:CH.text}" text-anchor="middle">${r.ft>=18000?"FL"+Math.round(r.ft/100):(r.ft/1000).toFixed(1).replace(/\.0$/,"")+"k"}</text>
       <text x="${cx(i)}" y="${H-pb+32}" font-size="10.5" font-weight="700" fill="${tail>=0?CH.green:CH.red}" text-anchor="middle">${tail>=0?"+":""}${Math.round(tail)}</text>
       <rect x="${cx(i)-Math.min(step*0.3,9)}" y="${tail>=0?wy-bh:wy}" width="${Math.min(step*0.6,18)}" height="${Math.max(bh,1)}" fill="${tail>=0?CH.green:CH.red}" opacity=".75"/>`; });
@@ -72,7 +73,7 @@ function levelChart(X){
     <text x="${pl-8}" y="${pt-8}" font-size="11" fill="${CH.blue}" text-anchor="end">fuel ${unit}</text>
     <text x="${W-pr+8}" y="${pt-8}" font-size="11" fill="${CH.amber}">time</text>`;
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Trip fuel and time by cruise level">
-    <defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#ffffff05"/><line x1="0" y1="0" x2="0" y2="8" stroke="#ffffff12" stroke-width="3"/></pattern></defs>${g}</svg>
+    <defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="color-mix(in srgb, var(--text) 2%, transparent)"/><line x1="0" y1="0" x2="0" y2="8" stroke="color-mix(in srgb, var(--text) 7%, transparent)" stroke-width="3"/></pattern></defs>${g}</svg>
     <div class="chartkey"><span><i style="background:${CH.blue}"></i>trip fuel</span><span><i style="background:${CH.amber}"></i>flight time</span><span><i style="background:${CH.green}"></i>optimum</span><span><i class="hatchkey"></i>excluded (terrain, MEA, oxygen, ceiling)</span><span class="note">hover a dot for details</span></div>`;
 }
 
@@ -91,23 +92,23 @@ function runwayDiagram(B){
     return {r,a:[-Math.sin(h)*L,-Math.cos(h)*L],b:[Math.sin(h)*L,Math.cos(h)*L]}; });
   const ext=Math.max(1,...segs.flatMap(s=>[Math.hypot(...s.a),Math.hypot(...s.b)]));
   const k=(R-26)/ext, T=([px,py])=>[c+px*k,c-py*k];
-  let g=`<circle cx="${c}" cy="${c}" r="${R}" fill="#0f1720" stroke="${CH.grid}"/>`;
+  let g=`<circle cx="${c}" cy="${c}" r="${R}" fill="var(--field)" stroke="${CH.grid}"/>`;
   for(let d=0;d<360;d+=30){ const a=rad(d), r1=d%90?R-5:R-9;
     g+=`<line x1="${c+Math.sin(a)*r1}" y1="${c-Math.cos(a)*r1}" x2="${c+Math.sin(a)*R}" y2="${c-Math.cos(a)*R}" stroke="${CH.axis}" stroke-width="${d%90?1:1.5}"/>`; }
   g+=["N","E","S","W"].map((t,i)=>{ const a=rad(i*90); return `<text x="${c+Math.sin(a)*(R+11)}" y="${c-Math.cos(a)*(R+11)+4}" font-size="11" fill="${CH.axis}" text-anchor="middle">${t}</text>`; }).join("");
   for(const s of segs){ const [x1,y1]=T(s.a), [x2,y2]=T(s.b), isBest=B.best&&B.best.r===s.r, wpx=Math.max(4,Math.min(10,(s.r.width||100)*k*1.4));
-    g+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isBest?"#2f6f58":"#4a5866"}" stroke-width="${wpx+3}" stroke-linecap="butt"/>
-      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isBest?CH.green:"#9aa7b4"}" stroke-width="${wpx}" stroke-linecap="butt"/>`;
+    g+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isBest?"color-mix(in oklch, var(--good) 45%, var(--field))":"var(--line-strong)"}" stroke-width="${wpx+3}" stroke-linecap="butt"/>
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isBest?CH.green:"var(--text-3)"}" stroke-width="${wpx}" stroke-linecap="butt"/>`;
     // runway number beyond each threshold
     const [ea,eb]=s.r.ends, dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
     for(const [e,px,py,sg] of [[ea,x1,y1,-1],[eb,x2,y2,1]]){ const best=B.best&&B.best.e.id===e.id;
-      g+=`<text x="${px+ux*sg*13}" y="${py+uy*sg*13+4}" font-size="11" font-weight="700" fill="${best?CH.green:CH.text}" text-anchor="middle" stroke="#0f1720" stroke-width="3" paint-order="stroke">${e.id}</text>`; } }
+      g+=`<text x="${px+ux*sg*13}" y="${py+uy*sg*13+4}" font-size="11" font-weight="700" fill="${best?CH.green:CH.text}" text-anchor="middle" stroke="var(--field)" stroke-width="3" paint-order="stroke">${e.id}</text>`; } }
   // wind arrow (from the reported direction toward the field)
   if(met&&met.wspd&&met.wdir!=null){
     const a=rad(met.wdir), x0=c+Math.sin(a)*(R-2), y0=c-Math.cos(a)*(R-2), x1=c+Math.sin(a)*34, y1=c-Math.cos(a)*34;
     g+=`<defs><marker id="wah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${CH.amber}"/></marker></defs>
       <line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="${CH.amber}" stroke-width="3.5" marker-end="url(#wah)"/>
-      <text x="${c+Math.sin(a)*(R-22)+(Math.sin(a)>=0?8:-8)}" y="${c-Math.cos(a)*(R-22)+(Math.cos(a)>=0?-8:14)}" font-size="11.5" font-weight="700" fill="${CH.amber}" text-anchor="${Math.sin(a)>=0?"start":"end"}" stroke="#0f1720" stroke-width="3" paint-order="stroke">${fmtBrg(met.wdir)}°/${met.wspd}${met.wgst?"G"+met.wgst:""}</text>`;
+      <text x="${c+Math.sin(a)*(R-22)+(Math.sin(a)>=0?8:-8)}" y="${c-Math.cos(a)*(R-22)+(Math.cos(a)>=0?-8:14)}" font-size="11.5" font-weight="700" fill="${CH.amber}" text-anchor="${Math.sin(a)>=0?"start":"end"}" stroke="var(--field)" stroke-width="3" paint-order="stroke">${fmtBrg(met.wdir)}°/${met.wspd}${met.wgst?"G"+met.wgst:""}</text>`;
   } else g+=`<text x="${c}" y="${c+R-16}" font-size="11.5" font-weight="700" fill="${CH.amber}" text-anchor="middle">${met?(met.vrb?`VRB ${met.wspd} kt`:"CALM"):"no wind report"}</text>`;
   return `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" role="img" aria-label="Runway diagram with wind" class="rwydiag">${g}</svg>`;
 }
@@ -140,17 +141,17 @@ function fuelChart(X){
   let g="";
   const gstep=[1,2,5,10,20,50,100,200,500,1000,2000,5000,10000].find(s=>top/s<=6)||10000;
   for(let v=0;v<=top;v+=gstep) g+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="${CH.grid}"/><text x="${pl-8}" y="${y(v)+4}" font-size="11" fill="${CH.axis}" text-anchor="end">${fmtK(v)}</text>`;
-  g+=`<rect x="${pl}" y="${y(res)}" width="${W-pl-pr}" height="${y(0)-y(res)}" fill="#ff6b6b1f"/><line x1="${pl}" x2="${W-pr}" y1="${y(res)}" y2="${y(res)}" stroke="${CH.red}" stroke-dasharray="4 4"/>
+  g+=`<rect x="${pl}" y="${y(res)}" width="${W-pl-pr}" height="${y(0)-y(res)}" fill="color-mix(in oklch, var(--bad) 12%, transparent)"/><line x1="${pl}" x2="${W-pr}" y1="${y(res)}" y2="${y(res)}" stroke="${CH.red}" stroke-dasharray="4 4"/>
     <text x="${pl+6}" y="${y(res)+14}" font-size="11" fill="${CH.red}">reserve ${fmtK(res)} ${unit} (${sel.reserveNote})</text>`;
   // stations / fixes along the route
   route.points.slice(1,-1).forEach((P,i)=>{ const d=route.legs[i].s0+route.legs[i].d, xx=x(d);
-    g+=`<line x1="${xx}" x2="${xx}" y1="${pt}" y2="${H-pb}" stroke="#ffffff14"/><text x="${xx}" y="${pt-8}" font-size="10" fill="${CH.axis}" text-anchor="middle">${svgEsc(P.label)}</text>`; });
-  g+=`<polygon points="${x(0)},${y(0)} ${line} ${x(total)},${y(0)}" fill="#3fb8ff22"/><polyline points="${line}" fill="none" stroke="${CH.blue}" stroke-width="2.4"/>`;
+    g+=`<line x1="${xx}" x2="${xx}" y1="${pt}" y2="${H-pb}" stroke="var(--line-soft)"/><text x="${xx}" y="${pt-8}" font-size="10" fill="${CH.axis}" text-anchor="middle">${svgEsc(P.label)}</text>`; });
+  g+=`<polygon points="${x(0)},${y(0)} ${line} ${x(total)},${y(0)}" fill="color-mix(in srgb, var(--accent) 13%, transparent)"/><polyline points="${line}" fill="none" stroke="${CH.blue}" stroke-width="2.4"/>`;
   for(const [k,d,col] of [["TOC",sel.climb.d,CH.green],["TOD",total-sel.descent.d,CH.magenta]]){ const p=profileAtX(sel,total,d), v=block-fu(p.fuel);
     g+=`<circle cx="${x(d)}" cy="${y(v)}" r="4.5" fill="${col}"><title>${k}: ${fmtK(v)} ${unit} left</title></circle>`; }
   g+=`<text x="${x(0)+6}" y="${y(block)-6}" font-size="11.5" fill="${CH.text}">block ${fmtK(block)} ${unit}</text>
     <circle cx="${x(total)}" cy="${y(land)}" r="5" fill="${land>=res*0.999?CH.green:CH.red}"/>
-    <text x="${x(total)-8}" y="${y(land)-10}" font-size="11.5" font-weight="700" fill="${land>=res*0.999?CH.green:CH.red}" text-anchor="end" stroke="#121b26" stroke-width="3" paint-order="stroke">land with ${fmtK(land)} ${unit}</text>
+    <text x="${x(total)-8}" y="${y(land)-10}" font-size="11.5" font-weight="700" fill="${land>=res*0.999?CH.green:CH.red}" text-anchor="end" stroke="${CH.halo}" stroke-width="3" paint-order="stroke">land with ${fmtK(land)} ${unit}</text>
     <text x="${pl}" y="${H-6}" font-size="11" fill="${CH.text}">${X.dep.icao}</text><text x="${W-pr}" y="${H-6}" font-size="11" fill="${CH.text}" text-anchor="end">${X.arr.icao}</text>
     <text x="${(W+pl)/2}" y="${H-6}" font-size="11" fill="${CH.axis}" text-anchor="middle">distance (NM) · ${fmtK(nm(total))} NM</text>
     <text x="12" y="${pt+4}" font-size="11" fill="${CH.axis}">${unit}</text>`;
@@ -192,9 +193,9 @@ function tafTimeline(B,etaDate,label){
   let g="";
   for(const p of T.base) if(p.t1>t0) g+=`<rect x="${x(p.t0)}" y="18" width="${Math.max(1,x(p.t1)-x(p.t0)-1)}" height="24" rx="3" fill="${CAT_COL[p.cat]}" opacity=".85"><title>${svgEsc(desc(p))}</title></rect>`;
   for(const p of T.over) if(p.t1>t0) g+=`<rect x="${x(p.t0)}" y="46" width="${Math.max(1,x(p.t1)-x(p.t0)-1)}" height="12" rx="2" fill="${CAT_COL[p.cat]}" opacity=".75"><title>${svgEsc(desc(p))}</title></rect>
-    <text x="${x(p.t0)+3}" y="55.5" font-size="9" fill="#04121d">${svgEsc(p.kind)}</text>`;
+    <text x="${x(p.t0)+3}" y="55.5" font-size="9" fill="var(--cat-ink)">${svgEsc(p.kind)}</text>`;
   g+=`<text x="${pl-8}" y="34" font-size="10.5" fill="${CH.axis}" text-anchor="end">forecast</text><text x="${pl-8}" y="56" font-size="10.5" fill="${CH.axis}" text-anchor="end">tempo</text>`;
-  for(let t=Math.ceil(t0/10800)*10800;t<=t1;t+=10800) g+=`<line x1="${x(t)}" x2="${x(t)}" y1="14" y2="62" stroke="#0b111880"/><text x="${x(t)}" y="76" font-size="10" fill="${CH.axis}" text-anchor="middle">${new Date(t*1000).toISOString().slice(11,13)}Z</text>`;
+  for(let t=Math.ceil(t0/10800)*10800;t<=t1;t+=10800) g+=`<line x1="${x(t)}" x2="${x(t)}" y1="14" y2="62" stroke="color-mix(in srgb, var(--bg) 50%, transparent)"/><text x="${x(t)}" y="76" font-size="10" fill="${CH.axis}" text-anchor="middle">${new Date(t*1000).toISOString().slice(11,13)}Z</text>`;
   if(now>t0&&now<t1) g+=`<line x1="${x(now)}" x2="${x(now)}" y1="12" y2="64" stroke="${CH.axis}" stroke-dasharray="2 3"/><text x="${x(now)}" y="10" font-size="9.5" fill="${CH.axis}" text-anchor="middle">now</text>`;
   // verdict at ETD / ETA
   let verdict="";

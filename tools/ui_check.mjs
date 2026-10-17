@@ -219,6 +219,51 @@ check("overview-values", async () => {
   } finally { await page.close(); }
 });
 
+check("airports-list", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.click('.sidebar [data-view="airports"]'); await settle(page);
+    expect(await visible(page, '[data-apt="dep"]') && await visible(page, '[data-apt="arr"]'), "airport list rows missing");
+    await page.click('[data-apt="arr"]'); await settle(page);
+    const shown = await page.eval(`[...document.querySelectorAll('.aptdetail [data-detail]')].filter(e=>e.getClientRects().length).map(e=>e.dataset.detail)`);
+    expect(JSON.stringify(shown) === '["arr"]', "detail shown: " + JSON.stringify(shown));
+    expect(await page.eval(`document.querySelector('.aptdetail [data-detail="arr"]').textContent.includes('KTRK')`), "arrival card lacks KTRK");
+  } finally { await page.close(); }
+});
+
+check("feature-inventory", async () => {
+  for (const f of Object.keys(FLIGHTS)) {
+    const page = await open(f, { plan: true });
+    try {
+      const base = JSON.parse(readFileSync(join(here, "regress", "baseline", `${mode}-${f}.json`), "utf8")).inventory || [];
+      const missing = await page.eval(`(${JSON.stringify(base)}).filter(h=>!document.querySelector(h))`);
+      expect(!missing.length, `${f}: hooks gone: ${missing.join(", ")}`);
+    } finally { await page.close(); }
+  }
+});
+
+check("theme-follow", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.click('.sidebar [data-view="profile"]'); await settle(page);
+    const stroke = () => page.eval(`new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>{ const e=document.querySelector('.c-axis'); r(e&&document.querySelector('.c-profile')?${RGB}(getComputedStyle(e).fill):null); })))`);
+    // the accent is the same in both themes by design, so check a theme-dependent chart colour (axis text)
+    const dark = await stroke(); expect(dark, "profile chart lacks .c-profile / .c-axis");
+    await page.eval(`Shell.setTheme("light")`);
+    const light = await stroke();
+    expect(dark !== light, `chart axis colour did not change with the theme (${dark})`);
+  } finally { await page.close(); }
+});
+
+check("no-hex", async () => {
+  const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  const files = { "charts.js": strip(readFileSync(join(here, "..", "charts.js"), "utf8")), "nav.js": strip(readFileSync(join(here, "..", "nav.js"), "utf8")) };
+  const html = readFileSync(join(here, "..", "index.html"), "utf8"), a = html.indexOf("function profileSVG"), b = html.indexOf("\n}\n", a);
+  files["profileSVG"] = html.slice(a, b);
+  const bad = Object.entries(files).map(([n, s]) => [n, [...new Set(s.match(/#[0-9a-fA-F]{3,8}\b/g) || [])].filter(h => !/^#(fff|ffffff)$/i.test(h))]).filter(([, h]) => h.length);
+  expect(!bad.length, "hard-coded colours: " + bad.map(([n, h]) => `${n}: ${h.join(" ")}`).join(" | "));
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {
