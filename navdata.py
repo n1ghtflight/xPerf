@@ -397,12 +397,12 @@ def weather(ident, lat, lon):
     return out
 
 
-# ---------------------------------------------------------------- terrain (Open-Meteo DEM, OpenTopoData SRTM fallback)
+# ---------------------------------------------------------------- terrain (Open-Meteo DEM)
 _terrain_cache = {}
 
 
 def terrain(locs):
-    """locs: [(lat, lon)] -> elevations in metres. Retries Open-Meteo, then falls back to OpenTopoData SRTM90."""
+    """locs: [(lat, lon)] -> elevations in metres from Open-Meteo (Copernicus DEM), retried."""
     key = tuple((round(a, 3), round(b, 3)) for a, b in locs)
     if key in _terrain_cache:
         return _terrain_cache[key]
@@ -420,18 +420,6 @@ def terrain(locs):
             errors.append(d.get("reason", "Open-Meteo error"))
         except Exception as e:
             errors.append(str(e))
-    try:
-        elev = []
-        for i in range(0, len(locs), 100):
-            chunk = "|".join(f"{a:.4f},{b:.4f}" for a, b in locs[i:i + 100])
-            d = json.loads(fetch(f"https://api.opentopodata.org/v1/srtm90m?locations={chunk}", timeout=30))
-            elev += [r.get("elevation") or 0 for r in d["results"]]
-            time.sleep(1.05)        # OpenTopoData public API: 1 request / second
-        out = {"source": "OpenTopoData (SRTM 90 m)", "elev": elev}
-        _terrain_cache[key] = out
-        return out
-    except Exception as e:
-        errors.append(str(e))
     raise RuntimeError("; ".join(dict.fromkeys(errors)))
 
 

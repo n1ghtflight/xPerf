@@ -3,11 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- data source: "server" (python server.py) or "packs" (static site); METAR/TAF relay URL and service worker
+     for a static site. tools/build_site.py sets all three for the hosted build. -->
+<meta name="xperf-data" content="server">
+<meta name="xperf-wx" content="">
+<meta name="xperf-sw" content="">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#08090a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#efeff0" media="(prefers-color-scheme: light)">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.17b">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.17q">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="styles/app.css?v=2026.10.17r">
+<link rel="stylesheet" href="vendor/leaflet-1.9.4/leaflet.min.css">
+<script src="vendor/leaflet-1.9.4/leaflet.min.js"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -63,7 +73,6 @@
       <h2 class="viewtitle">Plan a flight</h2>
       <label for="ac">Aircraft</label>
       <select id="ac"><option>Loading aircraft…</option></select>
-      <div id="otherRow"><input id="otherCode" placeholder="ICAO type, e.g. C82R" maxlength="4"><button class="sm" id="otherGo">Load</button></div>
       <div class="hint" id="acHint"></div>
 
       <div class="routefields">
@@ -132,6 +141,20 @@
         <dt><kbd>,</kbd> · <kbd>[</kbd></dt><dd>Settings · show or hide the sidebar</dd>
         <dt><kbd>Esc</kbd></dt><dd>Close a menu, the palette or All settings</dd>
       </dl></div>
+    <div class="card about" id="about"><h2>About</h2>
+      <p>XPerf plans performance, route, cruise level and fuel for Microsoft Flight Simulator 2024.
+        <b>For flight simulation only</b> — not for real-world navigation or flight planning.</p>
+      <ul class="credits">
+        <li>Airports and navaids: <a href="https://ourairports.com/data/" target="_blank" rel="noopener">OurAirports</a> (public domain)</li>
+        <li>US airways, procedures, preferred routes and charts: FAA NASR and d-TPP (public domain)</li>
+        <li>GA, turboprop and business-jet performance: XPerf's own table from manufacturer, POH and magazine figures (sources listed per aircraft)</li>
+        <li>Airliner performance: <a href="https://github.com/TUDelft-CNS-ATM/openap" target="_blank" rel="noopener">OpenAP</a> by TU Delft</li>
+        <li>Winds aloft and terrain: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather data by Open-Meteo.com</a> (CC BY 4.0)</li>
+        <li>METAR and TAF: <a href="https://aviationweather.gov/" target="_blank" rel="noopener">aviationweather.gov</a> (NOAA / National Weather Service)</li>
+        <li>Maps: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, <a href="https://opentopomap.org/" target="_blank" rel="noopener">OpenTopoMap</a> (CC BY-SA); map library <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a> (BSD-2-Clause)</li>
+        <li>Flight plans you import: <a href="https://www.simbrief.com/" target="_blank" rel="noopener">SimBrief</a>, fetched only when you ask</li>
+      </ul>
+      <p class="note">XPerf is a free hobby project, not affiliated with Microsoft, Asobo Studio, Navigraph or any data provider.</p></div>
     <div id="srcHost"><div class="card note">Data sources and model assumptions appear here after the first plan.</div></div>
     <p class="note simonly">For flight simulation only — not for real-world navigation.</p>
   </section>
@@ -156,16 +179,16 @@
 </div>
 </div>
 
-<script src="shell.js?v=2026.10.17k"></script>
-<script src="data.js?v=2026.10.17b"></script>
+<script src="shell.js?v=2026.10.17l"></script>
+<script src="data.js?v=2026.10.17d"></script>
 <script src="routeimport.js?v=2026.10.17a"></script>
-<script src="nav.js?v=2026.10.17d"></script>
-<script src="acpicker.js?v=2026.10.17a"></script>
+<script src="nav.js?v=2026.10.17e"></script>
+<script src="acpicker.js?v=2026.10.17b"></script>
 <script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
 <script src="chips.js?v=2026.10.17f"></script>
 <script src="blueprint.js?v=2026.10.17c"></script>
-<script src="overview.js?v=2026.10.17c"></script>
+<script src="overview.js?v=2026.10.17d"></script>
 <script src="palette.js?v=2026.10.17b"></script>
 <script>
 "use strict";
@@ -196,11 +219,6 @@ const GA_GROUPS = {
     F2TH:"Dassault Falcon 2000",F900:"Dassault Falcon 900",FA7X:"Dassault Falcon 7X",GLF4:"Gulfstream IV",GLF5:"Gulfstream V",GLEX:"Bombardier Global Express"}
 };
 const GA_NAMES = Object.assign({},...Object.values(GA_GROUPS));
-const PRESSURIZED = new Set(["PA46","P46T","M600","TBM7","TBM8","PC12","C340","C414","C421","C425","C441","BE9L","BE20","B350","P180"]);
-const TURBO_PISTON = new Set(["P28T","M20T","PA46","C340","C414","C421","PA31"]);   // types whose base model is turbocharged
-// for "Other" EUROCONTROL lookups only (the table carries its own engine data): types whose base model is
-// pressurized / turbocharged, and engine ratings where the power-plant text is wrong or missing (per engine: hp/shp, or kN)
-const ENGINE_FIX = {C152:{hp:110}, P46T:{hp:500}, C25A:{kN:10.5}, PRM1:{kN:10.2}, CL60:{kN:40.7}};
 const PLEVELS = [1000,925,850,700,600,500,400,300,250,200,150];
 
 /* ====================== Constants / ISA ====================== */
@@ -302,7 +320,6 @@ async function init(){
       entries.forEach(([v,t])=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; g.appendChild(o); }); sel.appendChild(g); };
     for(const [g,list] of Object.entries(GA_GROUPS)) group(g, Object.entries(list).sort((a,b)=>a[1].localeCompare(b[1])).map(([c,n])=>["apm:"+c,`${n} (${c})`]));
     group("Airliners & large jets — OpenAP", Object.keys(AC_NAMES).sort().map(c=>["oap:"+c,`${AC_NAMES[c]} (${c.toUpperCase()})`]));
-    group("Other", [["other","Other ICAO type (EUROCONTROL lookup)…"]]);
     sel.value="apm:C172";
     Chips.buildSegs(); Chips.syncForm();
     AcPicker.init();          // searchable picker over the list (restores the last aircraft used)
@@ -482,8 +499,7 @@ function aeroOptimum(m,mass,dT=0){ let best=null; for(let ft=10000;ft<=51000;ft+
     if(!(L.buffetOK&&L.thrustOK&&L.ceilOK)) continue; const sr=L.s.tas/L.s.ff; if(!best||sr>best.sr) best={ft,sr}; } return best?best.ft:null; }
 
 /* ====================== APM-style model (GA, turboprops, bizjets) ====================== */
-// Data: XPerf's table (data/ga_perf.json) for the listed types; EUROCONTROL APM for "Other" lookups.
-let SNAPSHOT=null;
+// Data: XPerf's own table (data/ga_perf.json), built from manufacturer, POH and magazine figures.
 // a table entry in the shape the model reads (perf values without their sourcing), plus its engine facts and sources
 function tableRecord(icao,t,sources){
   const ids=new Set(); const walk=o=>{ if(o&&typeof o==="object"){ (o.src||[]).forEach(i=>ids.add(i)); Object.values(o).forEach(walk); } }; walk(t);
@@ -493,42 +509,22 @@ function tableRecord(icao,t,sources){
 }
 async function apmData(icao){
   const T=await XD.gaPerf();
-  if(T.types[icao]) return {d:tableRecord(icao,T.types[icao],T.sources),live:false};
-  if(HAS_SERVER){ try{ const d=await XD.apm(icao); return {d,live:true}; }
-    catch(e){ if(/not found/i.test(e.message)) throw e; console.warn("live EUROCONTROL fetch failed",e); } }
-  if(!SNAPSHOT){ try{ SNAPSHOT=await get("apm_snapshot.json","json"); }catch(e){ SNAPSHOT={}; } }
-  if(SNAPSHOT[icao]) return {d:SNAPSHOT[icao],live:false};
-  throw new Error(HAS_SERVER?`${icao}: not available from EUROCONTROL`:`${icao}: start the app with "python server.py" to fetch EUROCONTROL data`);
-}
-// engine size from the EUROCONTROL power-plant text ("2 x 300 HP …", "1.200 SHP", "8.45 kN", "3,400 lbf")
-function parsePower(txt,kind){
-  txt=String(txt||"").replace(/(\d)\.(\d{3})(?!\d)/g,"$1$2");
-  const all=(re)=>[...txt.matchAll(re)].map(m=>parseFloat(m[1].replace(/,/g,"")));
-  // the text often lists several variants (e.g. C172: 145…195 hp) — use the median variant
-  const med=a=>{ const s=[...a].sort((x,y)=>x-y); return s[Math.floor((s.length-1)/2)]; };
-  if(kind==="J"){ const kn=[...txt.matchAll(/(\d+(?:[.,]\d+)?)\s*kN/gi)].map(m=>parseFloat(m[1].replace(",",".")));
-    if(kn.length) return {thrustN:med(kn)*1000};
-    const lb=all(/(\d[\d,]*)\s*(?:lbf|lb\s*st|lbs?\b)/gi); if(lb.length) return {thrustN:med(lb)*4.448};
-    return null; }
-  const hp=all(/(\d[\d,]*(?:\.\d+)?)\s*(?:e?shp|bhp|hp)\b/gi); if(hp.length) return {hp:med(hp)};
-  const kw=all(/(\d[\d,]*)\s*kW/gi); if(kw.length) return {hp:med(kw)*1.341};
-  return null;
+  if(T.types[icao]) return tableRecord(icao,T.types[icao],T.sources);
+  throw new Error(`${icao} isn't in XPerf's aircraft list.`);
 }
 
 async function loadApmModel(icao){
-  const {d,live}=await apmData(icao), P={...d.perf};
-  for(const k in P) if(P[k]===0) delete P[k];            // EUROCONTROL uses 0 for "no data" in places
+  const d=await apmData(icao), P={...d.perf};
   const type=d.type||"L1P", nEng=+type[1]||1, ek=type[2]||"P";
   const kind=ek==="J"?"jet":ek==="T"?"turboprop":"piston";
   const mtow=P.takeOffMTOW||1200, ceilFt=(P.cruiseCeiling||(kind==="piston"?140:kind==="turboprop"?250:410))*100;
-  const E=d.engine, fix=ENGINE_FIX[icao];
-  const pw=E?{hp:E.hp?.v,thrustN:E.thrustKN&&E.thrustKN.v*1000}:fix?{hp:fix.hp,thrustN:fix.kN&&fix.kN*1000}:(parsePower(d.powerplant,ek)||{});
+  const E=d.engine, pw={hp:E.hp?.v,thrustN:E.thrustKN&&E.thrustKN.v*1000};
   let hp=pw.hp, thrustN=pw.thrustN, powerEst=false;
   if(kind==="piston" && !(hp>=mtow*0.06/nEng && hp<=mtow*0.35/nEng)){ hp=mtow*0.15/nEng; powerEst=true; }
   if(kind==="turboprop" && !(hp>=mtow*0.08/nEng && hp<=mtow*0.5/nEng)){ hp=mtow*0.25/nEng; powerEst=true; }
   if(kind==="jet" && !(thrustN>=mtow*G0*0.12/nEng && thrustN<=mtow*G0*0.6/nEng)){ thrustN=mtow*G0*0.35/nEng; powerEst=true; }
-  const turbo = kind==="piston" && (E?!!E.turbocharged:TURBO_PISTON.has(icao));
-  const pressurized = kind==="jet" || (E?!!E.pressurized:PRESSURIZED.has(icao));
+  const turbo = kind==="piston" && !!E.turbocharged;
+  const pressurized = kind==="jet" || !!E.pressurized;
   const span=parseFloat(d.wingspan)||Math.sqrt(mtow/40);
 
   // --- power / thrust lapse with altitude ---
@@ -540,12 +536,10 @@ async function loadApmModel(icao){
   const pCruise=(hft,dT)=>Math.min(PC,pAvail(hft,dT)*(kind==="piston"?1:0.9));
   const refFt = kind==="piston" ? (turbo?Math.min(ceilFt-4000,17500):Math.min(7500,ceilFt-2000))
               : kind==="turboprop" ? (pressurized?ceilFt-4000:Math.min(10000,ceilFt-2000)) : ceilFt-4000;
-  const diesel = kind==="piston" && (E?!!E.diesel:/diesel|jet[- ]?a|austro|centurion|SMA SR305/i.test(d.powerplant||""));
+  const diesel = kind==="piston" && !!E.diesel;
   // what the cruise TAS refers to: the table states the power (e.g. 75 %) and often the altitude; otherwise 65 % at refFt
-  const tasPct=E&&kind==="piston"?+((String(d.cruise?.power||"").match(/(\d+)\s*%/)||[])[1]||0)/100:0;
+  const tasPct=kind==="piston"?+((String(d.cruise?.power||"").match(/(\d+)\s*%/)||[])[1]||0)/100:0;
   const tasFt=tasPct&&d.cruise?.alt_ft?d.cruise.alt_ft:refFt;
-  // table climb rates are sea-level figures; EUROCONTROL's read as band averages (mid-band, 2,500 ft)
-  const icMid=E?0:2500;
   const SFC0=diesel?{cr:0.36,cl:0.40,de:0.38}:{piston:{cr:0.43,cl:0.50,de:0.45},turboprop:{cr:0.60,cl:0.65,de:0.75}}[kind];
   // a published cruise fuel flow (table, some types) scales the SFC so cruise matches it at the stated power,
   // or at the model's own cruise power at the stated altitude when no % is given; climb and descent scale alike
@@ -560,7 +554,7 @@ async function loadApmModel(icao){
   const vCap=(Math.max(P.climb240IAS||0,P.descentIAS||0,250)+20)*KT;
 
   const m={kind:"apm",engineKind:kind,code:icao,id:"apm:"+icao,label:GA_NAMES[icao]||`${d.manufacturer||""} ${d.name||icao}`.trim(),table:!!d.table,
-    d,P,live,nEng,mtow,ceilFt,turbo,diesel,pressurized,hp,thrustN,powerEst,refFt,fuelK,fuelRef:fuelK!==1?fc:null,
+    d,P,nEng,mtow,ceilFt,turbo,diesel,pressurized,hp,thrustN,powerEst,refFt,fuelK,fuelRef:fuelK!==1?fc:null,
     fuelDensity:kind==="piston"&&!diesel?2.72:3.03, fuelName:kind==="piston"&&!diesel?"avgas":"Jet A",
     defaultLoad:Math.round(mtow*0.92/10)*10, loadLabel:"Takeoff weight (kg)", defaultRules:kind==="piston"&&!pressurized?"vfr":"ifr",
     climbOrder:["ic","c150","c240","mach"], descOrder:["mach","des","lo","app"],
@@ -581,7 +575,7 @@ async function loadApmModel(icao){
     return {tas,ff:nEng*hp*pc*SFC.cr*LBH,mach:tas2mach(tas,hft*FT,dT),power:pc};
   };
   m.climbState=(hft,dT,mass)=>{
-    const bands=[{top:5000,ias:P.initialClimbIAS,roc:P.initialClimbROC,key:"ic",mid:icMid},
+    const bands=[{top:5000,ias:P.initialClimbIAS,roc:P.initialClimbROC,key:"ic",mid:0},     // the table's climb rate is the sea-level figure
       {top:15000,ias:P.climb150IAS,roc:P.climb150ROC,key:"c150",mid:10000},
       {top:24000,ias:P.climb240IAS,roc:P.climb240ROC,key:"c240",mid:19500},
       {top:1e9,mach:P.machClimbMACH,roc:P.machClimbROC,key:"mach",mid:30000}];
@@ -732,12 +726,7 @@ const lvlShort=ft=>ft>=18000?"FL"+String(Math.round(ft/100)).padStart(3,"0"):(Ma
 async function onAircraft(){
   const v=$("ac").value; $("err").textContent="";
   if(window.AcPicker) AcPicker.sync();      // keep the search box in step with the selection
-  const otherRow=$("otherRow"); if(otherRow) otherRow.style.display=v==="other"?"flex":"none";
-  if(v==="other"){ $("acHint").textContent="Enter any ICAO aircraft type designator listed by EUROCONTROL."; return; }
   await selectModel(v);
-  // a type looked up from the search box gets its real EUROCONTROL name once loaded
-  const o=[...$("ac").options].find(o=>o.value===v);
-  if(o&&/EUROCONTROL lookup/.test(o.textContent)&&MODEL?.id===v){ o.textContent=`${MODEL.label} (${MODEL.code})`; AcPicker.index(); AcPicker.sync(); }
 }
 function selectModel(id){ const seq=++MODEL_SEQ; MODEL=null; return MODEL_P=loadModel(id,seq); }
 async function loadModel(id,seq){
@@ -774,12 +763,11 @@ async function loadModel(id,seq){
   } else {
     const P=m.P, d=m.d, nd=v=>v??"—";
     const eng=m.engineKind==="jet"?`${m.nEng} × ${(m.thrustN/1000).toFixed(1)} kN`:`${m.nEng} × ${Math.round(m.hp)} ${m.engineKind==="turboprop"?"shp":"hp"}`;
-    $("acHint").innerHTML=(m.table?`<span class="badge ok">XPerf data</span><span class="badge ${d.sourcing==="weak"?"warn":d.sourcing==="good"?"ok":""}" data-tip="How well the core figures are sourced: good, fair or weak">${d.sourcing||"fair"} sources</span>`
-      :`<span class="badge ok">EUROCONTROL APM</span><span class="badge ${m.live?"ok":"warn"}">${m.live?"live":"offline snapshot"}</span>`)+
+    $("acHint").innerHTML=`<span class="badge ok">XPerf data</span><span class="badge ${d.sourcing==="weak"?"warn":d.sourcing==="good"?"ok":""}" data-tip="How well the core figures are sourced: good, fair or weak">${d.sourcing||"fair"} sources</span>`+
       `<span class="badge">${m.engineKind}${m.diesel?" · diesel":""}${m.turbo?" · turbo":""}${m.pressurized?" · pressurized":""}</span>`+(m.powerEst?`<span class="badge warn">engine power estimated</span>`:"");
     $("acCard").innerHTML=`<h2>Aircraft data — ${m.code}</h2>${aircraftBlueprint(m,"accard-bp")}<dl>
       <dt>Type</dt><dd>${m.label}</dd>
-      ${m.table?`<dt>Modelled on</dt><dd>${svgEsc(d.variant||"—")}</dd>`:`<dt>Manufacturer</dt><dd>${d.manufacturer||"—"}</dd>`}
+      <dt>Modelled on</dt><dd>${svgEsc(d.variant||"—")}</dd>
       <dt>Engines</dt><dd>${eng}</dd>
       <dt>MTOW</dt><dd>${fmtK(m.mtow)} kg</dd>
       <dt>Ceiling</dt><dd>${lvl(m.ceilFt)}</dd>
@@ -793,9 +781,7 @@ async function loadModel(id,seq){
       <dt>Approach</dt><dd>${nd(P.approachIAS)} kt · ${fmtK(P.approachROD)} fpm</dd>
       <dt>V2 / Vat</dt><dd>${nd(P.takeOffV2)} / ${nd(P.landingVat)} kt</dd>
       <dt>TO / LDG distance</dt><dd>${fmtK(P.takeOffDistance)} / ${fmtK(P.landingDistance)} m</dd>
-      </dl>${m.table?`<p class="note" style="margin-top:10px">Sources: ${d.refs.map(r=>r.url?`<a href="${svgEsc(r.url)}" target="_blank" rel="noopener">${svgEsc(r.title||r.url)}</a>`:svgEsc(r.title||"")).join(" · ")||"—"}</p>`
-      :`<p class="note" style="margin-top:10px">${(d.powerplant||"").slice(0,220)}</p>
-      <p class="note"><a href="${d.source}" target="_blank">EUROCONTROL source page</a> · fetched ${d.fetched||""}</p>`}`;
+      </dl><p class="note" style="margin-top:10px">Sources: ${d.refs.map(r=>r.url?`<a href="${svgEsc(r.url)}" target="_blank" rel="noopener">${svgEsc(r.title||r.url)}</a>`:svgEsc(r.title||"")).join(" · ")||"—"}</p>`;
   }
 }
 
@@ -828,7 +814,7 @@ async function calculate(){
     if(MODEL_P){ status("loading performance data…"); await MODEL_P; }
     const acVal=$("ac").value;
     if(!MODEL){ status(""); if(!$("err").textContent) $("err").textContent="Select an aircraft first."; return; }   // keep a load error if there was one
-    if(acVal!=="other"&&MODEL.id!==acVal){ status(""); $("err").textContent="Aircraft performance data is still loading — try again."; return; }
+    if(MODEL.id!==acVal){ status(""); $("err").textContent="Aircraft performance data is still loading — try again."; return; }
     const m=MODEL, navMode=$("nav").value;
     let mode=navMode, navNote=null;
     if(mode!=="direct"){
@@ -1109,7 +1095,7 @@ function render(X){
     </dl>
     ${!apm&&X.aeroOptEnd>X.aeroOpt+1000?`<p class="note">Optimum rises ~${fmtK(X.aeroOptEnd-X.aeroOpt)} ft as fuel burns off — a step climb may save fuel on longer sectors.</p>`:""}
     ${apm&&m.fuelRef?`<p class="note">Fuel is an estimate from engine power (power setting × specific fuel consumption), calibrated to the published cruise fuel flow of ${m.fuelRef.kgh.v} kg/h (${m.fuelRef.setting}${m.fuelRef.alt_ft?`, ${fmtK(m.fuelRef.alt_ft)} ft`:""}); climb and descent use the same calibration. Use your POH/AFM fuel tables for planning.</p>`
-      :apm?`<p class="note">Fuel is an estimate from engine power (${m.engineKind==="jet"?"thrust × generic TSFC":"power setting × typical specific fuel consumption"}). ${m.table?"":"EUROCONTROL publishes no fuel-flow data. "}Use your POH/AFM fuel tables for planning.</p>`:""}
+      :apm?`<p class="note">Fuel is an estimate from engine power (${m.engineKind==="jet"?"thrust × generic TSFC":"power setting × typical specific fuel consumption"}). Use your POH/AFM fuel tables for planning.</p>`:""}
     </div>
   </div>
 
@@ -1125,14 +1111,13 @@ function render(X){
   </div>
   <details class="card note srcnote"><summary>Data sources and model assumptions</summary>
     <b>Data sources (fetched live):</b>
-    ${apm&&m.table?`performance from XPerf's own table (manufacturer, POH and magazine figures, ${m.d.sourcing||"fair"} sources — see Aircraft data);`
-     :apm?`performance from the <a href="https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/" target="_blank">EUROCONTROL Aircraft Performance Database</a> (${m.live?"live":"offline snapshot"});`
+    ${apm?`performance from XPerf's own table (manufacturer, POH and magazine figures, ${m.d.sourcing||"fair"} sources — see Aircraft data);`
       :`specs, drag polar, engine & fuel-flow models and climb/descent statistics from <a href="https://github.com/TUDelft-CNS-ATM/openap" target="_blank">OpenAP</a> (TU Delft; WRAP parameters derived from real ADS-B flight data);`}
     airports from ${DB.aptSource==="OurAirports"?'<a href="https://ourairports.com" target="_blank">OurAirports</a>':"OpenAP nav data"};
     navaids, runways & frequencies from OurAirports; ILS from FAA NASR (US, current) or X-Plane GPL data (elsewhere, 2013); US approach plates from FAA d-TPP; METAR/TAF from <a href="https://aviationweather.gov" target="_blank">aviationweather.gov</a>;
     winds/temperatures aloft from the <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> forecast at ${X.wx?X.wx.length:0} points; terrain from Open-Meteo elevation (Copernicus DEM).
     <br><b>Model assumptions:</b> great-circle routing (no SID/STAR/airways), optimum = minimum ${X.optBy==="time"?"time":"trip fuel"} among allowed levels,
-    ${apm?`piston/turboprop cruise at ${m.engineKind==="piston"?"65%":"~80% max cruise"} power with altitude power lapse${m.turbo?" (turbocharged to 18,000 ft)":""}, climb/descent rates from ${m.table?"the published sea-level climb rate":"EUROCONTROL averages"}${m.engineKind==="piston"&&!m.turbo?" reduced with altitude toward the service ceiling":""}, reserve 45 min at cruise.`
+    ${apm?`piston/turboprop cruise at ${m.engineKind==="piston"?"65%":"~80% max cruise"} power with altitude power lapse${m.turbo?" (turbocharged to 18,000 ft)":""}, climb/descent rates from the published sea-level climb rate${m.engineKind==="piston"&&!m.turbo?" reduced with altitude toward the service ceiling":""}, reserve 45 min at cruise.`
       :`1.3 g buffet margin (generic Mach-dependent buffet C<sub>L</sub>), climb rates = observed ADS-B averages corrected for weight, reserve = 5% trip + 30 min hold.`}
     <br><b style="color:var(--amber)">For flight simulation, planning practice and education only — not certified for operational use. Always use your aircraft's POH/AFM and approved flight planning.</b>
   </details>`;
@@ -1175,7 +1160,6 @@ function profileSVG(X){
 }
 
 $("ac").addEventListener("change",onAircraft);
-$("otherGo").addEventListener("click",()=>{ const c=$("otherCode").value.trim().toUpperCase(); if(/^[A-Z0-9]{2,4}$/.test(c)){ $("err").textContent=""; selectModel("apm:"+c); } else $("err").textContent="Enter a 2–4 character ICAO type designator."; });
 $("dep").addEventListener("input",aptSearch); $("arr").addEventListener("input",aptSearch); $("alt").addEventListener("input",aptSearch);
 $("go").addEventListener("click",()=>document.body.classList.contains("planned")?Chips.replan():calculate());
 document.addEventListener("change",e=>{ if(e.target?.id==="windTgl"){ $("profcard").classList.toggle("nowinds",!e.target.checked); try{ localStorage.setItem("xperf.winds",e.target.checked?"1":"0"); }catch(_){} } });

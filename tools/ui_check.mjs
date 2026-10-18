@@ -1,7 +1,7 @@
 // Named UI checks for the redesign, run against replayed test flights (deterministic).
 //   node tools/ui_check.mjs [--only name,name] [--mode server|packs] [--port 8770]
 // Needs: python server.py 8770, and fixtures from `node tools/regress.mjs record`.
-import { spawnSync } from "node:child_process";
+import { spawnSync, spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
@@ -572,6 +572,67 @@ check("surface-clicks", async () => {
     await page.click("#windTgl"); await settle(page);
     expect(await page.eval(`document.getElementById('windTgl').checked`) === !before, "checkbox click was cancelled");
     expect(await page.eval(`!document.getElementById('surface').hasAttribute('aria-current')`), "surface marked as the current page link");
+  } finally { await page.close(); }
+});
+
+// web release: no EUROCONTROL data or lookups ship (the GA table replaces them)
+check("no-eurocontrol", async () => {
+  const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1").replace(/<!--[\s\S]*?-->/g, "");
+  const bad = [];
+  for (const f of ["index.html", "data.js", "acpicker.js", "nav.js", "overview.js", "chips.js", "shell.js", "pln.js"]) {
+    const hits = strip(readFileSync(join(here, "..", f), "utf8")).match(/eurocontrol|apm_snapshot|\/api\/apm/gi);
+    if (hits) bad.push(`${f}: ${hits.length}`);
+  }
+  if (/\/api\/apm|APM_URL/.test(readFileSync(join(here, "..", "server.py"), "utf8"))) bad.push("server.py: /api/apm");
+  expect(!bad.length, "EUROCONTROL still referenced: " + bad.join(", "));
+  const page = await open("c172");
+  try {
+    expect(await page.eval(`![...document.getElementById('ac').options].some(o=>o.value==='other')`), "Other ICAO type option still listed");
+    await page.eval(`(()=>{ const i=document.querySelector('.acpick input'); i.focus(); i.value='ZZ9Q'; i.dispatchEvent(new Event('input',{bubbles:true})); })()`); await settle(page);
+    expect(await page.eval(`!document.querySelector('.acopt.lookup')`), "picker still offers a lookup for unlisted types");
+  } finally { await page.close(); }
+});
+
+// the hosted build: a plain static server (no XPerf API) serves tools/build_site.py's output; the app runs on the
+// packs, and once visited it opens and plans with the site's server gone (service worker cache)
+check("static-site", async () => {
+  if (mode !== "server") return;                       // builds and serves its own copy; once per run is enough
+  const out = join(here, "..", "out", "site-check"), sport = 8779;
+  const b = spawnSync("python", [join(here, "build_site.py"), "--out", out], { encoding: "utf8" });
+  expect(b.status === 0, "build_site failed: " + (b.stderr || b.stdout));
+  let srv = spawn("python", ["-m", "http.server", String(sport), "--bind", "127.0.0.1", "--directory", out], { stdio: "ignore" });
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  for (let i = 0; i < 40; i++) { try { if ((await fetch(`http://127.0.0.1:${sport}/index.html`)).ok) break; } catch {} await wait(250); }
+  const page = await launch({ port: sport });
+  try {
+    await page.goto("/");
+    await page.eval(`(async()=>{ for(let i=0;i<240&&document.getElementById('go').disabled;i++) await new Promise(r=>setTimeout(r,250)); })()`);
+    expect(await page.eval(`XD.mode`) === "packs", "static site is not in packs mode");
+    let err = await planFlight(page, FLIGHTS.c172); expect(!err, "plan on the static site failed: " + err);
+    await page.eval(`navigator.serviceWorker.ready.then(()=>true)`);
+    await page.goto("/");                                 // second visit: the worker controls the page and caches packs
+    await page.eval(`(async()=>{ for(let i=0;i<240&&document.getElementById('go').disabled;i++) await new Promise(r=>setTimeout(r,250)); })()`);
+    expect(await page.eval(`!!navigator.serviceWorker.controller`), "service worker not controlling the page");
+    err = await planFlight(page, FLIGHTS.c172); expect(!err, "second plan failed: " + err);
+    srv.kill(); srv = null; await wait(500);
+    let down = false; try { await fetch(`http://127.0.0.1:${sport}/index.html`); } catch { down = true; }
+    expect(down, "the static server is still answering: the offline step would prove nothing");
+    await page.goto("/");
+    await page.eval(`(async()=>{ for(let i=0;i<240&&document.getElementById('go').disabled;i++) await new Promise(r=>setTimeout(r,250)); })()`);
+    expect(await page.eval(`!!document.getElementById('go')&&typeof XD==='object'`), "app did not open with the site offline");
+    err = await planFlight(page, FLIGHTS.c172); expect(!err, "offline plan failed: " + err);
+  } finally { await page.close(); if (srv) srv.kill(); }
+});
+
+// a public site credits its data sources (Open-Meteo requires attribution) and says it is for simulation only
+check("about-credits", async () => {
+  const page = await open("c172");
+  try {
+    await page.eval(`Shell.showView('settings')`); await settle(page);
+    const t = await page.eval(`document.getElementById('about')?.innerText||''`);
+    for (const need of ["flight simulation only", "OurAirports", "FAA", "OpenAP", "Open-Meteo", "OpenStreetMap", "aviationweather.gov", "Leaflet", "not affiliated"])
+      expect(t.toLowerCase().includes(need.toLowerCase()), `About is missing “${need}”`);
+    expect(await page.eval(`!!document.querySelector('#about a[href^="https://open-meteo.com"]')`), "no Open-Meteo attribution link");
   } finally { await page.close(); }
 });
 

@@ -15,7 +15,7 @@ Everything is free/public data fetched live and cached locally. For simulation/e
 ```bash
 cd C:\FlightSim\XPerf
 python server.py          # http://localhost:8765  (python server.py 8770 for a second/test instance)
-python server.py --snapshot   # refresh apm_snapshot.json (offline EUROCONTROL fallback)
+python tools/build_site.py    # static website -> dist/site/ (packs mode, service worker; --wx <relay URL>)
 ```
 
 - **After any change to `server.py` / `navdata.py` the user must restart the server.** Static files (html/js) are
@@ -30,7 +30,7 @@ python server.py --snapshot   # refresh apm_snapshot.json (offline EUROCONTROL f
 
 | File | Role |
 |---|---|
-| `index.html` (~1250 lines) | UI, styles, ISA/geo math, aircraft models (OpenAP airliners + EUROCONTROL APM GA/bizjets), weather/terrain fetch, level optimisation (`planProfile`), `calculate()`, `render()` with tabs, profile SVG |
+| `index.html` (~1250 lines) | UI, styles, ISA/geo math, aircraft models (OpenAP airliners + XPerf GA table), weather/terrain fetch, level optimisation (`planProfile`), `calculate()`, `render()` with tabs, profile SVG |
 | `nav.js` (~930) | Navaids, VOR/NDB route planner, airway router (+ hybrid for non-US ends), published-route client, nav log, Leaflet map, airport briefs/cards, runway/takeoff/landing performance, minimums, setup card (FS2024), departure briefing, SID/STAR/approach pickers + suggestions, plate viewer |
 | `charts.js` (~210) | Winds-aloft layer, cruise-level chart, runway diagram, distance bars, fuel-remaining chart, TAF timeline |
 | `acpicker.js` (~110) | Searchable aircraft combobox over the hidden `#ac` select |
@@ -40,15 +40,17 @@ python server.py --snapshot   # refresh apm_snapshot.json (offline EUROCONTROL f
 | `packs/` | Built data packs (safe to delete; rebuild) |
 | `IOS_PORT_STUDY.md` | iOS App Store portability study (Capacitor + packs, licences, plan) |
 | `tools/check_weather_port.mjs` | Node check: data.js `weather()` vs server `/api/airportinfo` wx (needs server on 8770 + static on 8771) |
-| `server.py` | Stdlib HTTP server + API endpoints (below), EUROCONTROL scraper |
+| `server.py` | Stdlib HTTP server + API endpoints (below) |
 | `navdata.py` (~750) | All data loading/parsing/caching: navaids, runways, frequencies, ILS, d-TPP charts, METAR/TAF, terrain, FAA airways, SID/STAR, preferred/CDR routes, ICAO regions |
-| `apm_snapshot.json` | Offline snapshot of 82 EUROCONTROL GA/bizjet types |
+| `data/ga_perf.json` | XPerf's own GA / turboprop / bizjet performance table (82 types, sourced per value); build with `tools/build_ga_perf.py`, check with `tools/validate_ga_perf.py` |
+| `tools/build_site.py`, `sw.js`, `manifest.webmanifest`, `icons/`, `vendor/` | Static website build: packs mode, service worker (offline + install), Leaflet vendored |
+| `tools/wx-worker.js` | Cloudflare Worker relaying aviationweather.gov METAR/TAF with CORS for the static site |
 | `cache/` | Downloaded datasets (safe to delete; re-downloaded) |
 | `NUL` | Stray curl error output — safe to delete |
 
 ## API endpoints (server.py)
 
-`/api/apm/<ICAO>` EUROCONTROL perf · `/api/airports` OurAirports (49k) · `/api/navaids` · `/api/airways` (V/J/colored) ·
+`/api/airports` OurAirports (49k) · `/api/navaids` · `/api/airways` (V/J/colored) ·
 `/api/airportinfo?ident&aliases&country&lat&lon` (runways, freqs, ILS, charts, SID/STAR procs, METAR/TAF + decoded TAF) ·
 `/api/terrain?locs=lat,lon|…` · `/api/routes?orig&dest&olat&olon&dlat&dlon` (FAA preferred/TEC/CDR expanded to waypoints) ·
 `/api/regions?pts=id,lat,lon|…` (ICAO regions for .PLN) · `/api/health`
@@ -56,15 +58,15 @@ python server.py --snapshot   # refresh apm_snapshot.json (offline EUROCONTROL f
 ## Data sources
 
 - **Performance**: OpenAP (TU Delft, GitHub raw) for 37 airliners/large jets incl. WRAP ADS-B climb/descent stats;
-  EUROCONTROL Aircraft Performance Database (scraped via server, no CORS) for 82 GA/turboprop/bizjet types + any ICAO
-  lookup. GA fuel flow is **estimated** from engine power × generic SFC (no free fuel data). A few engine ratings are
-  hand-corrected in `ENGINE_FIX` (index.html).
+  XPerf's own table (`data/ga_perf.json`, manufacturer / POH / magazine figures) for 82 GA/turboprop/bizjet types; no
+  other types can be looked up. GA fuel flow is estimated from engine power × SFC, calibrated to the published cruise
+  fuel flow where the table has one. EUROCONTROL data is no longer used or shipped.
 - **Airports/navaids/runways/frequencies**: OurAirports (public domain).
 - **FAA NASR 28-day CSV** (current AIRAC via `navdata.airac()`, ref cycle 2610 = 2026-10-01): ILS, FIX, NAV, AWY, DP, STAR, PFR, CDR.
 - **FAA d-TPP** metafile → official plate PDFs (US only); embedded directly from aeronav.faa.gov.
 - **ILS outside US**: X-Plane GPL nav.dat via OpenAP (2013 — flagged as possibly outdated).
 - **Weather**: aviationweather.gov METAR/TAF (+ decoded TAF, nearest station ≤60 NM); Open-Meteo winds/temps aloft
-  (retries; was overloaded once). **Terrain**: Open-Meteo elevation, fallback OpenTopoData SRTM90 (server proxy).
+  (retries; was overloaded once). **Terrain**: Open-Meteo elevation (retried).
 - Map tiles: OpenStreetMap (CSS dark filter) + OpenTopoMap. CARTO needs an API key now — don't use.
 
 ## Features (current state)
@@ -116,7 +118,7 @@ python server.py --snapshot   # refresh apm_snapshot.json (offline EUROCONTROL f
 - Free official plates/procedures are **US only**; elsewhere ChartFox/SkyVector links + visual/ILS approach options.
 - Published routes only exist between larger US airports; small fields fall back to airways.
 - Minimums shown are the standard CAT I baseline; real DA/MDA only on the plate.
-- GA fuel and some EUROCONTROL climb rates (e.g. C172 400 fpm) are conservative/estimated.
+- GA fuel is estimated for types without a published cruise fuel flow.
 - Airports tab is long with three airports — possible next step: departure/arrival sub-tabs or side-by-side.
 - Ideas not done: SimBrief-style route string import, METAR-based runway-in-use from ATIS, alternate fuel,
   STAR/SID geometry drawn on the map for non-published routes, aircraft V-speeds per weight.

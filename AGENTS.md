@@ -15,6 +15,10 @@ Regression check (numbers must not change): `node tools/regress.mjs compare` wit
 - `python server.py 8770` → http://localhost:8770 (the owner's own instance uses 8765; restart after editing `.py`).
 - Syntax-check JS after edits: `node -e "new Function(require('fs').readFileSync('nav.js','utf8'))"`.
 - Screenshots: `$env:XPORT=8770; node tools\shoot.mjs <outDir> <width> <acId> <dep> <arr> <nav>` (PowerShell).
+- Tests: `node --test tests/palette.test.mjs tests/routeimport.test.mjs tests/blueprint.test.mjs tests/wx-worker.test.mjs`;
+  UI: `node tools/ui_check.mjs --mode server|packs` (~10 min each; never two runs at once).
+- Static site: `python build_packs.py` then `python tools/build_site.py [--wx <relay URL>]` → `dist/site/`;
+  METAR/TAF relay: `tools/wx-worker.js` (Cloudflare Worker).
 
 ## Rules
 

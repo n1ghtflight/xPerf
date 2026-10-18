@@ -1,13 +1,11 @@
 """Local server for the Flight Performance Calculator.
 
-Serves the app and proxies the EUROCONTROL Aircraft Performance Database
-(which has no CORS headers, so a browser can't fetch it directly).
+Serves the app and the /api endpoints (airports, navaids, airways, routes, airport info, regions, terrain)
+that navdata.py builds from public sources.
 
     python server.py            -> http://localhost:8765
-    python server.py --snapshot -> refresh apm_snapshot.json (offline fallback)
 """
 import csv
-import html
 import io
 import json
 import os
@@ -22,69 +20,10 @@ import navdata
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CACHE_DIR = os.path.join(ROOT, "cache")
-CACHE_TTL = 30 * 86400
-APM_URL = "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO={}"
 UA = "Mozilla/5.0 (flight-performance-calculator; personal use)"
-
-# general aviation, turboprop and business types offered in the app's list
-GA_TYPES = """C150 C152 C172 C177 C182 C206 C207 C208 C210 C310 C337 C340 C402 C414 C421 C425 C441
-P28A P28R P28T P32R PA18 PA23 PA27 PA31 PA32 PA34 PA38 PA44 PA46 P46T M600 SR20 SR22 DA40 DA42 DA50
-DR40 BE23 BE33 BE36 BE55 BE58 BE76 BE20 B350 BE9L M20P M20T TOBA TRIN TAMP RALL G115 PC12 PC6T TBM7 TBM8
-DHC6 P180 C25A C25B C525 C560 C56X C680 C750 E50P E55P PRM1 HDJT LJ45 LJ60 CL30 CL35 CL60 GLF4 GLF5 GLEX FA7X F2TH F900""".split()
 
 OURAIRPORTS_URL = "https://davidmegginson.github.io/ourairports-data/airports.csv"
 AIRPORT_TYPES = {"large_airport", "medium_airport", "small_airport", "seaplane_base"}
-
-
-def fetch_apm(icao):
-    req = urllib.request.Request(APM_URL.format(icao), headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=25) as r:
-        page = r.read().decode("utf-8", "ignore")
-    return parse_apm(icao, page)
-
-
-def parse_apm(icao, page):
-    def label(id_):
-        m = re.search(r'id="MainContent_%s"[^>]*>([^<]*)' % id_, page)
-        return html.unescape(m.group(1)).strip() if m else None
-
-    perf = {}
-    for key, val in re.findall(r'datagraph="(\w+)"[^>]*>([^<]*)<', page):
-        v = html.unescape(val).strip()
-        if not v or v in ("-", "no data"):
-            continue
-        try:
-            perf[key] = float(v)
-        except ValueError:
-            perf[key] = v
-    got = label("wsICAOLabel")
-    if not got or got.upper() != icao:
-        raise LookupError(f"{icao} not found in EUROCONTROL Aircraft Performance Database")
-    return {
-        "icao": icao,
-        "name": label("wsAcftNameLabel"),
-        "manufacturer": label("wsManufacturerLabel"),
-        "type": label("wsTypeLabel"),          # e.g. L1P = landplane, 1 engine, piston
-        "wtc": label("wsWTCLabel"),
-        "powerplant": label("wsLabelPowerPlant"),
-        "wingspan": label("wsLabelWingSpan"),
-        "accommodation": label("wsLabelAccommodation"),
-        "perf": perf,
-        "source": APM_URL.format(icao),
-        "fetched": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-
-
-def get_apm(icao):
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    path = os.path.join(CACHE_DIR, f"apm_{icao}.json")
-    if os.path.exists(path) and time.time() - os.path.getmtime(path) < CACHE_TTL:
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
-    data = fetch_apm(icao)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f)
-    return data
 
 
 def get_airports():
@@ -122,16 +61,6 @@ class Handler(SimpleHTTPRequestHandler):
         super().__init__(*a, directory=ROOT, **kw)
 
     def do_GET(self):
-        m = re.match(r"^/api/apm/([A-Za-z0-9]{2,4})$", self.path)
-        if m:
-            icao = m.group(1).upper()
-            try:
-                self.send_json(200, get_apm(icao))
-            except LookupError as e:
-                self.send_json(404, {"error": str(e)})
-            except Exception as e:  # network errors etc.
-                self.send_json(502, {"error": f"EUROCONTROL fetch failed: {e}"})
-            return
         if self.path == "/api/airports":
             try:
                 body = get_airports()
@@ -222,26 +151,9 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
 
-def build_snapshot():
-    out = {}
-    for icao in GA_TYPES:
-        try:
-            out[icao] = get_apm(icao)
-            print("ok  ", icao, out[icao]["name"])
-        except Exception as e:
-            print("FAIL", icao, e)
-        time.sleep(0.3)
-    with open(os.path.join(ROOT, "apm_snapshot.json"), "w", encoding="utf-8") as f:
-        json.dump(out, f, separators=(",", ":"))
-    print(f"wrote {len(out)} types to apm_snapshot.json")
-
-
 if __name__ == "__main__":
-    if "--snapshot" in sys.argv:
-        build_snapshot()
-    else:
-        args = [a for a in sys.argv[1:] if a.isdigit()]       # python server.py [port]
-        port = int(args[0]) if args else int(os.environ.get("PORT", 8765))
-        print(f"Flight Performance Calculator on http://localhost:{port}")
-        navdata.warm()
-        ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    args = [a for a in sys.argv[1:] if a.isdigit()]       # python server.py [port]
+    port = int(args[0]) if args else int(os.environ.get("PORT", 8765))
+    print(f"Flight Performance Calculator on http://localhost:{port}")
+    navdata.warm()
+    ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()

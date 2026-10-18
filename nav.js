@@ -279,13 +279,13 @@ function windComp(hdgT,met){ // headwind (+) / crosswind for a runway heading (t
 }
 
 /* ---------------------------------------------------------------- takeoff / landing performance */
-// Base distances: XPerf table (POH distance over 50 ft / FAR 25 field length, MTOW, ISA, sea level), EUROCONTROL APM
-// ("Other" types) or OpenAP WRAP (observed ADS-B ground roll).
+// Base distances: XPerf table (POH distance over 50 ft / FAR 25 field length, MTOW, ISA, sea level) or OpenAP WRAP
+// (observed ADS-B ground roll).
 // Corrections follow the UK CAA Safety Sense 7 factors; safety factors 1.33 (T/O) and 1.43 (LDG) for GA,
 // 1.15 / 1.67 (dry) for transport category.
 function basePerf(m){
   if(m.kind==="apm"){ const P=m.P; return {to:P.takeOffDistance, ldg:P.landingDistance, v2:P.takeOffV2||(P.landingVat?P.landingVat*1.1:70), vat:P.landingVat||60,
-    wTo:m.mtow, wLdg:m.mtow*0.95, sfTo:m.engineKind==="jet"?1.15:1.33, sfLdg:m.engineKind==="jet"?1.67:1.43, src:m.table?"XPerf table (published distance, MTOW, ISA, sea level)":"EUROCONTROL APM (MTOW, ISA, sea level)"}; }
+    wTo:m.mtow, wLdg:m.mtow*0.95, sfTo:m.engineKind==="jet"?1.15:1.33, sfLdg:m.engineKind==="jet"?1.67:1.43, src:"XPerf table (published distance, MTOW, ISA, sea level)"}; }
   const W=m.wrap, ac=m.ac;
   return {to:W.to_d_tof.opt*1000, ldg:(W.ld_d_brk.opt*1000)+300, v2:W.to_v_lof.opt/KT, vat:W.ld_v_app.opt/KT,
     wTo:(ac.oew+ac.mtow)/2, wLdg:(ac.oew+ac.mlw)/2, sfTo:1.15, sfLdg:1.67, src:"OpenAP WRAP (observed ADS-B, typical weights) + 300 m air distance"};

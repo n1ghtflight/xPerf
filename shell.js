@@ -65,6 +65,9 @@ const Shell=(()=>{
   });
   document.addEventListener("change",e=>{ if(e.target.id==="themeSel") setTheme(e.target.value);
     if(e.target.id==="bpTgl"){ document.body.classList.toggle("no-blueprint",!e.target.checked); store.set("xperf.blueprint",e.target.checked?"1":"0"); } });
+  // offline use and "Install app": the static site's service worker (never on the local dev server)
+  const sw=document.querySelector('meta[name="xperf-sw"]')?.content;
+  if(sw&&"serviceWorker" in navigator) navigator.serviceWorker.register(sw).catch(e=>console.warn("service worker",e));
   if(store.get("xperf.blueprint")==="0"){ document.body.classList.add("no-blueprint"); const t=document.getElementById("bpTgl"); if(t) t.checked=false; }
 
   // G then a letter jumps to a view; "," opens Settings; "[" toggles the sidebar. Never while typing.

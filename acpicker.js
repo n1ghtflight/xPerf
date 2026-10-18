@@ -3,8 +3,7 @@
    Searchable aircraft picker. A combobox over the (hidden) #ac <select>,
    so the rest of the app keeps reading $("ac").value and its change event.
    Type any part of a name, maker, ICAO code or class ("172", "king air",
-   "pa28", "737 max", "turboprop"); codes not in the list can be looked up
-   in the EUROCONTROL database directly from the results.
+   "pa28", "737 max", "turboprop").
    ===================================================================== */
 const AcPicker=(()=>{
   const norm=s=>String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"");
@@ -16,7 +15,7 @@ const AcPicker=(()=>{
       if(o.value==="other") continue;
       const group=g.label.replace(/ — .*/,""), code=(o.textContent.match(/\(([^)]+)\)\s*$/)||[])[1]||"";
       const name=o.textContent.replace(/\s*\([^)]+\)\s*$/,"");
-      items.push({value:o.value,text:o.textContent,name,code,group,src:g.label.includes("OpenAP")?"OpenAP":g.label==="Other"?"EUROCONTROL":"XPerf",
+      items.push({value:o.value,text:o.textContent,name,code,group,src:g.label.includes("OpenAP")?"OpenAP":"XPerf",
         hay:norm(`${o.textContent} ${group} ${code}`),hayWords:`${o.textContent} ${group}`.toLowerCase()});
     }
   }
@@ -39,13 +38,6 @@ const AcPicker=(()=>{
       if(grouped&&it.group!==lastGroup){ html+=`<div class="acgrp">${it.group}</div>`; lastGroup=it.group; }
       html+=`<div class="acopt${i===active?" on":""}${it.value===sel.value?" cur":""}" role="option" data-i="${i}" id="acopt${i}">
         <span class="acname">${hl(it.name,tokens)}</span><span class="accode">${hl(it.code,tokens)}</span>${grouped?"":`<span class="acgroup">${it.group}</span>`}</div>`; });
-    // any ICAO-shaped query that isn't already listed can be looked up live
-    const code=qRaw.trim().toUpperCase();
-    if(/^[A-Z][A-Z0-9]{1,3}$/.test(code)&&!shown.length){
-      shown.push({lookup:code});
-      html+=`<div class="acopt lookup${shown.length-1===active?" on":""}" role="option" data-i="${shown.length-1}" id="acopt${shown.length-1}">
-        <span class="acname">Look up <b>${code}</b> in the EUROCONTROL database</span><span class="accode">↵</span></div>`;
-    }
     if(!shown.length) html=`<div class="acnone">No aircraft match “${esc(qRaw)}”. Try a maker, model number or 2–4 letter ICAO type code.</div>`;
     list.innerHTML=html;
   }
@@ -66,12 +58,7 @@ const AcPicker=(()=>{
     const el=document.getElementById("acopt"+active); if(el){ el.scrollIntoView({block:"nearest"}); input.setAttribute("aria-activedescendant",el.id); } }
   function choose(i){
     const x=shown[i]; if(!x) return;
-    if(x.lookup){ // add the looked-up type to the list so it behaves like any other aircraft from now on
-      let g=[...sel.querySelectorAll("optgroup")].find(g=>g.label==="Other");
-      const v="apm:"+x.lookup;
-      if(![...sel.options].some(o=>o.value===v)){ const o=document.createElement("option"); o.value=v; o.textContent=`${x.lookup} — EUROCONTROL lookup (${x.lookup})`; g.appendChild(o); index(); }
-      set(v);
-    } else set(x.it.value);
+    set(x.it.value);
     close(false); input.blur();
   }
   function set(value){
@@ -82,7 +69,7 @@ const AcPicker=(()=>{
 
   function init(){
     sel=document.getElementById("ac"); if(!sel||wrap) return;
-    sel.hidden=true; document.getElementById("otherRow")?.remove();
+    sel.hidden=true;
     wrap=document.createElement("div"); wrap.className="acpick";
     wrap.innerHTML=`<input id="acSearch" type="text" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="acList" aria-label="Aircraft"
       placeholder="Search: name, maker or ICAO (C172, king air, 737)"><span class="acicon">⌕</span><div id="acList" class="aclist" role="listbox" hidden></div>`;

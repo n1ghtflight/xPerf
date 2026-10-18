@@ -11,3 +11,5 @@ dist/
 tools/regress/fixtures/
 # Local review screenshots
 out/
+# EUROCONTROL APM snapshot: private sanity check for tools/validate_ga_perf.py only, never published
+apm_snapshot.json

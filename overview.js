@@ -31,7 +31,7 @@ function renderOverview(X){
   const oap=m.kind==="openap", eng=oap?`${m.nEng} × ${Math.round(m.eng.max_thrust/1000)} kN`
     :m.engineKind==="jet"?`${m.nEng} × ${(m.thrustN/1000).toFixed(1)} kN`:`${m.nEng} × ${Math.round(m.hp)} ${m.engineKind==="turboprop"?"shp":"hp"}`;
   const facts=[["Engines",eng],["MTOW",`${fmtK(oap?m.ac.mtow:m.mtow)} kg`],["Cruise",oap?`M${m.cruiseMach}`:`${m.P.cruiseTAS} kt`],["Ceiling",lvl(m.ceilFt)]];
-  const acSub=oap?`OpenAP · ${m.eng.name}`:m.d?.variant||`${m.engineKind} · EUROCONTROL APM`;
+  const acSub=oap?`OpenAP · ${m.eng.name}`:m.d?.variant||m.engineKind;
   const acTile=tile("aircraft","setup","span-12 actile",aircraftBlueprint(m)+
     `<div class="actxt">${head("i-setup","Aircraft")}<div class="acname">${esc(m.label)}</div><div class="sub">${esc(acSub)}</div>`+
     `<dl class="acfacts">${facts.map(([k,v])=>`<div><dt>${k}</dt><dd class="num">${esc(v)}</dd></div>`).join("")}</dl></div>`,"Open FS2024 setup");

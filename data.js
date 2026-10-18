@@ -2,10 +2,12 @@
    XPerf data adapter — every data request of the app goes through XD.
 
    mode "server" (default with python server.py): the /api endpoints, exactly as before.
-   mode "packs"  (?data=packs, localStorage xperf.data=packs, or the iOS app): prebuilt AIRAC packs made by
+   mode "packs"  (?data=packs, localStorage xperf.data=packs, <meta name="xperf-data" content="packs"> in a static
+     build from tools/build_site.py, or the iOS app): prebuilt AIRAC packs made by
      build_packs.py (packs/current.json → packs/<cycle>/…json.gz) for all static data; live data is fetched at
      run time: winds aloft / terrain from Open-Meteo (CORS ok), METAR/TAF from aviationweather.gov through native
-     HTTP in the iOS app or the local server's /api when one answers (the browser can't call AWC: no CORS).
+     HTTP in the iOS app, a relay named by <meta name="xperf-wx"> (tools/wx-worker.js), or the local server's
+     /api when one answers (the browser can't call AWC directly: no CORS).
    Uses fetchT()/get() from index.html at call time.
    ===================================================================== */
 const XD=(()=>{
@@ -13,9 +15,10 @@ const XD=(()=>{
   let pref=qs.get("data"); try{ pref=pref||localStorage.getItem("xperf.data"); }catch(_){}
   const native=!!window.Capacitor?.isNativePlatform?.();
   const http=location.protocol.startsWith("http");
-  const mode=native||pref==="packs"?"packs":"server";
+  const meta=n=>document.querySelector(`meta[name="${n}"]`)?.content||"";
+  const mode=native||(pref||meta("xperf-data"))==="packs"?"packs":"server";
   const root=(qs.get("packs")||"packs/").replace(/\/?$/,"/");
-  const AWC="https://aviationweather.gov";
+  const WX=meta("xperf-wx").replace(/\/+$/,""), AWC=WX||"https://aviationweather.gov";   // WX: CORS relay for AWC
   const NMR=3440.065, r=x=>x*Math.PI/180;
   const nmBetween=(a1,o1,a2,o2)=>{ const p1=r(a1),p2=r(a2),dl=p2-p1,dn=r(o2-o1);
     return 2*NMR*Math.asin(Math.min(1,Math.sqrt(Math.sin(dl/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dn/2)**2))); };
@@ -88,7 +91,7 @@ const XD=(()=>{
     const rec=m.shardSet.has(shardOf(a.icao))?(await pack(`apt/${shardOf(a.icao)}.json`))[a.icao]||{}:{};
     const ilsSrc=US?m.ils.us:m.ils.other;
     const wxP=(async()=>{
-      if(native) return weather(a.icao,a.lat,a.lon);
+      if(native||WX) return weather(a.icao,a.lat,a.lon);
       if(await proxy()){ const q=new URLSearchParams({ident:a.icao,aliases:[a.iata,...(a.aliases||[])].filter(Boolean).join(","),country:a.country||"",lat:a.lat,lon:a.lon});
         try{ return (await fetchT("/api/airportinfo?"+q,"json",120000)).wx; }catch(e){ return {station:null,distNM:0,metar:null,taf:null,error:e.message}; } }
       return {station:null,distNM:0,metar:null,taf:null,error:"live METAR/TAF needs the app or the local server (aviationweather.gov blocks browser requests)"};
@@ -117,7 +120,7 @@ const XD=(()=>{
       return best?best[1]:null; });
   }
 
-  /* ---------- terrain: Open-Meteo direct (CORS ok, retried), then the server's SRTM fallback when there is one */
+  /* ---------- terrain: Open-Meteo direct (CORS ok, retried), then the local server's terrain endpoint when there is one */
   async function packTerrain(pts){
     const url="https://api.open-meteo.com/v1/elevation?latitude="+pts.map(p=>p.lat.toFixed(4)).join(",")+"&longitude="+pts.map(p=>p.lon.toFixed(4)).join(",");
     let last;
@@ -156,8 +159,6 @@ const XD=(()=>{
         u.protocol="https:"; url=u.href; }
       else url="https://www.simbrief.com/api/xml.fetcher.php?"+new URLSearchParams(/^\d+$/.test(s)?{userid:s}:{username:s});
       return httpText(url,20000,true); },
-    // EUROCONTROL APM, live (server scrape). Packs mode only through a local server; otherwise the caller uses apm_snapshot.json
-    apm: async icao=>{ if(S||await proxy()) return get(`/api/apm/${icao}`,"json",30000); throw new Error("live EUROCONTROL lookup unavailable"); },
     weather,                          // exposed for tests / native use
   };
 })();
