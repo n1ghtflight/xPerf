@@ -1,5 +1,5 @@
 {
- "blockKg": 47.24,
+ "blockKg": 50.772,
  "cruiseFt": 9500,
  "err": "",
  "inventory": [
@@ -41,6 +41,7 @@
   "#aptList",
   "#arr",
   "#arrRes",
+  "#bpTgl",
   "#chipMenu",
   "#chipbar",
   "#crumb",
@@ -68,6 +69,7 @@
   "#i-fwd",
   "#i-more",
   "#i-overview",
+  "#i-plus",
   "#i-profile",
   "#i-route",
   "#i-settings",
@@ -149,7 +151,7 @@
    "dist": 145.153,
    "eta": {},
    "ete": 4319.292,
-   "fuelRem": 17.115,
+   "fuelRem": 18.395,
    "gs": 120.981,
    "guid": "Pilotage / dead reckoning",
    "i": 0,
@@ -174,25 +176,25 @@
    "allowed": false,
    "ft": 7500,
    "timeS": 4376.05,
-   "tripKg": 30.194
+   "tripKg": 32.451
   },
   {
    "allowed": false,
    "ft": 9500,
    "timeS": 4319.292,
-   "tripKg": 30.125
+   "tripKg": 32.377
   },
   {
    "allowed": false,
    "ft": 11500,
    "timeS": 4385.724,
-   "tripKg": 30.911
+   "tripKg": 33.223
   },
   {
    "allowed": false,
    "ft": 13500,
    "timeS": 4598.073,
-   "tripKg": 32.401
+   "tripKg": 34.824
   }
  ],
  "pln": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<SimBase.Document Type=\"AceXML\" version=\"1,0\">\n    <Descr>AceXML Document</Descr>\n    <FlightPlan.FlightPlan>\n        <Title>KPAO to KTRK</Title>\n        <FPType>VFR</FPType>\n        <RouteType>Direct</RouteType>\n        <CruisingAlt>9500</CruisingAlt>\n        <DepartureID>KPAO</DepartureID>\n        <DepartureLLA>N37° 27' 39.96\",W122° 6' 54.00\",+000004.00</DepartureLLA>\n        <DestinationID>KTRK</DestinationID>\n        <DestinationLLA>N39° 19' 7.07\",W120° 8' 26.02\",+005900.00</DestinationLLA>\n        <Descr>KPAO to KTRK · DCT · Cessna 172 Skyhawk · 9,500 ft · planned with XPerf</Descr>\n        <DeparturePosition>31</DeparturePosition>\n        <DepartureName>Palo Alto Airport</DepartureName>\n        <DestinationName>Truckee Tahoe Airport</DestinationName>\n        <AppVersion>\n            <AppVersionMajor>12</AppVersionMajor>\n            <AppVersionBuild>282174</AppVersionBuild>\n        </AppVersion>\n        <ATCWaypoint id=\"KPAO\">\n            <ATCWaypointType>Airport</ATCWaypointType>\n            <WorldPosition>N37° 27' 39.96\",W122° 6' 54.00\",+000004.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <RunwayNumberFP>31</RunwayNumberFP>\n            <RunwayDesignatorFP>NONE</RunwayDesignatorFP>\n            <ICAO>\n                <ICAOIdent>KPAO</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n        <ATCWaypoint id=\"KTRK\">\n            <ATCWaypointType>Airport</ATCWaypointType>\n            <WorldPosition>N39° 19' 7.07\",W120° 8' 26.02\",+005900.00</WorldPosition>\n            <SpeedMaxFP>-1</SpeedMaxFP>\n            <ApproachTypeFP>RNAV</ApproachTypeFP>\n            <RunwayNumberFP>11</RunwayNumberFP>\n            <RunwayDesignatorFP>NONE</RunwayDesignatorFP>\n            <ICAO>\n                <ICAOIdent>KTRK</ICAOIdent>\n            </ICAO>\n        </ATCWaypoint>\n    </FlightPlan.FlightPlan>\n</SimBase.Document>\n",
@@ -210,7 +212,7 @@
   "tS": 509.143
  },
  "totalNM": 145.153,
- "tripKg": 30.125,
+ "tripKg": 32.377,
  "warnings": [
   "No level meets every limit on this route. Showing 9,500 ft, the best compromise: terrain clearance -430 ft < 756 at 7.6 NM before KTRK (during descent). Even at the steepest normal descent the straight-in path clips terrain — in practice you'd cross the high ground at a safe altitude and lose height in a descending circle over the airport, or route via a valley."
  ]

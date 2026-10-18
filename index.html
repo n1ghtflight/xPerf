@@ -488,7 +488,7 @@ let SNAPSHOT=null;
 function tableRecord(icao,t,sources){
   const ids=new Set(); const walk=o=>{ if(o&&typeof o==="object"){ (o.src||[]).forEach(i=>ids.add(i)); Object.values(o).forEach(walk); } }; walk(t);
   return {icao,name:t.name,variant:t.variant,type:t.type.v,perf:Object.fromEntries(Object.entries(t.perf).map(([k,o])=>[k,o.v])),
-    engine:t.engine,wingspan:t.wingspan_m?.v,cruise:t.cruise,sourcing:t.sourcing,table:true,
+    engine:t.engine,wingspan:t.wingspan_m?.v,cruise:t.cruise,fuel:t.fuel,sourcing:t.sourcing,table:true,
     refs:[...ids].map(i=>sources[i]).filter(Boolean)};
 }
 async function apmData(icao){
@@ -546,7 +546,12 @@ async function loadApmModel(icao){
   const tasFt=tasPct&&d.cruise?.alt_ft?d.cruise.alt_ft:refFt;
   // table climb rates are sea-level figures; EUROCONTROL's read as band averages (mid-band, 2,500 ft)
   const icMid=E?0:2500;
-  const SFC=diesel?{cr:0.36,cl:0.40,de:0.38}:{piston:{cr:0.43,cl:0.50,de:0.45},turboprop:{cr:0.60,cl:0.65,de:0.75}}[kind];
+  const SFC0=diesel?{cr:0.36,cl:0.40,de:0.38}:{piston:{cr:0.43,cl:0.50,de:0.45},turboprop:{cr:0.60,cl:0.65,de:0.75}}[kind];
+  // a published cruise fuel flow (table, some types) scales the SFC so cruise matches it at the stated power,
+  // or at the model's own cruise power at the stated altitude when no % is given; climb and descent scale alike
+  const fc=d.fuel?.cruise, fcPct=fc?+((String(fc.setting||"").match(/(\d+)\s*%/)||[])[1]||0)/100:0;
+  const fuelK=SFC0&&fc?.kgh?.v?fc.kgh.v/(nEng*hp*(fcPct||pCruise(fc.alt_ft||refFt,0))*SFC0.cr*LBH*3600):1;
+  const SFC=SFC0&&{cr:SFC0.cr*fuelK,cl:SFC0.cl*fuelK,de:SFC0.de*fuelK};
 
   // jets: generic drag polar from span (AR≈8) and TSFC that improves with altitude
   const S=span*span/8, k=1/(Math.PI*8*0.8), cd0=0.022;
@@ -555,7 +560,7 @@ async function loadApmModel(icao){
   const vCap=(Math.max(P.climb240IAS||0,P.descentIAS||0,250)+20)*KT;
 
   const m={kind:"apm",engineKind:kind,code:icao,id:"apm:"+icao,label:GA_NAMES[icao]||`${d.manufacturer||""} ${d.name||icao}`.trim(),table:!!d.table,
-    d,P,live,nEng,mtow,ceilFt,turbo,diesel,pressurized,hp,thrustN,powerEst,refFt,
+    d,P,live,nEng,mtow,ceilFt,turbo,diesel,pressurized,hp,thrustN,powerEst,refFt,fuelK,fuelRef:fuelK!==1?fc:null,
     fuelDensity:kind==="piston"&&!diesel?2.72:3.03, fuelName:kind==="piston"&&!diesel?"avgas":"Jet A",
     defaultLoad:Math.round(mtow*0.92/10)*10, loadLabel:"Takeoff weight (kg)", defaultRules:kind==="piston"&&!pressurized?"vfr":"ifr",
     climbOrder:["ic","c150","c240","mach"], descOrder:["mach","des","lo","app"],
@@ -1103,7 +1108,8 @@ function render(X){
       <dt>Minimum block fuel</dt><dd>${fuelTxt(sel.block)}</dd>
     </dl>
     ${!apm&&X.aeroOptEnd>X.aeroOpt+1000?`<p class="note">Optimum rises ~${fmtK(X.aeroOptEnd-X.aeroOpt)} ft as fuel burns off — a step climb may save fuel on longer sectors.</p>`:""}
-    ${apm?`<p class="note">Fuel is an estimate from engine power (${m.engineKind==="jet"?"thrust × generic TSFC":"power setting × typical specific fuel consumption"}); ${m.table?"":"EUROCONTROL publishes no fuel-flow data. "}Use your POH/AFM fuel tables for planning.</p>`:""}
+    ${apm&&m.fuelRef?`<p class="note">Fuel is an estimate from engine power (power setting × specific fuel consumption), calibrated to the published cruise fuel flow of ${m.fuelRef.kgh.v} kg/h (${m.fuelRef.setting}${m.fuelRef.alt_ft?`, ${fmtK(m.fuelRef.alt_ft)} ft`:""}); climb and descent use the same calibration. Use your POH/AFM fuel tables for planning.</p>`
+      :apm?`<p class="note">Fuel is an estimate from engine power (${m.engineKind==="jet"?"thrust × generic TSFC":"power setting × typical specific fuel consumption"}). ${m.table?"":"EUROCONTROL publishes no fuel-flow data. "}Use your POH/AFM fuel tables for planning.</p>`:""}
     </div>
   </div>
 
