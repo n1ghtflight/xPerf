@@ -285,19 +285,32 @@ function landingBody(X){
 }
 
 /* ---------------------------------------------------------------- summaries (Overview tile, FS2024 setup row) */
+// two halves: takeoff | landing; each half opens its side of the view (data-to-side), the tile opens the view
 function takeoffTile(X){
-  const T=X.takeoff; if(!T||!T.result) return "";
+  const T=X.takeoff, L=X.landing; if(!T||!T.result) return "";
   const s=T.result.selected, nofit=T.result.status==="nofit";
   const val=nofit?`<span class="bad">Does not fit</span>`:s.assumedT!=null?`${svgEsc(T.ac.label)} ${s.assumedT}<small>°C</small>`:T.ac.family==="airbus"?"TOGA":"Full thrust";
-  return `<div class="tile span-7" data-tile="takeoff" data-open="takeoff" tabindex="0" role="button" aria-label="Open Takeoff">
-    <div class="tl"><svg class="i"><use href="#i-takeoff"/></svg>Takeoff · ${svgEsc(T.end.e.id)}<span class="tr">estimate</span></div>
+  const dep=`<div data-to-side="dep"><div class="tl"><svg class="i"><use href="#i-takeoff"/></svg>Takeoff · ${svgEsc(T.end.e.id)}<span class="tr">estimate</span></div>
     <div class="val num">${val}</div><div class="sub num">${svgEsc(s.flap)} · V1 ${toKt(s.v1)} · VR ${toKt(s.vr)} · V2 ${toKt(s.v2)}</div></div>`;
+  let arr="";
+  if(L?.result){ const r=L.result, a=r.selected;
+    arr=`<div data-to-side="arr"><div class="tl"><svg class="i"><use href="#i-takeoff" transform="scale(1,-1) translate(0,-16)"/></svg>Landing · ${svgEsc(L.end.e.id)}<span class="tr">estimate</span></div>
+    <div class="val num">${r.status==="nofit"?`<span class="bad">Does not fit</span>`:`VAPP ${toKt(r.vapp)}<small>kt</small>`}</div>
+    <div class="sub num">${svgEsc(r.flap)} · VREF ${toKt(r.vref)} · autobrake ${svgEsc(a.name)}</div></div>`; }
+  return `<div class="tile span-7${arr?" split":""}" data-tile="takeoff" data-open="takeoff" tabindex="0" role="button" aria-label="Open Takeoff & landing">${dep}${arr}</div>`;
 }
 function takeoffSetupRow(X){
   const T=X.takeoff; if(!T||!T.result) return "";
   const s=T.result.selected;
-  return `<div class="sbox to-setup" data-to-setup data-open="takeoff" title="Open Takeoff"><div class="k">Takeoff data · estimate</div>
+  return `<div class="sbox to-setup" data-to-setup data-open="takeoff" data-to-side="dep" title="Open takeoff data"><div class="k">Takeoff data · estimate</div>
     <div class="v">${toKt(s.v1)} / ${toKt(s.vr)} / ${toKt(s.v2)}</div><div class="s">${T.result.status==="nofit"?"does not fit":s.assumedT!=null?`${svgEsc(T.ac.label)} ${s.assumedT}°`:"TOGA"} · flaps ${svgEsc(s.flap)}</div></div>`;
+}
+
+function landingSetupRow(X){
+  const L=X.landing; if(!L||!L.result) return "";
+  const r=L.result;
+  return `<div class="sbox to-setup" data-ld-setup data-open="takeoff" data-to-side="arr" title="Open landing data"><div class="k">Landing data · estimate</div>
+    <div class="v">${toKt(r.vref)} / ${toKt(r.vapp)}</div><div class="s">VREF / VAPP · flaps ${svgEsc(r.flap)} · ${r.status==="nofit"?"does not fit":"autobrake "+svgEsc(r.selected.name)}</div></div>`;
 }
 
 /* ---------------------------------------------------------------- interaction */
@@ -312,6 +325,7 @@ function refreshTakeoff(X){
   if(key&&panel) panel.querySelector(key)?.focus({preventScroll:true});
   const tile=document.querySelector('[data-tile="takeoff"]'); if(tile) tile.outerHTML=takeoffTile(X)||"<span data-tile=\"takeoff\" hidden></span>";
   const row=document.querySelector("[data-to-setup]"); if(row) row.outerHTML=takeoffSetupRow(X)||"<span data-to-setup hidden></span>";
+  const lrow=document.querySelector("[data-ld-setup]"); if(lrow) lrow.outerHTML=landingSetupRow(X)||"<span data-ld-setup hidden></span>";
 }
 if(typeof document!=="undefined"){
   const X=()=>window.LAST_X;

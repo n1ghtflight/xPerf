@@ -709,6 +709,7 @@ function setupCardHtml(X){
       ${box("Altimeter",am?am.inHg.toFixed(2):"—",am?`inHg · ${Math.round(am.qnh)} hPa`:"",{copy:am?am.inHg.toFixed(2):""})}
       ${box("Descent",`${nm(sel.descent.d).toFixed(0)} NM out`,`VS −${fmtK(descFpm)} fpm${tod.f?" · "+tod.f.text:""}`)}
       ${lp?box("Landing distance",`<span class="${lpCol}">${fmtK(Math.round(lp.fact/FT))} ft</span>`,`of ${fmtK(Math.round(lp.avail/FT))} ft available`):""}
+      ${typeof landingSetupRow==="function"?landingSetupRow(X):""}
     </div>
   </div>`;
 }
