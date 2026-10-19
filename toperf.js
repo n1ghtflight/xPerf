@@ -211,7 +211,10 @@ var TOPerf=(()=>{
       return {air, total:a>0?air+trans+gs*gs/(2*a):Infinity};
     };
     const mu=wet?LDG.muBrake.wet:LDG.muBrake.dry, rev=LDG.rev[input.reverse]!=null?input.reverse:"idle";
-    const byAutobrake=ac.autobrake.map(b=>{ const d=dist(vapp,b.decel,rev,mu), actualFt=d.total*M2FT, arrivalFt=actualFt*LDG.arrivalFactor;
+    // the steady-wind part of the additive is bled off approaching the threshold (Boeing keeps the gust part,
+    // Airbus the 5 kt), so a headwind shortens the landing rather than lengthening it
+    const vth=Math.min(vapp,vref+(ac.vappRule==="airbus"?5:Math.max(5,gust)));
+    const byAutobrake=ac.autobrake.map(b=>{ const d=dist(vth,b.decel,rev,mu), actualFt=d.total*M2FT, arrivalFt=actualFt*LDG.arrivalFactor;
       return {name:b.name, decel:b.decel, actualFt, arrivalFt, fits:arrivalFt<=ldaFt}; });
     const dispatchFt=dist(vref,null,"none",LDG.muBrake.dry,true).total*tune*M2FT/LDG.dispatchDiv*(wet?LDG.dispatchWet:1);
     const sug=byAutobrake.find(b=>b.fits)||null;
@@ -222,7 +225,7 @@ var TOPerf=(()=>{
     if(ac.vrefSrc==="est") notes.push("Approach speed estimated — speeds less certain");
     if(mass>ac.mlw) notes.push("Landing weight above MLW");
     return {flap:flap.name, vref, vapp, additive, byAutobrake, suggested:sug?sug.name:null, selected, dispatchFt, dispatchOK, ldaFt,
-      airFt:dist(vapp,null,rev,mu).air*M2FT, status, notes, paFt, tuned:!!ac.tuneLdg};
+      airFt:dist(vth,null,rev,mu).air*M2FT, status, notes, paFt, tuned:!!ac.tuneLdg};
   }
 
   // Dispatch landing distance vs manufacturer landing-field-length charts (ISA + isaDev, calm, level, default flap).

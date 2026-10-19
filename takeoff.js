@@ -79,6 +79,12 @@ function toLandingInputs(X,end,overrides,opts){
   return {input,src};
 }
 
+// the landing options that actually apply to this type: a flap or autobrake name saved on another type falls back
+function ldEffective(ac,input){
+  const f=ac.landingFlaps.find(x=>x.name===input.flap);
+  return {flap:f&&!f.default?f.name:"default", autobrake:ac.autobrake.some(a=>a.name===input.autobrake)?input.autobrake:"suggested"};
+}
+
 // Everything the arrival side, tile and setup box show. Runway = the approach chosen in FS2024 setup, else the best one.
 function landingResult(X){
   const m=X.m; if(!m||m.kind!=="openap") return {ga:true};
@@ -232,7 +238,7 @@ function landingBody(X){
   if(L.error) return toMsg(svgEsc(L.error));
   if(L.norunway) return toMsg("No runway data for the arrival airport — landing data needs a runway.");
   const {ac,input,src,result:r,end,B,approach}=L, s=r.selected, ov=X.toState.ldg, code=String(X.m.code).toUpperCase();
-  const field=toField("ld",src), seg=toSeg("ld"), wetCur=ov.wet!=null?ov.wet:input.wet;
+  const field=toField("ld",src), seg=toSeg("ld"), wetCur=ov.wet!=null?ov.wet:input.wet, eff=ldEffective(ac,input);
   const rule=ac.vappRule==="airbus"?"headwind ÷ 3, 5–15 kt":"½ headwind + gust, 5–20 kt";
   const inputs=`<div class="to-box"><h3>From your plan <span class="note">edit any value</span></h3>
       <div class="to-ac"><b>${svgEsc(X.m.label||code)}</b> <span class="note">${svgEsc(ac.engine||"")} · OpenAP</span></div>
@@ -249,8 +255,8 @@ function landingBody(X){
       ${B.met?`<p class="note to-raw">${svgEsc(B.met.raw||"")}</p><p class="note">Current METAR — check the ATIS before landing.</p>`:`<p class="note">No METAR — standard atmosphere, calm wind and a dry runway assumed; type the expected values.</p>`}
     </div>
     <div class="to-box"><h3>Options</h3>
-      ${seg("flap","Landing flaps",ac.landingFlaps.map(f=>[f.default?"default":f.name,f.name]),input.flap==="default"?"default":input.flap)}
-      ${seg("autobrake","Autobrake",[["suggested","Suggested"],...ac.autobrake.map(a=>[a.name,a.name])],input.autobrake)}
+      ${seg("flap","Landing flaps",ac.landingFlaps.map(f=>[f.default?"default":f.name,f.name]),eff.flap)}
+      ${seg("autobrake","Autobrake",[["suggested","Suggested"],...ac.autobrake.map(a=>[a.name,a.name])],eff.autobrake)}
       ${seg("reverse","Reversers",[["max","Max"],["idle","Idle"],["none","None"]],input.reverse)}
       ${seg("wet","Runway",[["false","Dry"],["true","Wet"]],String(!!wetCur))}
     </div>`;
@@ -259,7 +265,7 @@ function landingBody(X){
         ${toBig("VREF",toKt(r.vref),"kt")}
         ${toBig("VAPP",toKt(r.vapp),"kt","acc",`<span title="Wind additive: ${rule}">+${toKt(r.additive)} kt additive</span>`)}
         ${toBig("Flaps",svgEsc(r.flap),"")}
-        ${toBig("Autobrake",svgEsc(s.name),"",r.status==="nofit"?"bad":"",input.autobrake==="suggested"?"suggested":"chosen")}
+        ${toBig("Autobrake",svgEsc(s.name),"",r.status==="nofit"?"bad":"",eff.autobrake!=="suggested"?"chosen":r.suggested?"suggested":"no setting fits")}
       </div>
       <p class="to-status">${ldStatusHtml(L)}</p>
       ${r.notes.map(n=>`<p class="note warn">${svgEsc(n)}</p>`).join("")}
@@ -295,8 +301,8 @@ function takeoffTile(X){
   let arr="";
   if(L?.result){ const r=L.result, a=r.selected;
     arr=`<div data-to-side="arr"><div class="tl"><svg class="i"><use href="#i-takeoff" transform="scale(1,-1) translate(0,-16)"/></svg>Landing · ${svgEsc(L.end.e.id)}<span class="tr">estimate</span></div>
-    <div class="val num">${r.status==="nofit"?`<span class="bad">Does not fit</span>`:`VAPP ${toKt(r.vapp)}<small>kt</small>`}</div>
-    <div class="sub num">${svgEsc(r.flap)} · VREF ${toKt(r.vref)} · autobrake ${svgEsc(a.name)}</div></div>`; }
+    <div class="val num">${r.status==="nofit"?`<span class="bad">Does not fit</span>`:`<span class="${r.status==="tight"?"warn":""}">VAPP ${toKt(r.vapp)}</span><small>kt</small>`}</div>
+    <div class="sub num">${svgEsc(r.flap)} · VREF ${toKt(r.vref)} · autobrake ${svgEsc(a.name)}${r.status==="tight"?' · <span class="warn">dispatch ✗</span>':""}</div></div>`; }
   return `<div class="tile span-7${arr?" split":""}" data-tile="takeoff" data-open="takeoff" tabindex="0" role="button" aria-label="Open Takeoff & landing">${dep}${arr}</div>`;
 }
 function takeoffSetupRow(X){
@@ -310,7 +316,7 @@ function landingSetupRow(X){
   const L=X.landing; if(!L||!L.result) return "";
   const r=L.result;
   return `<div class="sbox to-setup" data-ld-setup data-open="takeoff" data-to-side="arr" title="Open landing data"><div class="k">Landing data · estimate</div>
-    <div class="v">${toKt(r.vref)} / ${toKt(r.vapp)}</div><div class="s">VREF / VAPP · flaps ${svgEsc(r.flap)} · ${r.status==="nofit"?"does not fit":"autobrake "+svgEsc(r.selected.name)}</div></div>`;
+    <div class="v">${toKt(r.vref)} / ${toKt(r.vapp)}</div><div class="s">VREF / VAPP · flaps ${svgEsc(r.flap)} · ${r.status==="nofit"?"does not fit":"autobrake "+svgEsc(r.selected.name)}${r.status==="tight"?' · <span class="warn">dispatch ✗ (runway below the dispatch requirement)</span>':""}</div></div>`;
 }
 
 /* ---------------------------------------------------------------- interaction */

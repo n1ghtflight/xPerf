@@ -377,3 +377,40 @@ test("landing: GA aircraft gets the pointer", () => {
   assert.ok(ctx.landingResult, "landingResult not defined");
   assert.equal(ctx.landingResult({ m: { kind: "apm" } }).ga, true);
 });
+
+/* ---------------------------------------------------------------- landing review fixes */
+test("a headwind shortens the landing even with a gust additive", () => {
+  const calm = land({ autobrake: "Max manual" }, "b738").selected.actualFt;
+  assert.ok(land({ windKt: 20, gustKt: 10, autobrake: "Max manual" }, "b738").selected.actualFt < calm);
+  assert.ok(land({ windKt: 30, autobrake: "Max manual" }).selected.actualFt < land({ autobrake: "Max manual" }).selected.actualFt);
+});
+
+test("options saved on another type fall back visibly", () => {
+  assert.ok(ctx.ldEffective, "ldEffective not defined");
+  const ac = acOf("b738");
+  assert.deepEqual({ ...ctx.ldEffective(ac, { flap: "3", autobrake: "MED" }) }, { flap: "default", autobrake: "suggested" });
+  assert.deepEqual({ ...ctx.ldEffective(ac, { flap: "40", autobrake: "2" }) }, { flap: "40", autobrake: "2" });
+  assert.deepEqual({ ...ctx.ldEffective(ac, { flap: "30", autobrake: "suggested" }) }, { flap: "default", autobrake: "suggested" });
+});
+
+test("summaries flag a failed dispatch check", () => {
+  ctx.svgEsc = x => String(x); ctx.fmtK = v => String(Math.round(v));
+  const r = land({ autobrake: "Max manual" }), mm = r.byAutobrake.find(a => a.name === "Max manual");
+  assert.ok(mm.arrivalFt < r.dispatchFt);
+  const tight = land({ autobrake: "Max manual", ldaFt: (mm.arrivalFt + r.dispatchFt) / 2 });
+  assert.equal(tight.status, "tight");
+  const X = { landing: { result: tight, end: { e: { id: "25L" } }, ac: acOf("a20n") } };
+  assert.match(ctx.landingSetupRow(X), /dispatch/i);
+});
+
+test("landing runway falls back to the best runway when the approach's runway is unknown", () => {
+  vm.runInContext(`TO_DATA={ref:${JSON.stringify(REF)},tune:{}}`, ctx);
+  ctx.rwyKey = id => String(id || "").toUpperCase().replace(/^0+(?=\d)/, "");
+  ctx.chosenApproach = () => ({ sel: { rwy: "7L", name: "ILS RWY 7L" } });
+  const e25 = end25L(), e24 = { ...end25L(), e: { id: "24R", elev: 125, hdgT: 250, dthr: 0 } };
+  const X = { m: { ...FIX.a20n, kind: "openap" }, sel: { tow: 70000, land: 62000 },
+    briefs: { arr: { a: { icao: "KLAX", alt: 125 }, met: arrMetar, ends: [e25, e24], best: e24 } } };
+  assert.equal(ctx.landingResult(X).end.e.id, "24R");
+  ctx.chosenApproach = () => ({ sel: { rwy: "25L", name: "ILS RWY 25L" } });
+  assert.equal(ctx.landingResult(X).end.e.id, "25L");
+});
