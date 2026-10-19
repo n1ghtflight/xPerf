@@ -248,3 +248,17 @@ test("runway-specific overrides stay with their runway", () => {
   const e10 = { ...end28R(), e: { id: "10L", elev: 10, hdgT: 104 } }, on10 = toInputs(planX(metar), e10, ov, OPTS).input;
   assert.equal(on10.lengthFt, 11870); assert.equal(on10.intersectionFt, 0); assert.equal(on10.lineup, "none"); assert.equal(on10.oat, 25);
 });
+
+/* ================================================================ landing */
+test("landing reference data per type", () => {
+  for (const c of AC_CODES) {
+    const r = REF[c];
+    assert.ok(Array.isArray(r.landingFlaps) && r.landingFlaps.length >= 1 && r.landingFlaps.length <= 2, `${c}: landingFlaps`);
+    assert.equal(r.landingFlaps.filter(f => f.default).length, 1, `${c}: one default landing flap`);
+    for (const f of r.landingFlaps) assert.ok(f.frac > 0.8 && f.frac <= 1, `${c}: frac ${f.frac}`);
+    const ab = r.autobrake; assert.ok(Array.isArray(ab) && ab.length >= 1, `${c}: autobrake`);
+    assert.deepEqual(ab[ab.length - 1], { name: "Max manual", decel: null }, `${c}: last autobrake`);
+    ab.slice(0, -1).forEach((a, i, arr) => { assert.ok(a.decel > 0.5 && a.decel < 5, `${c}: ${a.name} ${a.decel}`); if (i) assert.ok(a.decel > arr[i - 1].decel, `${c}: ascending`); });
+    assert.ok(["airbus", "boeing"].includes(r.vapp), `${c}: vapp ${r.vapp}`);
+  }
+});

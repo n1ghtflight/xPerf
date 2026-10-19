@@ -69,11 +69,30 @@ types["b3xm"]["malwKg"]=None
 LEAP28={"name":"LEAP-1B28","thrustN":130400,"bpr":8.3,"src":"OpenAP engines.csv; 737-9/-10 at MTOW use the LEAP-1B28 rating (OpenAP's default 'LEAP-1B' resolves to the 21K LEAP-1B21)"}
 types["b39m"]["engine"]=LEAP28; types["b3xm"]["engine"]=LEAP28
 types["b788"]["engine"]={"name":"GEnx-1B70","thrustN":321600,"bpr":8.8,"src":"OpenAP engines.csv; one of the 787-8 options in OpenAP's b788.yml — the default Trent 1000-E2 is a low-rated short-haul variant"}
+# landing: flap settings (CLmax fraction of the maximum landing flap; one default), autobrake target decelerations
+# (m/s², ascending; "Max manual" = full anti-skid braking) and the VAPP wind-additive rule. Generic family values from
+# common public operating practice (recalled, not from a manual) — verify.
+LF=lambda *p:[{"name":n,"frac":f,**({"default":True} if d else {})} for n,f,d in p]
+MAXM={"name":"Max manual","decel":None}
+AB=lambda *p:[{"name":n,"decel":d} for n,d in p]+[MAXM]
+NOAB=AB(("Normal",2.0))
+LDG={
+ **{c:(LF(("3",0.92,0),("FULL",1,1)),AB(("LO",1.7),("MED",3.0)),"airbus") for c in "a19n a20n a21n a318 a319 a320 a321 a332 a333 a343 a359 a388".split()},
+ **{c:(LF(("30",0.92,1),("40",1,0)),AB(("1",1.22),("2",1.52),("3",2.19),("MAX",4.27)),"boeing") for c in "b37m b38m b39m b3xm b734 b737 b738 b739".split()},
+ **{c:(LF(("25",0.95,0),("30",1,1)),AB(("1",1.22),("2",1.52),("3",2.13),("4",3.05),("MAX AUTO",3.66)),"boeing") for c in "b752 b763 b772 b773 b77w b788 b789 b744 b748".split()},
+ **{c:(LF(("5",0.94,0),("FULL",1,1)),AB(("LO",1.5),("MED",2.4),("HI",3.6)),"boeing") for c in "e170 e75l e190 e195".split()},
+ "e145":(LF(("22",0.93,0),("45",1,1)),NOAB,"boeing"),
+ "crj9":(LF(("30",0.94,0),("45",1,1)),NOAB,"boeing"),
+ "c550":(LF(("15",0.90,0),("40",1,1)),NOAB,"boeing"),
+ "glf6":(LF(("22",0.93,0),("39",1,1)),NOAB,"boeing"),
+}
+for c,(lf,ab,va) in LDG.items(): types[c].update({"landingFlaps":lf,"autobrake":ab,"vapp":va})
+assert set(LDG)==set(types), set(types)^set(LDG)
 schema={"about":"Takeoff reference data per OpenAP type (toperf.js). Built from the FAA Aircraft Characteristics Database, downloaded 2026-10-18.",
  "vrefMLW":"approach speed (VREF) at the max landing weight malwKg (kt); s = pub (published) | est (estimated, see src/ref)",
  "malwKg":"the landing weight the approach speed applies to (FAA MALW); null = use OpenAP mlw",
  "flaps":"the type's most-used takeoff flap settings, one per model level (low/mid/high); from common public operator usage (recalled, not from a manual) — verify",
- "engine":"optional takeoff engine {name, thrustN per engine, bpr, src} replacing OpenAP's default for this model only","family":"naming family","label":"what the reduced-thrust temperature is called on this type"}
+ "engine":"optional takeoff engine {name, thrustN per engine, bpr, src} replacing OpenAP's default for this model only","landingFlaps":"landing flap settings: CLmax as a fraction of the maximum landing flap; one default","autobrake":"autobrake target deceleration m/s² (ascending); Max manual = full anti-skid braking; generic family values, recalled — verify","vapp":"VAPP wind-additive rule: airbus (max(5, min(15, HW/3))) or boeing (max(5, min(20, ½ HW + gust)))","family":"naming family","label":"what the reduced-thrust temperature is called on this type"}
 s=json.dumps({"_schema":schema,"types":types},indent=1,ensure_ascii=False)
 open(out,"w",encoding="utf-8",newline="\r\n").write(s+"\n")
 print(len(types),"types")

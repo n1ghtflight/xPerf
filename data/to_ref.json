@@ -5,6 +5,9 @@
   "malwKg": "the landing weight the approach speed applies to (FAA MALW); null = use OpenAP mlw",
   "flaps": "the type's most-used takeoff flap settings, one per model level (low/mid/high); from common public operator usage (recalled, not from a manual) — verify",
   "engine": "optional takeoff engine {name, thrustN per engine, bpr, src} replacing OpenAP's default for this model only",
+  "landingFlaps": "landing flap settings: CLmax as a fraction of the maximum landing flap; one default",
+  "autobrake": "autobrake target deceleration m/s² (ascending); Max manual = full anti-skid braking; generic family values, recalled — verify",
+  "vapp": "VAPP wind-additive rule: airbus (max(5, min(15, HW/3))) or boeing (max(5, min(20, ½ HW + gust)))",
   "family": "naming family",
   "label": "what the reduced-thrust temperature is called on this type"
  },
@@ -32,7 +35,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A19N · Airbus A319 Neo · Approach_Speed_knot · MALW 137789 lb"
    },
-   "malwKg": 62500
+   "malwKg": 62500,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "a20n": {
    "family": "airbus",
@@ -57,7 +86,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A20N · Airbus A320 Neo · Approach_Speed_knot · MALW 148591 lb"
    },
-   "malwKg": 67400
+   "malwKg": 67400,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "a21n": {
    "family": "airbus",
@@ -82,7 +137,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A21N · Airbus A321 Neo · Approach_Speed_knot · MALW 174606 lb"
    },
-   "malwKg": 79200
+   "malwKg": 79200,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "a318": {
    "family": "airbus",
@@ -107,7 +188,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A318 · Airbus A318 · Approach_Speed_knot · MALW 126766 lb"
    },
-   "malwKg": 57500
+   "malwKg": 57500,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "a319": {
    "family": "airbus",
@@ -132,7 +239,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A319 · Airbus A319 · Approach_Speed_knot · MALW 134482 lb"
    },
-   "malwKg": 61000
+   "malwKg": 61000,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "a320": {
    "family": "airbus",
@@ -157,7 +290,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A320 · Airbus A320 · Approach_Speed_knot · MALW 145505 lb"
    },
-   "malwKg": 66000
+   "malwKg": 66000,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "a321": {
    "family": "airbus",
@@ -182,7 +341,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A321 · Airbus A321 · Approach_Speed_knot · MALW 171520 lb"
    },
-   "malwKg": 77800
+   "malwKg": 77800,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "a332": {
    "family": "airbus",
@@ -207,7 +392,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A332 · Airbus A330-200 · Approach_Speed_knot · MALW 401241 lb"
    },
-   "malwKg": 182000
+   "malwKg": 182000,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "a333": {
    "family": "airbus",
@@ -232,7 +443,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A333 · Airbus A330-300 · Approach_Speed_knot · MALW 412264 lb"
    },
-   "malwKg": 187000
+   "malwKg": 187000,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "a343": {
    "family": "airbus",
@@ -257,7 +494,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A343 · Airbus A340-300 · Approach_Speed_knot · MALW 423288 lb"
    },
-   "malwKg": 192000
+   "malwKg": 192000,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "a359": {
    "family": "airbus",
@@ -282,7 +545,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A359 · Airbus 350-900 · Approach_Speed_knot · MALW 456357 lb"
    },
-   "malwKg": 207000
+   "malwKg": 207000,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "a388": {
    "family": "airbus",
@@ -307,7 +596,33 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "A388 · Airbus A380-800 · Approach_Speed_knot · MALW 868621 lb"
    },
-   "malwKg": 394000
+   "malwKg": 394000,
+   "landingFlaps": [
+    {
+     "name": "3",
+     "frac": 0.92
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.7
+    },
+    {
+     "name": "MED",
+     "decel": 3.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "airbus"
   },
   "b37m": {
    "family": "boeing",
@@ -332,7 +647,41 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B37M · Boeing 737 MAX 7 · Approach_Speed_knot · MALW 145600 lb"
    },
-   "malwKg": 66043
+   "malwKg": 66043,
+   "landingFlaps": [
+    {
+     "name": "30",
+     "frac": 0.92,
+     "default": true
+    },
+    {
+     "name": "40",
+     "frac": 1
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.19
+    },
+    {
+     "name": "MAX",
+     "decel": 4.27
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b38m": {
    "family": "boeing",
@@ -357,7 +706,41 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B38M · Boeing 737 MAX 8 · Approach_Speed_knot · MALW 152800 lb"
    },
-   "malwKg": 69309
+   "malwKg": 69309,
+   "landingFlaps": [
+    {
+     "name": "30",
+     "frac": 0.92,
+     "default": true
+    },
+    {
+     "name": "40",
+     "frac": 1
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.19
+    },
+    {
+     "name": "MAX",
+     "decel": 4.27
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b39m": {
    "family": "boeing",
@@ -388,7 +771,41 @@
     "thrustN": 130400,
     "bpr": 8.3,
     "src": "OpenAP engines.csv; 737-9/-10 at MTOW use the LEAP-1B28 rating (OpenAP's default 'LEAP-1B' resolves to the 21K LEAP-1B21)"
-   }
+   },
+   "landingFlaps": [
+    {
+     "name": "30",
+     "frac": 0.92,
+     "default": true
+    },
+    {
+     "name": "40",
+     "frac": 1
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.19
+    },
+    {
+     "name": "MAX",
+     "decel": 4.27
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b3xm": {
    "family": "boeing",
@@ -419,7 +836,41 @@
     "thrustN": 130400,
     "bpr": 8.3,
     "src": "OpenAP engines.csv; 737-9/-10 at MTOW use the LEAP-1B28 rating (OpenAP's default 'LEAP-1B' resolves to the 21K LEAP-1B21)"
-   }
+   },
+   "landingFlaps": [
+    {
+     "name": "30",
+     "frac": 0.92,
+     "default": true
+    },
+    {
+     "name": "40",
+     "frac": 1
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.19
+    },
+    {
+     "name": "MAX",
+     "decel": 4.27
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b734": {
    "family": "boeing",
@@ -444,7 +895,41 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B734 · Boeing 737-400 · Approach_Speed_knot · MALW 123700 lb"
    },
-   "malwKg": 56109
+   "malwKg": 56109,
+   "landingFlaps": [
+    {
+     "name": "30",
+     "frac": 0.92,
+     "default": true
+    },
+    {
+     "name": "40",
+     "frac": 1
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.19
+    },
+    {
+     "name": "MAX",
+     "decel": 4.27
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b737": {
    "family": "boeing",
@@ -469,7 +954,41 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B737 · Boeing 737-700 · Approach_Speed_knot · MALW 145600 lb"
    },
-   "malwKg": 66043
+   "malwKg": 66043,
+   "landingFlaps": [
+    {
+     "name": "30",
+     "frac": 0.92,
+     "default": true
+    },
+    {
+     "name": "40",
+     "frac": 1
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.19
+    },
+    {
+     "name": "MAX",
+     "decel": 4.27
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b738": {
    "family": "boeing",
@@ -494,7 +1013,41 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B738 · Boeing 737-800 · Approach_Speed_knot · MALW 146275 lb"
    },
-   "malwKg": 66349
+   "malwKg": 66349,
+   "landingFlaps": [
+    {
+     "name": "30",
+     "frac": 0.92,
+     "default": true
+    },
+    {
+     "name": "40",
+     "frac": 1
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.19
+    },
+    {
+     "name": "MAX",
+     "decel": 4.27
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b739": {
    "family": "boeing",
@@ -519,7 +1072,41 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B739 · Boeing 737-900 · Approach_Speed_knot"
    },
-   "malwKg": null
+   "malwKg": null,
+   "landingFlaps": [
+    {
+     "name": "30",
+     "frac": 0.92,
+     "default": true
+    },
+    {
+     "name": "40",
+     "frac": 1
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.19
+    },
+    {
+     "name": "MAX",
+     "decel": 4.27
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b744": {
    "family": "boeing",
@@ -540,7 +1127,45 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B744 · Boeing 747-400 · Approach_Speed_knot · MALW 630000 lb"
    },
-   "malwKg": 285763
+   "malwKg": 285763,
+   "landingFlaps": [
+    {
+     "name": "25",
+     "frac": 0.95
+    },
+    {
+     "name": "30",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.13
+    },
+    {
+     "name": "4",
+     "decel": 3.05
+    },
+    {
+     "name": "MAX AUTO",
+     "decel": 3.66
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b748": {
    "family": "boeing",
@@ -561,7 +1186,45 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B748 · Boeing 747-8 · Approach_Speed_knot · MALW 688000 lb"
    },
-   "malwKg": 312072
+   "malwKg": 312072,
+   "landingFlaps": [
+    {
+     "name": "25",
+     "frac": 0.95
+    },
+    {
+     "name": "30",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.13
+    },
+    {
+     "name": "4",
+     "decel": 3.05
+    },
+    {
+     "name": "MAX AUTO",
+     "decel": 3.66
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b752": {
    "family": "boeing",
@@ -586,7 +1249,45 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B752 · Boeing 757-200 · Approach_Speed_knot · MALW 198000 lb"
    },
-   "malwKg": 89811
+   "malwKg": 89811,
+   "landingFlaps": [
+    {
+     "name": "25",
+     "frac": 0.95
+    },
+    {
+     "name": "30",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.13
+    },
+    {
+     "name": "4",
+     "decel": 3.05
+    },
+    {
+     "name": "MAX AUTO",
+     "decel": 3.66
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b763": {
    "family": "boeing",
@@ -611,7 +1312,45 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B763 · Boeing 767-300 · Approach_Speed_knot · MALW 320000 lb"
    },
-   "malwKg": 145150
+   "malwKg": 145150,
+   "landingFlaps": [
+    {
+     "name": "25",
+     "frac": 0.95
+    },
+    {
+     "name": "30",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.13
+    },
+    {
+     "name": "4",
+     "decel": 3.05
+    },
+    {
+     "name": "MAX AUTO",
+     "decel": 3.66
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b772": {
    "family": "boeing",
@@ -636,7 +1375,45 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B772 · Boeing 777-200 · Approach_Speed_knot · MALW 470000 lb"
    },
-   "malwKg": 213188
+   "malwKg": 213188,
+   "landingFlaps": [
+    {
+     "name": "25",
+     "frac": 0.95
+    },
+    {
+     "name": "30",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.13
+    },
+    {
+     "name": "4",
+     "decel": 3.05
+    },
+    {
+     "name": "MAX AUTO",
+     "decel": 3.66
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b773": {
    "family": "boeing",
@@ -661,7 +1438,45 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B773 · Boeing 777-300 · Approach_Speed_knot · MALW 524000 lb"
    },
-   "malwKg": 237682
+   "malwKg": 237682,
+   "landingFlaps": [
+    {
+     "name": "25",
+     "frac": 0.95
+    },
+    {
+     "name": "30",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.13
+    },
+    {
+     "name": "4",
+     "decel": 3.05
+    },
+    {
+     "name": "MAX AUTO",
+     "decel": 3.66
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b77w": {
    "family": "boeing",
@@ -686,7 +1501,45 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B77W · Boeing 777-300ER · Approach_Speed_knot · MALW 554000 lb"
    },
-   "malwKg": 251290
+   "malwKg": 251290,
+   "landingFlaps": [
+    {
+     "name": "25",
+     "frac": 0.95
+    },
+    {
+     "name": "30",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.13
+    },
+    {
+     "name": "4",
+     "decel": 3.05
+    },
+    {
+     "name": "MAX AUTO",
+     "decel": 3.66
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b788": {
    "family": "boeing",
@@ -717,7 +1570,45 @@
     "thrustN": 321600,
     "bpr": 8.8,
     "src": "OpenAP engines.csv; one of the 787-8 options in OpenAP's b788.yml — the default Trent 1000-E2 is a low-rated short-haul variant"
-   }
+   },
+   "landingFlaps": [
+    {
+     "name": "25",
+     "frac": 0.95
+    },
+    {
+     "name": "30",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.13
+    },
+    {
+     "name": "4",
+     "decel": 3.05
+    },
+    {
+     "name": "MAX AUTO",
+     "decel": 3.66
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "b789": {
    "family": "boeing",
@@ -742,7 +1633,45 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B789 · Boeing 787-9 Dreamliner · Approach_Speed_knot · MALW 425000 lb"
    },
-   "malwKg": 192777
+   "malwKg": 192777,
+   "landingFlaps": [
+    {
+     "name": "25",
+     "frac": 0.95
+    },
+    {
+     "name": "30",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "1",
+     "decel": 1.22
+    },
+    {
+     "name": "2",
+     "decel": 1.52
+    },
+    {
+     "name": "3",
+     "decel": 2.13
+    },
+    {
+     "name": "4",
+     "decel": 3.05
+    },
+    {
+     "name": "MAX AUTO",
+     "decel": 3.66
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "c550": {
    "family": "cessna",
@@ -763,7 +1692,29 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "C550 · Cessna Citation II/Bravo · Approach_Speed_knot · MALW 13500 lb"
    },
-   "malwKg": 6123
+   "malwKg": 6123,
+   "landingFlaps": [
+    {
+     "name": "15",
+     "frac": 0.9
+    },
+    {
+     "name": "40",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "Normal",
+     "decel": 2.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "crj9": {
    "family": "bombardier",
@@ -784,7 +1735,29 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "CRJ9 · canadair CRJ-900 · Approach_Speed_knot · MALW 73500 lb"
    },
-   "malwKg": 33339
+   "malwKg": 33339,
+   "landingFlaps": [
+    {
+     "name": "30",
+     "frac": 0.94
+    },
+    {
+     "name": "45",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "Normal",
+     "decel": 2.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "e145": {
    "family": "embraer",
@@ -805,7 +1778,29 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "E145 · Embraer ERJ-145 · Approach_Speed_knot · MALW 41226 lb"
    },
-   "malwKg": 18700
+   "malwKg": 18700,
+   "landingFlaps": [
+    {
+     "name": "22",
+     "frac": 0.93
+    },
+    {
+     "name": "45",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "Normal",
+     "decel": 2.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "e170": {
    "family": "embraer",
@@ -830,7 +1825,37 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "E170 · Embraer 170 · Approach_Speed_knot · MALW 73413 lb"
    },
-   "malwKg": 33300
+   "malwKg": 33300,
+   "landingFlaps": [
+    {
+     "name": "5",
+     "frac": 0.94
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.5
+    },
+    {
+     "name": "MED",
+     "decel": 2.4
+    },
+    {
+     "name": "HI",
+     "decel": 3.6
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "e190": {
    "family": "embraer",
@@ -855,7 +1880,37 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "E190 · Embraer 190 · Approach_Speed_knot · MALW 94799 lb"
    },
-   "malwKg": 43000
+   "malwKg": 43000,
+   "landingFlaps": [
+    {
+     "name": "5",
+     "frac": 0.94
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.5
+    },
+    {
+     "name": "MED",
+     "decel": 2.4
+    },
+    {
+     "name": "HI",
+     "decel": 3.6
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "e195": {
    "family": "embraer",
@@ -880,7 +1935,37 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "E195 · Embraer 195 · Approach_Speed_knot · MALW 100972 lb"
    },
-   "malwKg": 45800
+   "malwKg": 45800,
+   "landingFlaps": [
+    {
+     "name": "5",
+     "frac": 0.94
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.5
+    },
+    {
+     "name": "MED",
+     "decel": 2.4
+    },
+    {
+     "name": "HI",
+     "decel": 3.6
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "e75l": {
    "family": "embraer",
@@ -905,7 +1990,37 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "E75L · Embraer 175 long wing · Approach_Speed_knot · MALW 74957 lb"
    },
-   "malwKg": 34000
+   "malwKg": 34000,
+   "landingFlaps": [
+    {
+     "name": "5",
+     "frac": 0.94
+    },
+    {
+     "name": "FULL",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "LO",
+     "decel": 1.5
+    },
+    {
+     "name": "MED",
+     "decel": 2.4
+    },
+    {
+     "name": "HI",
+     "decel": 3.6
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   },
   "glf6": {
    "family": "gulfstream",
@@ -926,7 +2041,29 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "GLF6 · Gulfstream G650 · Approach_Speed_knot · MALW 83500 lb"
    },
-   "malwKg": 37875
+   "malwKg": 37875,
+   "landingFlaps": [
+    {
+     "name": "22",
+     "frac": 0.93
+    },
+    {
+     "name": "39",
+     "frac": 1,
+     "default": true
+    }
+   ],
+   "autobrake": [
+    {
+     "name": "Normal",
+     "decel": 2.0
+    },
+    {
+     "name": "Max manual",
+     "decel": null
+    }
+   ],
+   "vapp": "boeing"
   }
  }
 }
