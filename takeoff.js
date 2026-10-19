@@ -10,7 +10,7 @@ let TO_DATA=null;   // {ref, tune} | {error}
 // loaded once the page's scripts have all run (XD's fetch helper lives in index.html's inline script)
 if(typeof document!=="undefined") document.addEventListener("DOMContentLoaded",()=>{
   Promise.all([XD.toRef(),XD.toTune()]).then(([r,t])=>{ TO_DATA={ref:r.types,tune:t.types}; },e=>{ TO_DATA={error:e.message||String(e)}; })
-    .then(()=>{ if(window.LAST_X) refreshTakeoff(window.LAST_X); });
+    .then(()=>{ if(window.LAST_X&&typeof render==="function"){ const y=scrollY; render(window.LAST_X); scrollTo(0,y); } });   // tile + setup row too
 });
 
 function toOpts(){ let o={}; try{ o=JSON.parse(localStorage.getItem(TO_OPTS_KEY)||"{}")||{}; }catch(_){}
@@ -143,14 +143,14 @@ function takeoffTile(X){
   const T=X.takeoff; if(!T||!T.result) return "";
   const s=T.result.selected, nofit=T.result.status==="nofit";
   const val=nofit?`<span class="bad">Does not fit</span>`:s.assumedT!=null?`${svgEsc(T.ac.label)} ${s.assumedT}<small>°C</small>`:T.ac.family==="airbus"?"TOGA":"Full thrust";
-  return `<div class="tile span-4" data-tile="takeoff" data-open="takeoff" tabindex="0" role="button" aria-label="Open Takeoff">
+  return `<div class="tile span-7" data-tile="takeoff" data-open="takeoff" tabindex="0" role="button" aria-label="Open Takeoff">
     <div class="tl"><svg class="i"><use href="#i-takeoff"/></svg>Takeoff · ${svgEsc(T.end.e.id)}<span class="tr">estimate</span></div>
     <div class="val num">${val}</div><div class="sub num">${svgEsc(s.flap)} · V1 ${toKt(s.v1)} · VR ${toKt(s.vr)} · V2 ${toKt(s.v2)}</div></div>`;
 }
 function takeoffSetupRow(X){
   const T=X.takeoff; if(!T||!T.result) return "";
   const s=T.result.selected;
-  return `<div class="sbox" data-to-setup data-open="takeoff" title="Open Takeoff"><div class="k">Takeoff data · estimate</div>
+  return `<div class="sbox to-setup" data-to-setup data-open="takeoff" title="Open Takeoff"><div class="k">Takeoff data · estimate</div>
     <div class="v">${toKt(s.v1)} / ${toKt(s.vr)} / ${toKt(s.v2)}</div><div class="s">${T.result.status==="nofit"?"does not fit":s.assumedT!=null?`${svgEsc(T.ac.label)} ${s.assumedT}°`:"TOGA"} · flaps ${svgEsc(s.flap)}</div></div>`;
 }
 

@@ -101,7 +101,10 @@ function renderOverview(X){
       `<div class="wxgrid">${rows.map(([k,v])=>`<div><span>${k}</span><b class="num">${v}</b></div>`).join("")}</div>${rw}`,`Open ${label.toLowerCase()} airport`);
   };
 
-  return `${callout}<div class="bento">${acTile}${mapTile}${cruiseTile}${tdTile}${fuelTile}${windTile}${profTile}`+
+  /* takeoff (airliners): next to Climb & descent, filling that row (takeoff.js) */
+  const toTile=typeof takeoffTile==="function"?takeoffTile(X):"";
+
+  return `${callout}<div class="bento">${acTile}${mapTile}${cruiseTile}${tdTile}${fuelTile}${windTile}${profTile}${toTile}`+
     `${wxTile("dep-wx",X.briefs?.dep,"Departure",true)}${wxTile("arr-wx",X.briefs?.arr,"Arrival",false)}</div>`;
 }
 
