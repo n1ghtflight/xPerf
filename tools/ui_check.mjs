@@ -678,6 +678,22 @@ check("route-procs", async () => {
   } finally { await page.close(); }
 });
 
+// planning while the Route view is showing: the layout changes after the map is drawn (setup form leaves, chip bar
+// appears), and the map must follow, filling its card and keeping the whole route in view
+check("route-map-first-plan", async () => {
+  const page = await open("c172", { width: 2000, height: 1200 });
+  try {
+    await page.eval(`Shell.showView('route')`);
+    const err = await planFlight(page, FLIGHTS.c172); expect(!err, "plan failed: " + err);
+    await page.eval(`new Promise(r=>setTimeout(r,900))`);
+    const r = await page.eval(`(()=>{ const m=document.getElementById('map'), b=MAP.getBounds(), sz=MAP.getSize();
+      return {view:Shell.current(), out:LAST_X.route.points.filter(p=>!b.contains([p.lat,p.lon])).map(p=>p.label), leaflet:sz.x, box:m.clientWidth}; })()`);
+    expect(r.view === "route", "not on the Route view: " + r.view);
+    expect(Math.abs(r.leaflet - r.box) <= 2, `Leaflet still thinks the map is ${r.leaflet} px wide, it is ${r.box} px`);
+    expect(!r.out.length, "route points outside the map: " + r.out.join(" "));
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {
