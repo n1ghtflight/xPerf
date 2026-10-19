@@ -89,7 +89,7 @@ def main():
 
     # host hints: Cloudflare Pages / Netlify read _headers; GitHub Pages needs .nojekyll
     with open(os.path.join(out, "_headers"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("/packs/*\n  Cache-Control: public, max-age=31536000, immutable\n"
+        f.write("/packs/:cycle/*\n  Cache-Control: public, max-age=31536000, immutable\n"   # cycle files only, not current.json
                 "/packs/current.json\n  Cache-Control: no-cache\n"
                 "/sw.js\n  Cache-Control: no-cache\n"
                 "/index.html\n  Cache-Control: no-cache\n")
