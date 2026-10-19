@@ -549,6 +549,36 @@ check("route-palette", async () => {
   } finally { await page.close(); }
 });
 
+// start screen: a banner on top with one-click example flights; gone once planned
+check("start-hero", async () => {
+  const page = await open("c172", { width: 1100 });
+  try {
+    expect(await visible(page, "#hero"), "no start banner");
+    const r = await page.eval(`(()=>{ const h=document.getElementById('hero'), f=document.querySelector('.work .setupform');
+      return { above:h.getBoundingClientRect().bottom<=f.getBoundingClientRect().top, ex:[...h.querySelectorAll('[data-example]')].map(b=>b.dataset.example),
+        text:h.textContent.replace(/\s+/g,' '), formTitle:!!f.querySelector('.viewtitle')?.getClientRects().length }; })()`);
+    expect(r.above, "banner is not above the setup form");
+    expect(JSON.stringify(r.ex) === '["c172","sr22","a320","b789"]', "examples: " + JSON.stringify(r.ex));
+    expect(/Plan flight/.test(r.text) && /KPAO → KTRK/.test(r.text), "banner text: " + r.text);
+    expect(!r.formTitle, "setup form repeats the Plan a flight title under the banner");
+    await page.click('[data-example="c172"]');
+    await page.eval(`(async()=>{ for(let i=0;i<600&&!(window.LAST_X&&LAST_X.arr.icao==='KTRK');i++) await new Promise(r=>setTimeout(r,100)); })()`);
+    await idle(page);
+    const p = await page.eval(`({dep:LAST_X?.dep.icao, arr:LAST_X?.arr.icao, ac:MODEL.id, nav:document.getElementById('nav').value, planned:document.body.classList.contains('planned')})`);
+    expect(p.dep === "KPAO" && p.arr === "KTRK" && p.ac === "apm:C172" && p.nav === "direct" && p.planned, "example did not plan: " + JSON.stringify(p));
+    expect(!(await visible(page, "#hero")), "banner still shown after planning");
+  } finally { await page.close(); }
+});
+
+check("start-hero-phone", async () => {
+  const page = await open("c172", { width: 390, height: 800, mobile: true });
+  try {
+    const r = await page.eval(`(()=>{ const h=document.getElementById('hero'), b=[...h.querySelectorAll('[data-example]')].map(x=>x.getBoundingClientRect());
+      return { overflow:document.documentElement.scrollWidth>innerWidth, cols:new Set(b.map(x=>Math.round(x.left))).size, art:!!h.querySelector('svg')?.getClientRects().length }; })()`);
+    expect(!r.overflow && r.cols === 2 && !r.art, "phone banner: " + JSON.stringify(r));
+  } finally { await page.close(); }
+});
+
 check("new-flight", async () => {
   const page = await open("c172", { plan: true });
   try {
@@ -556,7 +586,7 @@ check("new-flight", async () => {
     await page.click('[data-chip="new"]'); await settle(page);
     const s = await page.eval(`(()=>{ const $=id=>document.getElementById(id);
       return {planned:document.body.classList.contains('planned'), bar:$('chipbar').hidden, fields:['dep','arr','alt','etd','route'].map(i=>$(i).value).join(''),
-        empty:!!document.querySelector('#results .card.empty'), crumb:$('crumb').textContent, formHome:!!document.querySelector('.work > .formcol'),
+        empty:!$('results').children.length&&!!$('hero')&&$('hero').getClientRects().length>0, crumb:$('crumb').textContent, formHome:!!document.querySelector('.work > .formcol'),
         errHome:$('go').nextElementSibling===$('err'), ac:$('ac').value, x:window.LAST_X, nav:$('nav').value, view:Shell.current()}; })()`);
     expect(!s.planned && s.bar, "still in the planned layout");
     expect(s.fields === "", "fields not cleared: " + s.fields);

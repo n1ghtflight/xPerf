@@ -15,7 +15,7 @@
 <meta name="theme-color" content="#efeff0" media="(prefers-color-scheme: light)">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.19n">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.19q">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.19r">
 <link rel="stylesheet" href="vendor/leaflet-1.9.4/leaflet.min.css">
 <script src="vendor/leaflet-1.9.4/leaflet.min.js"></script>
 </head>
@@ -70,6 +70,20 @@
   <div class="chipbar" id="chipbar" hidden aria-label="Flight setup"></div>
   <div class="errslot" id="errSlot"></div>
   <div class="work">
+  <section class="hero" id="hero" aria-labelledby="heroTitle">
+    <div class="herotext">
+      <div class="heroeyebrow">Flight planner for MSFS 2024</div>
+      <h1 id="heroTitle">Plan a flight</h1>
+      <p>Pick an aircraft, departure and arrival, then press <span class="nowrap"><b>Plan flight</b> <kbd>Ctrl</kbd><kbd>↵</kbd></span></p>
+    </div>
+    <svg class="heroart" viewBox="0 0 170 80" aria-hidden="true"><path d="M14 62Q85-6 156 40"/><circle cx="14" cy="62" r="4"/><circle cx="156" cy="40" r="4"/></svg>
+    <div class="heroexs" role="group" aria-label="Example flights">
+      <button type="button" class="heroex" data-example="c172"><b>KPAO → KTRK</b><span>Cessna 172 · C172</span></button>
+      <button type="button" class="heroex" data-example="sr22"><b>EGTF → LFPN</b><span>Cirrus SR22 · SR22</span></button>
+      <button type="button" class="heroex" data-example="a320"><b>EGLL → LFPG</b><span>Airbus A320 · A320</span></button>
+      <button type="button" class="heroex" data-example="b789"><b>KJFK → EGLL</b><span>Boeing 787-9 · B789</span></button>
+    </div>
+  </section>
   <section class="formcol">
     <div class="card setupform">
       <h2 class="viewtitle">Plan a flight</h2>
@@ -123,10 +137,7 @@
     <div class="card" style="margin-top:18px" id="acCard"><h2>Aircraft data</h2><div class="note">Select an aircraft.</div></div>
   </section>
 
-  <section id="results">
-    <div class="card empty">Pick an aircraft, departure and arrival, then press <b>Plan flight</b> (Ctrl+Enter).<br><br>
-      <span class="note">Examples: Cessna 172 · KPAO → KTRK &nbsp;·&nbsp; SR22 · EGTF → LFPN &nbsp;·&nbsp; A320 · EGLL → LFPG &nbsp;·&nbsp; B789 · KJFK → EGLL</span></div>
-  </section>
+  <section id="results"></section>
   </div>
   <section class="tabpanel settingspanel" data-tab="settings" hidden>
     <h2 class="viewtitle">Settings</h2>
@@ -189,7 +200,7 @@
 <script src="acpicker.js?v=2026.10.19q"></script>
 <script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
-<script src="chips.js?v=2026.10.19p"></script>
+<script src="chips.js?v=2026.10.19r"></script>
 <script src="toperf.js?v=2026.10.19b"></script>
 <script src="takeoff.js?v=2026.10.19e"></script>
 <script src="blueprint.js?v=2026.10.17c"></script>

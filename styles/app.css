@@ -264,6 +264,28 @@ button.icon-btn:hover{background-image:linear-gradient(var(--hover),var(--hover)
 /* ================= Setup form, chips, All settings drawer ================= */
 .visually-hidden,.seg-src{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 body:not(.planned) .work{grid-template-columns:minmax(0,560px);justify-content:center}
+/* start banner: above the setup form until the first plan; New flight brings it back */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:14px 16px;align-items:center;padding:22px 22px 18px;
+  background:var(--tile);border:var(--hairline) solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow)}
+body.planned .hero,.surface[data-view="settings"] .hero{display:none}
+.heroeyebrow{font-size:var(--fs-mini);color:var(--accent);font-weight:var(--w-medium);margin-bottom:6px}
+.hero h1{margin:0 0 6px;font-size:var(--fs-title2);font-weight:var(--w-semibold);letter-spacing:-.012em;line-height:1.15}
+.hero p{margin:0;color:var(--text-3);font-size:var(--fs-small);line-height:1.6}
+.hero p b{color:var(--text-2);font-weight:var(--w-medium)}
+.hero p kbd{margin-left:3px}
+.hero .nowrap{white-space:nowrap}
+.heroart{width:150px;height:auto}
+.heroart path{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-dasharray:4 4}
+.heroart circle{fill:var(--good)}
+.heroexs{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.heroex{display:flex;flex-direction:column;align-items:flex-start;gap:2px;height:auto;margin:0;padding:9px 12px;text-align:left;
+  background:var(--field);border:var(--hairline) solid var(--line);border-radius:var(--r);color:var(--text);cursor:pointer;
+  transition:background-color var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+.heroex b{font-size:var(--fs-small);font-weight:var(--w-medium);font-feature-settings:var(--num-features)}
+.heroex span{font-size:var(--fs-mini);color:var(--text-3)}
+.heroex:hover{background-image:linear-gradient(var(--hover),var(--hover));border-color:var(--line-strong)}
+body:not(.planned) .setupform .viewtitle{display:none}
+@media (max-width:560px){ .hero{grid-template-columns:minmax(0,1fr);padding:18px 16px 16px} .heroart{display:none} }
 body.planned .work{grid-template-columns:minmax(0,1fr)}
 body.planned .work>.formcol{display:none}
 .setupform .viewtitle{margin-bottom:4px}

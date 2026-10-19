@@ -120,7 +120,7 @@ const Chips=(()=>{
     $("fl").value="auto"; ROUTE_SB=null; hint(HINT0); $("err").textContent="";
     if(body.classList.contains("planned")){                 // undo afterRender: the form leaves the drawer
       body.classList.remove("planned");
-      document.querySelector(".work").prepend(document.querySelector(".formcol"));
+      $("hero").after(document.querySelector(".formcol"));
       $("go").after($("err"));
       $("chipbar").hidden=true; $("chipbar").innerHTML="";
     }
@@ -128,6 +128,18 @@ const Chips=(()=>{
     Shell.setCrumb("New flight"); Shell.showView("overview"); syncForm();
     $("dep").focus();
   }
+
+  /* ---------- Start banner: one click fills the aircraft, both airports and the navigation, then plans */
+  const EXAMPLES={ c172:["apm:C172","KPAO","KTRK","direct"], sr22:["apm:SR22","EGTF","LFPN","direct"],
+    a320:["oap:a320","EGLL","LFPG","direct"], b789:["oap:b789","KJFK","EGLL","awy"] };
+  async function runExample(k){
+    const [ac,dep,arr,nav]=EXAMPLES[k]||[]; if(!ac||$("go").disabled) return;   // data still loading: the click does nothing
+    if($("ac").value!==ac) AcPicker.set(ac);
+    $("dep").value=dep; $("arr").value=arr; $("alt").value=""; $("route").value="";
+    $("nav").value=nav; $("nav").dispatchEvent(new Event("change",{bubbles:true}));
+    syncForm(); await replan();
+  }
+  document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("[data-example]"); if(b) runExample(b.dataset.example); });
 
   /* ---------- All settings drawer */
   function openDrawer(){ closeMenu(); $("allSettings").hidden=false; body.classList.add("drawer-open"); $("allSettings").querySelector("input,select,button")?.focus(); }
