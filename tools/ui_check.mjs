@@ -224,7 +224,12 @@ check("airports-list", async () => {
   try {
     await page.click('.sidebar [data-view="airports"]'); await settle(page);
     expect(await visible(page, '[data-apt="dep"]') && await visible(page, '[data-apt="arr"]'), "airport list rows missing");
+    const aria = await page.eval(`(()=>{ const l=document.querySelector('.aptlist'), rows=[...l.querySelectorAll('.aptrow')];
+      return { role:l.getAttribute('role'), sel:rows.filter(r=>r.hasAttribute('aria-selected')).length, cur:rows.filter(r=>r.getAttribute('aria-current')==='true').map(r=>r.dataset.apt) }; })()`);
+    expect(aria.role !== "listbox" && !aria.sel, "airport rows use listbox semantics: " + JSON.stringify(aria));
+    expect(JSON.stringify(aria.cur) === '["dep"]', "aria-current on: " + JSON.stringify(aria.cur));
     await page.click('[data-apt="arr"]'); await settle(page);
+    expect(await page.eval(`[...document.querySelectorAll('.aptrow[aria-current="true"]')].map(r=>r.dataset.apt).join()`) === "arr", "aria-current did not move to the arrival");
     const shown = await page.eval(`[...document.querySelectorAll('.aptdetail [data-detail]')].filter(e=>e.getClientRects().length).map(e=>e.dataset.detail)`);
     expect(JSON.stringify(shown) === '["arr"]', "detail shown: " + JSON.stringify(shown));
     expect(await page.eval(`document.querySelector('.aptdetail [data-detail="arr"]').textContent.includes('KTRK')`), "arrival card lacks KTRK");
@@ -265,6 +270,12 @@ check("no-hex", async () => {
   expect(!bad.length, "hard-coded colours: " + bad.map(([n, h]) => `${n}: ${h.join(" ")}`).join(" | "));
 });
 
+check("no-alias-colours", async () => {
+  const files = ["index.html", "nav.js", "charts.js", "styles/app.css", "styles/tokens.css"];
+  const bad = files.map(f => [f, [...new Set(readFileSync(join(here, "..", f), "utf8").match(/--(panel2|muted|green|amber|red|magenta)\b/g) || [])]]).filter(([, m]) => m.length);
+  expect(!bad.length, "old colour aliases: " + bad.map(([f, m]) => `${f}: ${m.join(" ")}`).join(" | "));
+});
+
 check("palette", async () => {
   const page = await open("c172", { plan: true });
   try {
@@ -276,6 +287,12 @@ check("palette", async () => {
     expect(first === "This plan", "first group: " + first);
     await page.key("Escape"); await settle(page);
     expect(!(await visible(page, "#palette")), "Esc did not close the palette");
+    // palette opened over the All settings drawer: one Esc closes the palette only
+    await page.click('[data-chip="all"]'); await settle(page);
+    await page.key("k", { ctrl: true }); await settle(page);
+    await page.key("Escape"); await settle(page);
+    expect(!(await visible(page, "#palette")), "Esc did not close the palette over the drawer");
+    expect(await visible(page, "#allSettings"), "one Esc also closed the drawer under the palette");
   } finally { await page.close(); }
 });
 
@@ -292,6 +309,8 @@ check("typed-plan", async () => {
     await idle(page);
     expect(await page.eval(`window.LAST_X?.dep.icao`) === "KJFK", "typed plan did not plan KJFK");
     expect(await page.eval(`MODEL.id`) === "oap:b789", "aircraft not switched: " + await page.eval(`MODEL.id`));
+    expect(await page.eval(`localStorage.getItem("xperf.ac")`) === "oap:b789", "typed plan did not remember the aircraft");
+    expect(/B789/.test(await page.eval(`document.getElementById("acSearch")?.value||""`)), "aircraft picker still shows the old type");
   } finally { await page.close(); }
 });
 

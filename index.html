@@ -14,8 +14,8 @@
 <meta name="theme-color" content="#08090a" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#efeff0" media="(prefers-color-scheme: light)">
 <title>Flight Performance Calculator</title>
-<link rel="stylesheet" href="styles/tokens.css?v=2026.10.19a">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.19g">
+<link rel="stylesheet" href="styles/tokens.css?v=2026.10.19n">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.19n">
 <link rel="stylesheet" href="vendor/leaflet-1.9.4/leaflet.min.css">
 <script src="vendor/leaflet-1.9.4/leaflet.min.js"></script>
 </head>
@@ -182,14 +182,14 @@
 </div>
 </div>
 
-<script src="shell.js?v=2026.10.19a"></script>
+<script src="shell.js?v=2026.10.19n"></script>
 <script src="data.js?v=2026.10.19e"></script>
 <script src="routeimport.js?v=2026.10.19c"></script>
-<script src="nav.js?v=2026.10.19m"></script>
-<script src="acpicker.js?v=2026.10.17b"></script>
+<script src="nav.js?v=2026.10.19n"></script>
+<script src="acpicker.js?v=2026.10.19n"></script>
 <script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
-<script src="chips.js?v=2026.10.17f"></script>
+<script src="chips.js?v=2026.10.19n"></script>
 <script src="toperf.js?v=2026.10.19b"></script>
 <script src="takeoff.js?v=2026.10.19e"></script>
 <script src="blueprint.js?v=2026.10.17c"></script>
@@ -1066,7 +1066,7 @@ function render(X){
   <div class="card ${X.wx&&localStorage.getItem("xperf.winds")!=="0"?"":"nowinds"}" id="profcard"><div class="cardhead"><h2>Vertical profile${X.terrain?" & terrain":""}${X.wx?" · winds aloft":""}</h2>
     ${X.wx?`<label class="chk" style="margin:0"><input type="checkbox" id="windTgl" ${localStorage.getItem("xperf.winds")!=="0"?"checked":""}> Show winds aloft</label>`:""}</div>${profileSVG(X)}${X.wx?windLegend():""}
     ${X.maxTerrain!=null?`<p class="note">Highest terrain on the direct track: <b>${fmtK(X.maxTerrain)} ft</b>. Required clearance ${fmtK(X.margin)} ft (${$("rules").value==="vfr"?"VFR":"IFR"}), checked along the whole profile, tapering to 300 ft within 10 NM of each airport.
-      ${sel.terrain?.min!=null?`Lowest clearance at ${lvl(crzFt)}: <b style="color:${sel.terrain.ok?"var(--green)":"var(--red)"}">${fmtK(sel.terrain.min)} ft</b>, ${nm(sel.terrain.at).toFixed(1)} NM from ${dep.icao}.`:""}
+      ${sel.terrain?.min!=null?`Lowest clearance at ${lvl(crzFt)}: <b style="color:${sel.terrain.ok?"var(--good)":"var(--bad)"}">${fmtK(sel.terrain.min)} ft</b>, ${nm(sel.terrain.at).toFixed(1)} NM from ${dep.icao}.`:""}
       Sampled along the centreline only — always check charted MEA/MOCA/grid MORA.</p>`:""}</div>
 
   <div class="grid2">
@@ -1115,7 +1115,7 @@ function render(X){
     ${levelChart(X)}
     <div class="tblwrap"><table><tr><th>Level</th><th>Trip fuel kg</th><th>Δ fuel</th><th>Time</th><th>Δ time</th><th>Wind kt</th><th>ISA dev</th><th>TOC NM</th><th>TOD NM</th><th>Cruise NM</th><th>Status</th></tr>
     ${X.results.slice().reverse().map(r=>{ const [st,bad]=statusOf(r,X);
-      return `<tr class="${r===best?"best":""} ${r.ft===sel.ft?"sel":""} ${bad?"dim":""}"><td>${lvl(r.ft)}</td><td>${fmtK(r.trip)}</td><td>${r===X.minFuel?"—":(r.trip>=X.minFuel.trip?"+":"−")+fmtK(Math.abs(r.trip-X.minFuel.trip))}</td><td>${hhmm(r.time)}</td><td>${r===X.minTime?"—":(r.time>=X.minTime.time?"+":"−")+Math.round(Math.abs(r.time-X.minTime.time)/60)+" min"}</td><td>${r.cruise.tail>=0?"+":""}${Math.round(r.cruise.tail/KT)}</td><td>${r.cruise.dT>=0?"+":""}${Math.round(r.cruise.dT)}</td><td>${Math.round(nm(r.climb.d))}</td><td>${Math.round(nm(r.descent.d))}</td><td>${Math.round(nm(r.cruise.dist))}</td><td style="color:${bad?"var(--red)":"inherit"}">${st}</td></tr>`; }).join("")}
+      return `<tr class="${r===best?"best":""} ${r.ft===sel.ft?"sel":""} ${bad?"dim":""}"><td>${lvl(r.ft)}</td><td>${fmtK(r.trip)}</td><td>${r===X.minFuel?"—":(r.trip>=X.minFuel.trip?"+":"−")+fmtK(Math.abs(r.trip-X.minFuel.trip))}</td><td>${hhmm(r.time)}</td><td>${r===X.minTime?"—":(r.time>=X.minTime.time?"+":"−")+Math.round(Math.abs(r.time-X.minTime.time)/60)+" min"}</td><td>${r.cruise.tail>=0?"+":""}${Math.round(r.cruise.tail/KT)}</td><td>${r.cruise.dT>=0?"+":""}${Math.round(r.cruise.dT)}</td><td>${Math.round(nm(r.climb.d))}</td><td>${Math.round(nm(r.descent.d))}</td><td>${Math.round(nm(r.cruise.dist))}</td><td style="color:${bad?"var(--bad)":"inherit"}">${st}</td></tr>`; }).join("")}
     </table></div>
   </div>
 
@@ -1130,7 +1130,7 @@ function render(X){
     <br><b>Model assumptions:</b> great-circle routing (no SID/STAR/airways), optimum = minimum ${X.optBy==="time"?"time":"trip fuel"} among allowed levels,
     ${apm?`piston/turboprop cruise at ${m.engineKind==="piston"?"65%":"~80% max cruise"} power with altitude power lapse${m.turbo?" (turbocharged to 18,000 ft)":""}, climb/descent rates from the published sea-level climb rate${m.engineKind==="piston"&&!m.turbo?" reduced with altitude toward the service ceiling":""}, reserve 45 min at cruise.`
       :`1.3 g buffet margin (generic Mach-dependent buffet C<sub>L</sub>), climb rates = observed ADS-B averages corrected for weight, reserve = 5% trip + 30 min hold.`}
-    <br><b style="color:var(--amber)">For flight simulation, planning practice and education only — not certified for operational use. Always use your aircraft's POH/AFM and approved flight planning.</b>
+    <br><b style="color:var(--warn)">For flight simulation, planning practice and education only — not certified for operational use. Always use your aircraft's POH/AFM and approved flight planning.</b>
   </details>`;
   $("results").innerHTML=html;
   { const sn=$("results").querySelector(".srcnote"); if(sn) $("srcHost").replaceChildren(sn); }   // per-plan sources live in Settings

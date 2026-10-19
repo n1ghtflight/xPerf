@@ -172,7 +172,7 @@ function navLegs(X){
       g.push(`COP ${cop.toFixed(0)} NM from ${A.nav.ident}`); }
     if(A.kind==="apt"&&B.kind==="apt") g.push("Pilotage / dead reckoning");
     const gap=route.plan&&route.plan.gaps.find(q=>q.i===i);
-    if(gap) g.push(`<span style="color:var(--amber)">⚠ ${gap.gap.toFixed(0)} NM outside reception — DR</span>`);
+    if(gap) g.push(`<span style="color:var(--warn)">⚠ ${gap.gap.toFixed(0)} NM outside reception — DR</span>`);
     let tmax=0; for(const t of terr){ const xx=t.f*total; if(xx>=x0-1852&&xx<=x1+1852) tmax=Math.max(tmax,t.ft); }
     const msa=terr.length?Math.ceil((tmax+(tmax>3000?2000:1000))/100)*100:null;
     rows.push({i,A,B,x0,x1,guid:g.join("<br>"),tc,v,mc,wd:w.wd,ws:w.ws,wca,mh,dist:L.d/NM,gs:gs/KT,ete:p1.t-p0.t,eta:new Date(etd.getTime()+p1.t*1000),
@@ -365,7 +365,7 @@ function windTxt(met){ if(!met) return "—"; if(!met.wspd) return "calm"; if(me
   return `${fmtBrg(met.wdir)}° / ${met.wspd}${met.wgst?"G"+met.wgst:""} kt`; }
 function rwyWindTxt(met,wc,xwLimit){
   if(!met) return "—"; if(!met.wspd) return "calm"; if(wc.vrb) return `VRB ${met.wspd}`;
-  return `${wc.hw>=0?"H":"T"} ${Math.abs(Math.round(wc.hw))} / X ${Math.abs(Math.round(wc.xw))}${wc.side||""}${wc.gxw>xwLimit?' <span style="color:var(--red)">⚠</span>':""}`; }
+  return `${wc.hw>=0?"H":"T"} ${Math.abs(Math.round(wc.hw))} / X ${Math.abs(Math.round(wc.xw))}${wc.side||""}${wc.gxw>xwLimit?' <span style="color:var(--bad)">⚠</span>':""}`; }
 function airportBrief(role,a,info,X,weight){
   if(!a) return null;
   if(!info||info.error) return {a,role,missing:true,error:info?.error};
@@ -420,7 +420,7 @@ function airportCard(B,X,{collapsed=false,eta=null,label="ETA"}={}){
       ${wx.distNM?`<p class="note">No weather reporting at ${a.icao} — using <b>${wx.station}</b>, ${wx.distNM} NM away.</p>`:""}`;
   } else wxHtml=`<p class="note">${wx.error?"Live weather unavailable: "+svgEsc(wx.error):"No METAR within 60 NM"}.</p>`;
   // ---- runways
-  const rwyRows=B.ends.map(x=>{ const {r,e,wc,perf:pp}=x, col=pp?{ok:"var(--green)",tight:"var(--amber)",no:"var(--red)"}[pp.status]:"inherit";
+  const rwyRows=B.ends.map(x=>{ const {r,e,wc,perf:pp}=x, col=pp?{ok:"var(--good)",tight:"var(--warn)",no:"var(--bad)"}[pp.status]:"inherit";
     return `<tr class="${x===best?"best":""}"><td><b>${e.id}</b>${x===best?" ★":""}</td><td>${e.hdgT!=null?fmtBrg(e.hdgT-var_)+"°":"—"}</td>
       <td>${fmtK(r.length)} × ${fmtK(r.width)}</td><td>${r.surface||"—"}${r.lighted?" · lit":""}</td>
       <td>${rwyWindTxt(met,wc,xwLimit)}</td>
@@ -429,7 +429,7 @@ function airportCard(B,X,{collapsed=false,eta=null,label="ETA"}={}){
   const bp=basePerf(m), sf=role==="Departure"?bp.sfTo:bp.sfLdg;
   const rwyHtml=B.ends.length?`<div class="rwyviz">${runwayDiagram(B)}${distanceBars(B)}</div>
     <details class="sub"><summary>Runway table — heading, size, surface, wind, ILS</summary><div class="tblwrap"><table><tr><th>Rwy</th><th>Hdg °M</th><th>L × W ft</th><th>Surface</th><th>Wind H/X kt</th><th>${role==="Departure"?"Takeoff":"Landing"} distance ft</th><th>ILS</th></tr>${rwyRows}</table></div></details>
-    <p class="note">★ recommended runway. Distance = required (× safety factor ${sf}) of ${role==="Departure"?"runway length":"landing distance available"}: <span style="color:var(--green)">fits</span> · <span style="color:var(--amber)">only unfactored fits</span> · <span style="color:var(--red)">too short</span>. ${bp.src}, corrected for ${fmtK(B.weight)} kg, density altitude, slope, surface${met?.wet?" (wet)":""} and wind. Crosswind ⚠ above ${xwLimit} kt.</p>`
+    <p class="note">★ recommended runway. Distance = required (× safety factor ${sf}) of ${role==="Departure"?"runway length":"landing distance available"}: <span style="color:var(--good)">fits</span> · <span style="color:var(--warn)">only unfactored fits</span> · <span style="color:var(--bad)">too short</span>. ${bp.src}, corrected for ${fmtK(B.weight)} kg, density altitude, slope, surface${met?.wet?" (wet)":""} and wind. Crosswind ⚠ above ${xwLimit} kt.</p>`
     :`<p class="note">No runway data on record for ${a.icao} (OurAirports). Check the AIP / chart supplement.</p>`;
   // ---- ILS & minimums
   const ils=info.ils||{list:[]};
@@ -437,7 +437,7 @@ function airportCard(B,X,{collapsed=false,eta=null,label="ETA"}={}){
     return `<tr><td><b>${i.rwy}</b></td><td>${i.type}${i.cat?" · CAT "+i.cat:""}</td><td>${i.ident} <span class="morse">${morse(i.ident.replace(/^I-/,"I"))}</span></td><td><b>${i.freq?.toFixed(2)}</b></td>
       <td>${fmtBrg(ilsCourse(i,var_))}°</td><td>${i.gs!=null?i.gs.toFixed(1)+"°":"—"}</td><td>${i.dme||"—"}</td><td style="white-space:normal;text-align:left;min-width:240px">${mins?mins.text:"—"}${mins?.da!=null&&met?minsCheck(met,mins):""}</td></tr>`; }).join("");
   const ilsHtml=ils.list.length?`<div class="tblwrap"><table><tr><th>Rwy</th><th>Type</th><th>Ident</th><th>Freq</th><th>Course</th><th>GS</th><th>DME</th><th>Minimums</th></tr>${ilsRows}</table></div>
-    <p class="note" style="color:${ils.current?"var(--muted)":"var(--amber)"}">Source: ${ils.source}. Standard CAT I baseline — the DA/MDA on the approach chart may be higher and always governs.</p>`
+    <p class="note" style="color:${ils.current?"var(--text-3)":"var(--warn)"}">Source: ${ils.source}. Standard CAT I baseline — the DA/MDA on the approach chart may be higher and always governs.</p>`
     :`<p class="note">No ILS or localizer on record.</p>`;
   // ---- frequencies (all), radio aids, charts
   const fq=B.fq.slice().sort((p,q)=>(FREQ_ORDER.indexOf(p.type)+99)%99-(FREQ_ORDER.indexOf(q.type)+99)%99);
@@ -469,7 +469,7 @@ function airportCard(B,X,{collapsed=false,eta=null,label="ETA"}={}){
 }
 function minsCheck(met,mins,tdze){
   const ceilOk=met.ceil==null||met.ceil>=mins.dh, visOk=met.vis==null||met.vis>=0.5;
-  return ` <span style="color:${ceilOk&&visOk?"var(--green)":"var(--red)"}">— current wx ${ceilOk&&visOk?"above":"BELOW"} CAT I</span>`;
+  return ` <span style="color:${ceilOk&&visOk?"var(--good)":"var(--bad)"}">— current wx ${ceilOk&&visOk?"above":"BELOW"} CAT I</span>`;
 }
 
 /* =====================================================================
@@ -1029,19 +1029,19 @@ function airportsView(X,cards){
     const B=X.briefs?.[k], met=B&&!B.missing?B.met:null;
     const end=B&&!B.missing?(k==="dep"&&typeof chosenDepRunway==="function"?chosenDepRunway(B):B.best):null;
     const cat=met?.cat?`<span class="fcat ${met.cat.toLowerCase()}">${met.cat}</span>`:`<span class="fcat none">—</span>`;
-    return `<button type="button" class="aptrow" data-apt="${k}" aria-selected="${k===sel}">${cat}
+    return `<button type="button" class="aptrow" data-apt="${k}"${k===sel?' aria-current="true"':""}>${cat}
       <span class="aptname"><b>${svgEsc(a.icao)}</b> <span>${label} · ${svgEsc(a.name)}</span></span>
       <span class="aptmeta">${met?windTxt(met):"no METAR"}${end?` · RWY ${end.e.id}`:""}</span></button>`;
   };
   return `<div class="aptsplit">
-    <div class="aptlist" role="listbox" aria-label="Airports">${roles.map(row).join("")}</div>
+    <div class="aptlist" role="group" aria-label="Airports">${roles.map(row).join("")}</div>
     <div class="aptdetail">${roles.map(([k])=>`<div data-detail="${k}"${k===sel?"":" hidden"}>
       <button type="button" class="aptback" data-aptback>‹ Airports</button>${cards[k]}</div>`).join("")}</div></div>`;
 }
 document.addEventListener("click",e=>{
   const r=e.target.closest&&e.target.closest(".aptrow[data-apt]");
   if(r){ const k=r.dataset.apt, root=r.closest(".aptsplit");
-    root.querySelectorAll(".aptrow").forEach(b=>b.setAttribute("aria-selected",String(b===r)));
+    root.querySelectorAll(".aptrow").forEach(b=>b===r?b.setAttribute("aria-current","true"):b.removeAttribute("aria-current"));
     root.querySelectorAll("[data-detail]").forEach(d=>d.hidden=d.dataset.detail!==k);
     root.classList.add("detail-open");
     try{ localStorage.setItem("xperf.aptSel",k); }catch(_){}

@@ -168,7 +168,7 @@ const Palette=(()=>{
     return [];
   }
   async function runPlan(r){
-    if(r.ac&&$("ac").value!==r.ac){ $("ac").value=r.ac; if(window.AcPicker) AcPicker.sync(); $("ac").dispatchEvent(new Event("change")); }
+    if(r.ac&&$("ac").value!==r.ac) AcPicker.set(r.ac);
     $("dep").value=r.dep.icao; $("arr").value=r.arr.icao; Chips.syncForm();
     await replan();
   }

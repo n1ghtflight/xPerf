@@ -123,12 +123,4 @@ kbd,.kbd{display:inline-grid;place-items:center;min-width:18px;height:18px;paddi
   --map-land:     light-dark(oklch(.97 .006 120), oklch(.17 .006 260));
   --violet-soft:  color-mix(in oklch, var(--violet) 16%, transparent);
   --cat-ink:      var(--bg);              /* text on a flight-category badge */
-
-  /* Transition aliases: names used by nav.js/charts.js inline styles before the redesign. */
-  --panel2: var(--field);
-  --muted:  var(--text-3);
-  --green:  var(--good);
-  --amber:  var(--warn);
-  --red:    var(--bad);
-  --magenta:var(--violet);
 }

@@ -180,7 +180,7 @@ const Chips=(()=>{
     setNav("import");
     const code=o=>((o.textContent.match(/\(([^)]+)\)\s*$/)||[])[1]||"").toUpperCase();
     const opt=sb.acType?[...$("ac").options].find(o=>o.value&&code(o)===sb.acType.toUpperCase()):null;
-    if(opt&&$("ac").value!==opt.value){ $("ac").value=opt.value; window.AcPicker?.sync(); $("ac").dispatchEvent(new Event("change")); }
+    if(opt&&$("ac").value!==opt.value) AcPicker.set(opt.value);
     hint(`SimBrief ${sb.dep} → ${sb.arr}${sb.airac?` · AIRAC ${sb.airac}`:""} · ${sb.points.length} fixes${sb.initialAlt?` · filed ${lvl(sb.initialAlt)}`:""}`+
       `${sb.acType&&!opt?` · ${sb.acType} isn't in XPerf, so the current aircraft is kept`:""}. Editing the route switches to the typed route.`);
     replan();
@@ -229,7 +229,7 @@ const Chips=(()=>{
   document.addEventListener("keydown",e=>{
     if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){ e.preventDefault(); if(e.target.id==="route") routeEnds();
       if(body.classList.contains("planned")) replan(); else if(!$("go").disabled) $("go").click(); return; }
-    if(e.key==="Escape"){ if(!$("chipMenu").hidden){ closeMenu(); e.preventDefault(); } else if(!$("allSettings").hidden){ closeDrawer(); e.preventDefault(); } return; }
+    if(e.key==="Escape"){ if(Palette.isOpen()) return; if(!$("chipMenu").hidden){ closeMenu(); e.preventDefault(); } else if(!$("allSettings").hidden){ closeDrawer(); e.preventDefault(); } return; }
     if(e.key==="Enter"&&(e.target.id==="chipDep"||e.target.id==="chipArr")){ e.preventDefault(); applyRoute(); return; }
     if(e.key==="Enter"&&e.target.id==="chipEtd"){ e.preventDefault(); applyEtd(); return; }
     if(e.key==="Enter"&&e.target.id==="sbSrc"){ e.preventDefault(); fetchSimbrief(); return; }

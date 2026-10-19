@@ -91,5 +91,5 @@ const AcPicker=(()=>{
     list.addEventListener("mousedown",e=>{ const el=e.target.closest(".acopt"); if(el){ e.preventDefault(); choose(+el.dataset.i); } });
     input.addEventListener("blur",()=>setTimeout(()=>{ if(document.activeElement!==input) close(); },120));
   }
-  return {init,sync,index};
+  return {init,sync,index,set};
 })();
