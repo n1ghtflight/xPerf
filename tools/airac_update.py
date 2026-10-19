@@ -24,6 +24,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 import navdata  # noqa: E402  (same cycle logic as build_packs.py)
 
+# wrangler prints emoji; a cp1252 console (scheduled runs, pipes) would crash on them after the deploy
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 SITE = os.environ.get("XPERF_SITE", "https://xperf.n1ghtflight.workers.dev")
 WX = os.environ.get("XPERF_WX", "https://xperf-wx.n1ghtflight.workers.dev")
 WORKER = os.environ.get("XPERF_WORKER", "xperf")
