@@ -92,3 +92,68 @@ test("engine overrides in to_ref replace OpenAP's default engine", () => {
   }
   assert.ok(REF.b39m.engine, "b39m override missing");
 });
+
+/* ---------------------------------------------------------------- compute(): reduced thrust, flaps, limits */
+const inp0 = { towKg: 70000, elevFt: 13, qnh: 1013, oat: 18, windKt: 0, slopePct: 0, lengthFt: 11870, intersectionFt: 0,
+  lineup: "none", wet: false, packs: true, antiIce: "off", thrust: "reduced", flap: "optimum" };
+const run = (inp = {}, code = "a20n") => TOPerf().compute(acOf(code), { ...inp0, ...inp });
+const allFinite = res => res.byFlap.every(f => finite(f)) && Number.isFinite(res.shortfallFt);
+
+test("reduced thrust on a long runway", () => {
+  const ac = acOf("a20n"), r = run();
+  assert.equal(r.status, "reduced");
+  assert.ok(r.selected.assumedT >= 18 && r.selected.thrustRed <= 0.25, JSON.stringify(r.selected));
+  assert.ok(ac.flaps.some(f => f.name === r.optimum), r.optimum);
+  assert.equal(r.byFlap.length, ac.flaps.length);
+});
+
+test("short runway gives TOGA only", () => {
+  const flap = run().optimum, full = run({ thrust: "full", flap }).selected.requiredFt, r = run({ lengthFt: full * 1.002, flap });   // any temperature above the flat-rating point would need more
+  assert.equal(r.status, "toga"); assert.equal(r.selected.assumedT, null);
+});
+
+test("too short does not fit", () => {
+  const r = run({ lengthFt: 4000 });
+  assert.equal(r.status, "nofit"); assert.ok(r.shortfallFt > 0); assert.ok(allFinite(r));
+});
+
+test("intersection beyond the runway clamps", () => {
+  const r = run({ intersectionFt: 20000 });
+  assert.equal(r.selected.availableFt, 0); assert.equal(r.status, "nofit");
+  assert.equal(run({ intersectionFt: -50 }).selected.availableFt, run().selected.availableFt);
+});
+
+test("tailwind uses 150 %", () => {
+  const T = run({ thrust: "full" }), tail = run({ thrust: "full", windKt: -10 }), head = run({ thrust: "full", windKt: 10 });
+  assert.ok(tail.selected.requiredFt > T.selected.requiredFt && tail.selected.requiredFt > head.selected.requiredFt);
+  // 10 kt tail counts as 15 kt; 10 kt head as 5 kt: the tailwind penalty is the larger one
+  assert.ok(tail.selected.requiredFt - T.selected.requiredFt > T.selected.requiredFt - head.selected.requiredFt);
+});
+
+test("anti-ice and packs lower the temperature", () => {
+  // runway-limited (not at the 25 % thrust cap, which bleed doesn't change)
+  const L = { lengthFt: 7000 };
+  assert.ok(run({ ...L, antiIce: "wing" }).selected.assumedT < run(L).selected.assumedT);
+  assert.ok(run({ ...L, packs: false }).selected.assumedT >= run(L).selected.assumedT);
+});
+
+test("wet never raises the temperature", () => {
+  assert.ok(run({ wet: true }).selected.assumedT <= run().selected.assumedT);
+});
+
+test("above MTOW still computes with a note", () => {
+  const ac = acOf("a20n"), r = run({ towKg: ac.mtow + 2000 });
+  assert.ok(allFinite(r)); assert.ok(r.notes.includes("Takeoff weight above MTOW"));
+});
+
+test("climb-limited weight is not a field-length fit", () => {
+  // very hot and high: the one-engine-out gradient fails even with full thrust on a long runway
+  const r = run({ towKg: 79000, elevFt: 8000, oat: 40, lengthFt: 16000 });
+  assert.equal(r.status, "nofit"); assert.ok(r.selected.limits.some(l => l.id === "grad2" && !l.ok));
+});
+
+test("fast enough", () => {
+  const ac = acOf("b77w"), t0 = performance.now();
+  for (let i = 0; i < 20; i++) TOPerf().compute(ac, { ...inp0, towKg: 300000, lengthFt: 13000 });
+  assert.ok(performance.now() - t0 < 2000, `${Math.round(performance.now() - t0)} ms`);
+});
