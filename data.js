@@ -141,6 +141,8 @@ const XD=(()=>{
     navaids:  ()=>S?get("/api/navaids","json",90000):pack("navaids.json"),
     airways:  ()=>S?get("/api/airways","json",180000):pack("airways.json"),
     gaPerf:   ()=>once("gaperf",()=>get("data/ga_perf.json","json",60000)),   // XPerf's own GA / turboprop / bizjet table
+    toRef:    ()=>once("toref",()=>get("data/to_ref.json","json",60000)),     // takeoff reference data per OpenAP type (toperf.js)
+    toTune:   ()=>once("totune",()=>get("data/to_tune.json","json",60000)),   // takeoff tuning to airport-planning charts
     airportInfo: a=>S?fetchT("/api/airportinfo?"+new URLSearchParams({ident:a.icao,aliases:[a.iata,...(a.aliases||[])].filter(Boolean).join(","),country:a.country||"",lat:a.lat,lon:a.lon}),"json",120000)
                      :packAirportInfo(a),
     routes: async(dep,arr)=>{

@@ -3,7 +3,7 @@
     python tools/build_site.py                          -> dist/site/
     python tools/build_site.py --wx https://xperf-wx.<you>.workers.dev
 
-Copies the app files index.html references, data/ga_perf.json, the current AIRAC pack (packs/current.json and
+Copies the app files index.html references, data/ga_perf.json + to_ref.json + to_tune.json, the current AIRAC pack (packs/current.json and
 packs/<cycle>/), vendor/, icons/ and the web manifest. index.html is marked as a static build: data from the
 packs, the METAR/TAF relay (--wx, see tools/wx-worker.js) and the service worker, whose version and precache
 list are filled in here. Build the packs first: python build_packs.py
@@ -53,7 +53,8 @@ def main():
 
     for r in refs:
         copy(r)
-    copy("data/ga_perf.json")
+    for d in ("data/ga_perf.json", "data/to_ref.json", "data/to_tune.json"):
+        copy(d)
     for d in ("vendor", "icons"):
         shutil.copytree(os.path.join(ROOT, d), os.path.join(out, d), dirs_exist_ok=True)
     os.makedirs(os.path.join(out, "packs"))
@@ -74,7 +75,7 @@ def main():
         f.write(page)
 
     # service worker: precache the app shell; its version changes whenever any shell file does
-    shell = list(dict.fromkeys(["./"] + refs + ["data/ga_perf.json"] + sorted(
+    shell = list(dict.fromkeys(["./"] + refs + ["data/ga_perf.json", "data/to_ref.json", "data/to_tune.json"] + sorted(
         os.path.relpath(os.path.join(dp, fn), out).replace(os.sep, "/")
         for d in ("vendor", "icons") for dp, _, fns in os.walk(os.path.join(out, d)) for fn in fns)))   # addAll rejects duplicates
     h = hashlib.sha256()
