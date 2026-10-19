@@ -8,10 +8,10 @@ const Shell=(()=>{
   const root=document.documentElement, THEMES=["system","dark","light"];
   // view links and tab buttons; #surface also carries data-view (the current view, for CSS) but is not a control
   const NAV_CTL="a[data-view],button[data-view]";
-  const VIEWS=[["overview","Overview"],["route","Route & nav log"],["airports","Airports & weather"],["profile","Profile"],
+  const VIEWS=[["overview","Overview"],["route","Route & nav log"],["airports","Airports & weather"],["takeoff","Takeoff"],["profile","Profile"],
                ["fuel","Fuel & levels"],["setup","FS2024 setup"],["settings","Settings"]];
   const PHONE_TABS=["overview","route","airports","profile","more"];
-  const CHORDS={o:"overview",r:"route",a:"airports",p:"profile",f:"fuel",s:"setup"};
+  const CHORDS={o:"overview",r:"route",a:"airports",t:"takeoff",p:"profile",f:"fuel",s:"setup"};
   const store={get(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } },
                set(k,v){ try{ localStorage.setItem(k,v); }catch(_){} }};
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -141,7 +141,7 @@ const Palette=(()=>{
         {group:g,label:"Change aircraft…",keys:[],run:()=>document.querySelector('[data-chip="ac"]')?.click()},
         {group:g,label:"All settings",keys:[],run:()=>Chips.openDrawer()});
     }
-    for(const [id,k] of [["overview","O"],["route","R"],["airports","A"],["profile","P"],["fuel","F"],["setup","S"]])
+    for(const [id,k] of [["overview","O"],["route","R"],["airports","A"],["takeoff","T"],["profile","P"],["fuel","F"],["setup","S"]])
       cmds.push({group:"Navigate",label:"Go to "+Shell.VIEWS.find(v=>v[0]===id)[1],keys:["G",k],run:()=>Shell.showView(id)});
     cmds.push({group:"Navigate",label:"Open Settings",keys:[","],run:()=>Shell.showView("settings")},
       {group:"App",label:"New flight",keys:[],run:()=>Chips.newFlight()},

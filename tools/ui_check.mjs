@@ -59,13 +59,13 @@ check("views", async () => {
   const page = await open("c172", { plan: true });
   try {
     const views = await page.eval(`Shell.VIEWS.map(v=>v[0])`);
-    expect(JSON.stringify(views) === JSON.stringify(["overview", "route", "airports", "profile", "fuel", "setup", "settings"]), "Shell.VIEWS ids: " + views);
+    expect(JSON.stringify(views) === JSON.stringify(["overview", "route", "airports", "takeoff", "profile", "fuel", "setup", "settings"]), "Shell.VIEWS ids: " + views);
     for (const id of views) {
       await page.click(`.sidebar [data-view="${id}"]`); await settle(page);
       const vis = await page.eval(VISIBLE_VIEWS);
       expect(vis.length === 1 && vis[0] === id, `sidebar ${id}: visible panels ${JSON.stringify(vis)}`);
     }
-    const chords = { o: "overview", r: "route", a: "airports", p: "profile", f: "fuel", s: "setup", ",": "settings" };
+    const chords = { o: "overview", r: "route", a: "airports", t: "takeoff", p: "profile", f: "fuel", s: "setup", ",": "settings" };
     for (const [k, id] of Object.entries(chords)) {
       await page.eval(`document.activeElement?.blur()`);
       if (k !== ",") await page.key("g");
@@ -333,7 +333,7 @@ check("overflow", async () => {
   for (const scheme of ["dark", "light"]) for (const [w, h, mob] of sizes) {
     const page = await open("b789", { plan: true, width: w, height: h, mobile: mob, scheme });
     try {
-      for (const v of ["overview", "route", "airports", "profile", "fuel", "setup", "settings"]) {
+      for (const v of ["overview", "route", "airports", "takeoff", "profile", "fuel", "setup", "settings"]) {
         await page.eval(`Shell.showView(${JSON.stringify(v)})`); await settle(page);
         const o = await page.eval(`({doc:document.documentElement.scrollWidth-innerWidth, surf:(s=>s.scrollWidth-s.clientWidth)(document.getElementById('surface'))})`);
         if (o.doc > 1 || o.surf > 1) bad.push(`${w}x${h} ${scheme} ${v}: page +${o.doc}px, surface +${o.surf}px`);

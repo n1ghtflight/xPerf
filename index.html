@@ -15,7 +15,7 @@
 <meta name="theme-color" content="#efeff0" media="(prefers-color-scheme: light)">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.19a">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.19b">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.19d">
 <link rel="stylesheet" href="vendor/leaflet-1.9.4/leaflet.min.css">
 <script src="vendor/leaflet-1.9.4/leaflet.min.js"></script>
 </head>
@@ -29,6 +29,7 @@
   <symbol id="i-route" viewBox="0 0 16 16"><circle cx="3.5" cy="12.5" r="1.5"/><circle cx="12.5" cy="3.5" r="1.5"/><path d="M5 12.5h4.5a2 2 0 0 0 0-4h-3a2 2 0 0 1 0-4H11"/></symbol>
   <symbol id="i-airports" viewBox="0 0 16 16"><path d="M8 14s4.5-4 4.5-7.5a4.5 4.5 0 0 0-9 0C3.5 10 8 14 8 14z"/><circle cx="8" cy="6.5" r="1.5"/></symbol>
   <symbol id="i-profile" viewBox="0 0 16 16"><path d="M1.5 13.5h13M2.5 12l3.5-6h4l3.5 6"/></symbol>
+  <symbol id="i-takeoff" viewBox="0 0 16 16"><path d="M1.5 13.5h13M3 10.5l9.5-5.2a1.3 1.3 0 0 1 1.3 2.2L5.4 11.6 3 10.5zM6.2 7.6 4.6 5.4l1.3-.6 3 1.3"/></symbol>
   <symbol id="i-fuel" viewBox="0 0 16 16"><path d="M8 2.5s-4 4.6-4 7.5a4 4 0 0 0 8 0c0-2.9-4-7.5-4-7.5z"/></symbol>
   <symbol id="i-setup" viewBox="0 0 16 16"><path d="M8 2v4.5L2 9.5V11l6-1.5v3l-1.5 1V15L8 14.5l1.5.5v-1.5l-1.5-1v-3L14 11V9.5L8 6.5V2"/></symbol>
   <symbol id="i-settings" viewBox="0 0 16 16"><path d="M3 4.5h6M12 4.5h1M3 11.5h1M7 11.5h6"/><circle cx="10.5" cy="4.5" r="1.5"/><circle cx="5.5" cy="11.5" r="1.5"/></symbol>
@@ -57,6 +58,7 @@
     <a class="nav" href="#overview" data-view="overview" data-tip="Overview" data-kbd="G O"><svg class="i"><use href="#i-overview"/></svg><span class="lbl">Overview</span></a>
     <a class="nav" href="#route" data-view="route" data-tip="Route &amp; nav log" data-kbd="G R"><svg class="i"><use href="#i-route"/></svg><span class="lbl">Route &amp; nav log</span></a>
     <a class="nav" href="#airports" data-view="airports" data-tip="Airports &amp; weather" data-kbd="G A"><svg class="i"><use href="#i-airports"/></svg><span class="lbl">Airports &amp; weather</span></a>
+    <a class="nav" href="#takeoff" data-view="takeoff" data-tip="Takeoff" data-kbd="G T"><svg class="i"><use href="#i-takeoff"/></svg><span class="lbl">Takeoff</span></a>
     <a class="nav" href="#profile" data-view="profile" data-tip="Profile" data-kbd="G P"><svg class="i"><use href="#i-profile"/></svg><span class="lbl">Profile</span></a>
     <a class="nav" href="#fuel" data-view="fuel" data-tip="Fuel &amp; levels" data-kbd="G F"><svg class="i"><use href="#i-fuel"/></svg><span class="lbl">Fuel &amp; levels</span></a>
     <a class="nav" href="#setup" data-view="setup" data-tip="FS2024 setup" data-kbd="G S"><svg class="i"><use href="#i-setup"/></svg><span class="lbl">FS2024 setup</span></a>
@@ -173,13 +175,14 @@
   <button data-view="more"><svg class="i"><use href="#i-more"/></svg><span>More</span></button>
 </nav>
 <div class="moresheet" id="moreSheet" hidden>
+  <button data-view="takeoff"><svg class="i"><use href="#i-takeoff"/></svg><span>Takeoff</span></button>
   <button data-view="fuel"><svg class="i"><use href="#i-fuel"/></svg><span>Fuel &amp; levels</span></button>
   <button data-view="setup"><svg class="i"><use href="#i-setup"/></svg><span>FS2024 setup</span></button>
   <button data-view="settings"><svg class="i"><use href="#i-settings"/></svg><span>Settings</span></button>
 </div>
 </div>
 
-<script src="shell.js?v=2026.10.17l"></script>
+<script src="shell.js?v=2026.10.18a"></script>
 <script src="data.js?v=2026.10.18a"></script>
 <script src="routeimport.js?v=2026.10.17a"></script>
 <script src="nav.js?v=2026.10.17e"></script>
@@ -187,6 +190,8 @@
 <script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
 <script src="chips.js?v=2026.10.17f"></script>
+<script src="toperf.js?v=2026.10.18a"></script>
+<script src="takeoff.js?v=2026.10.18c"></script>
 <script src="blueprint.js?v=2026.10.17c"></script>
 <script src="overview.js?v=2026.10.17d"></script>
 <script src="palette.js?v=2026.10.17b"></script>
@@ -1028,6 +1033,7 @@ function render(X){
   X.legs=navLegs(X);
   X.briefs={dep:airportBrief("Departure",dep,X.info?.dep,X,sel.tow),arr:airportBrief("Arrival",arr,X.info?.arr,X,sel.land),
     alt:X.altApt?airportBrief(`Alternate (${Math.round(nm(gcDist(arr,X.altApt)))} NM from ${arr.icao})`,X.altApt,X.info?.alt,X,sel.land):null};
+  X.takeoff=takeoffResult(X);
   const climbFpm=Math.round(fpm((crzFt-dep.alt)*FT/c.t)/10)*10, descFpm=Math.round(fpm((crzFt-arr.alt)*FT/d.t)/10)*10;
   const html=`
   <div class="tabpanel" data-tab="overview">
@@ -1050,6 +1056,7 @@ function render(X){
     alt:X.briefs.alt?airportCard(X.briefs.alt,X,{collapsed:true,eta:new Date(X.etd.getTime()+(sel.time+gcDist(arr,X.altApt)/cr.tas+900)*1000),label:"ETA"}):""})}
 
   </div>
+  <div class="tabpanel" data-tab="takeoff">${takeoffView(X)}</div>
   <div class="tabpanel" data-tab="profile">
   ${warn.length?`<div class="warnbox" id="warnlist">${warn.map(w=>"⚠ "+w).join("<br>")}</div>`:""}
   <div class="card ${X.wx&&localStorage.getItem("xperf.winds")!=="0"?"":"nowinds"}" id="profcard"><div class="cardhead"><h2>Vertical profile${X.terrain?" & terrain":""}${X.wx?" · winds aloft":""}</h2>

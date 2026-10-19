@@ -175,3 +175,40 @@ test("untuned types have no factor", () => {
   const c = AC_CODES.find(x => !TUNE[x]);
   assert.equal(TOPerf().acFromModel(FIX[c], REF[c], TUNE[c] || null).tune, null);
 });
+
+/* ---------------------------------------------------------------- plan → inputs (takeoff.js) */
+if (existsSync(new URL("../takeoff.js", import.meta.url))) vm.runInContext(read("takeoff.js"), ctx);
+const toInputs = (...a) => { assert.ok(ctx.toInputs, "toInputs not defined"); return ctx.toInputs(...a); };
+const metar = { temp: 18, qnh: 1016, wdir: 290, wspd: 14, wgst: 0, wet: false, vrb: false, raw: "KSFO 181756Z 29014KT 10SM FEW008 18/12 A3000" };
+const planX = (met, elev = 13) => ({ m: { kind: "openap", code: "a20n" }, sel: { tow: 70000 },
+  briefs: { dep: { a: { icao: "KSFO", alt: elev }, met } } });
+const end28R = (elev = 13) => ({ r: { length: 11870, surface: "ASP" }, e: { id: "28R", elev, hdgT: 284 }, o: { elev: elev - 3 } });
+const OPTS = { flap: "optimum", thrust: "reduced", packs: true, antiIce: "off" };
+
+test("METAR values flow through with sources", () => {
+  const { input, src } = toInputs(planX(metar), end28R(), {}, OPTS);
+  assert.equal(input.oat, 18); assert.equal(input.qnh, 1016);
+  assert.ok(Math.abs(input.windKt - 14 * Math.cos(6 * Math.PI / 180)) < 0.5, String(input.windKt));
+  assert.equal(src.oat, "METAR 1756Z"); assert.equal(input.towKg, 70000); assert.equal(input.lengthFt, 11870);
+  assert.ok(input.slopePct < 0, "downhill toward the far end");
+});
+
+test("no METAR assumes ISA and calm", () => {
+  const { input, src } = toInputs(planX(null, 1000), end28R(1000), {}, OPTS);
+  assert.equal(input.oat, 13); assert.equal(input.qnh, 1013.25); assert.equal(input.windKt, 0); assert.equal(input.wet, false);
+  for (const k of ["oat", "qnh", "windKt", "wet"]) assert.equal(src[k], "assumed — no METAR", k);
+});
+
+test("VRB wind is zero headwind", () => {
+  assert.equal(toInputs(planX({ ...metar, vrb: true, wdir: null }), end28R(), {}, OPTS).input.windKt, 0);
+});
+
+test("overrides win and are marked", () => {
+  const { input, src } = toInputs(planX(metar), end28R(), { oat: 30 }, OPTS);
+  assert.equal(input.oat, 30); assert.equal(src.oat, "edited");
+});
+
+test("GA aircraft gets the pointer", () => {
+  assert.ok(ctx.takeoffResult, "takeoffResult not defined");
+  assert.equal(ctx.takeoffResult({ m: { kind: "apm" } }).ga, true);
+});
