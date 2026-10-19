@@ -406,6 +406,8 @@ test("summaries flag a failed dispatch check", () => {
 test("landing runway falls back to the best runway when the approach's runway is unknown", () => {
   vm.runInContext(`TO_DATA={ref:${JSON.stringify(REF)},tune:{}}`, ctx);
   ctx.rwyKey = id => String(id || "").toUpperCase().replace(/^0+(?=\d)/, "");
+  // the real rule (nav.js, shared with the Overview and Airports list), not a stub
+  vm.runInContext(read("nav.js").match(/^function chosenArrRunway\(.*$/m)[0], ctx);
   ctx.chosenApproach = () => ({ sel: { rwy: "7L", name: "ILS RWY 7L" } });
   const e25 = end25L(), e24 = { ...end25L(), e: { id: "24R", elev: 125, hdgT: 250, dthr: 0 } };
   const X = { m: { ...FIX.a20n, kind: "openap" }, sel: { tow: 70000, land: 62000 },

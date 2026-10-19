@@ -92,7 +92,7 @@ function renderOverview(X){
   const wxTile=(name,B,label,isDep)=>{
     const a=isDep?dep:arr;
     if(!B||B.missing) return tile(name,"airports","span-6",head("i-airports",`${label} · ${a.icao}`)+`<div class="sub">Weather and runway data unavailable${B?.error?": "+esc(B.error):""}.</div>`,"Open airports");
-    const met=B.met, end=isDep&&typeof chosenDepRunway==="function"?chosenDepRunway(B):B.best;
+    const met=B.met, end=isDep?chosenDepRunway(B):chosenArrRunway(B);
     const cat=met?.cat?`<span class="fcat ${met.cat.toLowerCase()}">${met.cat}</span>`:`<span class="fcat none">no METAR</span>`;
     const rows=[["Wind",met?windTxt(met):"—"],["Vis",met?.visTxt!=null?`${esc(met.visTxt)} SM`:"—"],["Ceiling",met?.ceil!=null?`${fmtK(met.ceil)} ft`:"none"],
       ["Temp · QNH",met?`${met.temp??"—"}°C · ${Math.round(met.qnh)} hPa`:"—"]];

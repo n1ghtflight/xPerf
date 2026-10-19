@@ -756,6 +756,8 @@ function chosenApproach(B){
   const auto=ilsPick||opts.find(o=>o.rwy===best&&o.kind==="precision"&&o.ils)||opts.find(o=>o.rwy===best&&o.kind!=="visual")||opts.find(o=>o.rwy===best)||opts[0];
   return {opts,sel:opts.find(o=>o.id===id)||auto,auto};
 }
+// the arrival runway in use: the chosen approach's runway, else the best one for the wind
+function chosenArrRunway(B){ const ap=chosenApproach(B).sel; return (ap?.rwy&&B.ends.find(x=>rwyKey(x.e.id)===ap.rwy))||B.best; }
 function approachSelect(B,ch){
   const groups=[["precision","ILS / localizer"],["radio","VOR / NDB"],["gps","RNAV (GPS)"],["other","Other"],["visual","Visual"]];
   const wind=o=>{ const e=B.ends.find(x=>rwyKey(x.e.id)===o.rwy); return e&&B.met&&B.met.wspd&&!e.wc.vrb?` · ${e.wc.hw>=0?"head":"TAIL"} ${Math.abs(Math.round(e.wc.hw))} kt`:""; };
@@ -1027,7 +1029,7 @@ function airportsView(X,cards){
   if(!roles.some(r=>r[0]===sel)) sel="dep";
   const row=([k,label,a])=>{
     const B=X.briefs?.[k], met=B&&!B.missing?B.met:null;
-    const end=B&&!B.missing?(k==="dep"&&typeof chosenDepRunway==="function"?chosenDepRunway(B):B.best):null;
+    const end=B&&!B.missing?(k==="dep"?chosenDepRunway(B):k==="arr"?chosenArrRunway(B):B.best):null;
     const cat=met?.cat?`<span class="fcat ${met.cat.toLowerCase()}">${met.cat}</span>`:`<span class="fcat none">—</span>`;
     return `<button type="button" class="aptrow" data-apt="${k}"${k===sel?' aria-current="true"':""}>${cat}
       <span class="aptname"><b>${svgEsc(a.icao)}</b> <span>${label} · ${svgEsc(a.name)}</span></span>

@@ -92,8 +92,7 @@ function landingResult(X){
   if(TO_DATA.error) return {error:"Landing data unavailable: "+TO_DATA.error};
   const B=X.briefs?.arr; if(!B||B.missing||!B.ends?.length) return {norunway:true};
   const ref=TO_DATA.ref[m.code]; if(!ref) return {error:`No landing reference data for ${String(m.code).toUpperCase()}.`};
-  const ap=typeof chosenApproach==="function"?chosenApproach(B).sel:null;
-  const end=(ap?.rwy&&B.ends.find(x=>rwyKey(x.e.id)===ap.rwy))||B.best; if(!end) return {norunway:true};
+  const ap=chosenApproach(B).sel, end=chosenArrRunway(B); if(!end) return {norunway:true};
   const state=X.toState||(X.toState={overrides:{}}), ov=state.ldg||(state.ldg={}), opts=ldOpts();
   const ac=TOPerf.acFromModel(m,ref,TO_DATA.tune[m.code]||null), {input,src}=toLandingInputs(X,end,ov,opts);
   return {ac,input,src,opts,end,B,approach:ap,result:TOPerf.computeLanding(ac,input)};
@@ -251,7 +250,7 @@ function landingBody(X){
       ${field("oat","OAT",input.oat,"°C")}
       ${field("qnh","QNH",Math.round(input.qnh*10)/10,"hPa")}
       ${field("windKt","Headwind (− tail)",Math.round(input.windKt),"kt")}
-      ${field("gustKt","Gust increment",Math.round(input.gustKt),"kt")}
+      ${ac.vappRule==="airbus"?"":field("gustKt","Gust increment",Math.round(input.gustKt),"kt")}
       ${B.met?`<p class="note to-raw">${svgEsc(B.met.raw||"")}</p><p class="note">Current METAR — check the ATIS before landing.</p>`:`<p class="note">No METAR — standard atmosphere, calm wind and a dry runway assumed; type the expected values.</p>`}
     </div>
     <div class="to-box"><h3>Options</h3>
@@ -293,16 +292,20 @@ function landingBody(X){
 /* ---------------------------------------------------------------- summaries (Overview tile, FS2024 setup row) */
 // two halves: takeoff | landing; each half opens its side of the view (data-to-side), the tile opens the view
 function takeoffTile(X){
-  const T=X.takeoff, L=X.landing; if(!T||!T.result) return "";
-  const s=T.result.selected, nofit=T.result.status==="nofit";
-  const val=nofit?`<span class="bad">Does not fit</span>`:s.assumedT!=null?`${svgEsc(T.ac.label)} ${s.assumedT}<small>°C</small>`:T.ac.family==="airbus"?"TOGA":"Full thrust";
-  const dep=`<div data-to-side="dep"><div class="tl"><svg class="i"><use href="#i-takeoff"/></svg>Takeoff · ${svgEsc(T.end.e.id)}<span class="tr">estimate</span></div>
-    <div class="val num">${val}</div><div class="sub num">${svgEsc(s.flap)} · V1 ${toKt(s.v1)} · VR ${toKt(s.vr)} · V2 ${toKt(s.v2)}</div></div>`;
+  const T=X.takeoff, L=X.landing; if(!T||T.ga) return "";
+  // a side without a result: what is missing, in the tile's own words
+  const why=(R,what)=>R?.pending?`Loading ${what} data…`:R?.norunway?"No runway data":R?.error?svgEsc(R.error):"Not available";
+  const side=(k,icon,title,body)=>`<div data-to-side="${k}"><div class="tl"><svg class="i"><use href="#${icon}"/></svg>${title}${body.est?'<span class="tr">estimate</span>':""}</div>${body.html}</div>`;
+  let dep;
+  if(T.result){ const s=T.result.selected, nofit=T.result.status==="nofit";
+    const val=nofit?`<span class="bad">Does not fit</span>`:s.assumedT!=null?`${svgEsc(T.ac.label)} ${s.assumedT}<small>°C</small>`:T.ac.family==="airbus"?"TOGA":"Full thrust";
+    dep=side("dep","i-takeoff",`Takeoff · ${svgEsc(T.end.e.id)}`,{est:true,html:`<div class="val num">${val}</div><div class="sub num">${svgEsc(s.flap)} · V1 ${toKt(s.v1)} · VR ${toKt(s.vr)} · V2 ${toKt(s.v2)}</div>`}); }
+  else dep=side("dep","i-takeoff","Takeoff",{html:`<div class="sub">${why(T,"takeoff")}</div>`});
   let arr="";
   if(L?.result){ const r=L.result, a=r.selected;
-    arr=`<div data-to-side="arr"><div class="tl"><svg class="i"><use href="#i-takeoff" transform="scale(1,-1) translate(0,-16)"/></svg>Landing · ${svgEsc(L.end.e.id)}<span class="tr">estimate</span></div>
-    <div class="val num">${r.status==="nofit"?`<span class="bad">Does not fit</span>`:`<span class="${r.status==="tight"?"warn":""}">VAPP ${toKt(r.vapp)}</span><small>kt</small>`}</div>
-    <div class="sub num">${svgEsc(r.flap)} · VREF ${toKt(r.vref)} · autobrake ${svgEsc(a.name)}${r.status==="tight"?' · <span class="warn">dispatch ✗</span>':""}</div></div>`; }
+    arr=side("arr","i-landing",`Landing · ${svgEsc(L.end.e.id)}`,{est:true,html:`<div class="val num">${r.status==="nofit"?`<span class="bad">Does not fit</span>`:`<span class="${r.status==="tight"?"warn":""}">VAPP ${toKt(r.vapp)}</span><small>kt</small>`}</div>
+    <div class="sub num">${svgEsc(r.flap)} · VREF ${toKt(r.vref)} · autobrake ${svgEsc(a.name)}${r.status==="tight"?' · <span class="warn">dispatch ✗</span>':""}</div>`}); }
+  else if(L&&!L.ga) arr=side("arr","i-landing","Landing",{html:`<div class="sub">${why(L,"landing")}</div>`});
   return `<div class="tile span-7${arr?" split":""}" data-tile="takeoff" data-open="takeoff" tabindex="0" role="button" aria-label="Open Takeoff & landing">${dep}${arr}</div>`;
 }
 function takeoffSetupRow(X){

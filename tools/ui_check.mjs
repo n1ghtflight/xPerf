@@ -801,6 +801,74 @@ check("route-map-fitbtn", async () => {
   } finally { await page.close(); }
 });
 
+/* ---------- landing (airliners) ---------- */
+check("landing-view", async () => {
+  const page = await open("b789", { plan: true });
+  try {
+    await page.click('.sidebar [data-view="takeoff"]'); await settle(page);
+    await page.click('.tabpanel[data-tab="takeoff"] button[data-to-side="arr"]'); await settle(page);
+    const r = await page.eval(`(()=>{ const p=document.querySelector('.tabpanel[data-tab="takeoff"]'), L=LAST_X.landing, B=LAST_X.briefs.arr, ap=chosenApproach(B).sel;
+      return { text:p.innerText.replace(/\s+/g,' '), ok:!!L?.result, rwy:L?.end?.e?.id, apRwy:ap?.rwy, endKey:L?.end?rwyKey(L.end.e.id):null }; })()`);
+    expect(r.ok, "no landing result for B789 at EGLL");
+    expect(/VREF/.test(r.text) && /VAPP/.test(r.text) && /Autobrake/.test(r.text), "landing side lacks VREF / VAPP / autobrake");
+    expect(!r.apRwy || r.endKey === r.apRwy, `landing runway ${r.rwy} is not the chosen approach's runway ${r.apRwy}`);
+  } finally { await page.close(); }
+});
+
+// choosing an approach to a runway that is not the best for the wind: every arrival "runway in use" follows it
+check("arr-runway-approach", async () => {
+  const page = await open("b789", { plan: true });
+  try {
+    const want = await page.eval(`(()=>{ const B=LAST_X.briefs.arr, ch=chosenApproach(B), best=rwyKey(B.best.e.id);
+      const o=ch.opts.find(o=>o.rwy!==best&&o.kind!=="visual")||ch.opts.find(o=>o.rwy!==best); if(!o) return null;
+      const s=document.getElementById('apprSel'); s.value=o.id; s.dispatchEvent(new Event('change',{bubbles:true}));
+      return B.ends.find(x=>rwyKey(x.e.id)===o.rwy).e.id; })()`);
+    expect(want, "test setup: EGLL has no approach to another runway");
+    await settle(page);
+    const got = await page.eval(`(()=>{ const t=sel=>document.querySelector(sel)?.textContent.replace(/\s+/g,' ')||'';
+      return { overview:t('[data-tile="arr-wx"] .rwy b'), list:t('.aptrow[data-apt="arr"] .aptmeta'), tile:t('[data-tile="takeoff"] [data-to-side="arr"] .tl'), landing:LAST_X.landing?.end?.e?.id }; })()`);
+    expect(got.overview === "RWY " + want, `Overview arrival tile shows "${got.overview}", approach is to ${want}`);
+    expect(got.list.includes("RWY " + want), `Airports list arrival row shows "${got.list}", approach is to ${want}`);
+    expect(got.tile.includes(want) && got.landing === want, `landing uses ${got.landing} / tile "${got.tile}", approach is to ${want}`);
+  } finally { await page.close(); }
+});
+
+check("landing-airbus-gust", async () => {
+  const page = await open("b789", { plan: true });
+  try {
+    const r = await page.eval(`(()=>{ const L=LAST_X.landing, has=()=>landingBody(LAST_X).includes('data-ld="gustKt"'), rule=L.ac.vappRule;
+      const boeing=has(); L.ac.vappRule="airbus"; const airbus=has(); L.ac.vappRule=rule; return {boeing,airbus}; })()`);
+    expect(r.boeing, "Boeing landing inputs lack the gust field");
+    expect(!r.airbus, "Airbus landing inputs show a gust field the Airbus rule does not use");
+  } finally { await page.close(); }
+});
+
+// the Overview tile exists for every airliner plan, whatever state each side is in; GA has none
+check("takeoff-tile-states", async () => {
+  const page = await open("b789", { plan: true });
+  try {
+    const r = await page.eval(`(()=>{ const X=LAST_X, T=X.takeoff, L=X.landing, out={};
+      X.takeoff={pending:true}; X.landing={pending:true}; out.pending=takeoffTile(X);
+      X.takeoff={norunway:true}; X.landing=L; out.norunway=takeoffTile(X);
+      X.takeoff={error:"No takeoff reference data for B789."}; out.error=takeoffTile(X);
+      X.takeoff={ga:true}; X.landing={ga:true}; out.ga=takeoffTile(X);
+      X.takeoff=T; X.landing=L; return out; })()`);
+    expect(r.pending.includes('data-tile="takeoff"') && /Loading/.test(r.pending), "no tile while takeoff data loads");
+    expect(/No runway data/.test(r.norunway) && r.norunway.includes('data-to-side="arr"') && /VAPP/.test(r.norunway), "takeoff without a runway hides the tile or its landing half");
+    expect(/No takeoff reference data/.test(r.error), "takeoff error not shown in the tile");
+    expect(r.ga === "", "GA aircraft got a takeoff tile");
+  } finally { await page.close(); }
+});
+
+check("landing-icon", async () => {
+  const page = await open("b789", { plan: true });
+  try {
+    const r = await page.eval(`({ sym:!!document.getElementById('i-landing'), tile:takeoffTile(LAST_X) })`);
+    expect(r.sym, "no #i-landing icon");
+    expect(r.tile.includes('#i-landing') && !r.tile.includes('scale(1,-1)'), "landing half still uses the flipped takeoff icon");
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0, running = null;
 // a run that ends mid-check (event loop drained, or killed) must say so, not just stop printing
