@@ -694,6 +694,19 @@ check("route-map-first-plan", async () => {
   } finally { await page.close(); }
 });
 
+// airport names and other OurAirports text are shown as text, never as markup (public site, user-contributed data)
+check("escape-airport-text", async () => {
+  const page = await open("c172");
+  try {
+    await page.eval(`(()=>{ const a=DB.aptIndex.KPAO; a.name='Palo <img src=x id=xssApt onerror=window.XSS=1> Alto'; window.XSS=0; })()`);
+    const err = await planFlight(page, FLIGHTS.c172); expect(!err, "plan failed: " + err);
+    for (const v of ["airports", "overview", "route", "setup"]) { await page.eval(`Shell.showView(${JSON.stringify(v)})`); await settle(page); }
+    const r = await page.eval(`({el:!!document.getElementById('xssApt'), ran:window.XSS, shown:document.querySelector('.aptrow[data-apt="dep"]')?.textContent.includes('<img src=x')})`);
+    expect(!r.el && !r.ran, "airport name was inserted as markup");
+    expect(r.shown, "airport name not shown as text in the Airports list");
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {

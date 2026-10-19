@@ -250,12 +250,12 @@ function drawMap(X){
       const d=aptSide(P);
       L.circleMarker([P.lat,P.lon],{radius:7,color:"var(--panel)",fillColor:"var(--good)",fillOpacity:1,weight:2}).addTo(MAP)
         .bindTooltip(P.apt.icao+procNote(P===first?"dep":"arr"),{permanent:true,direction:d,offset:off(d),className:"maplbl apt"})
-        .bindPopup(`<b>${P.apt.icao}</b> ${P.apt.name}<br>Elev ${fmtK(P.apt.alt)} ft`);
+        .bindPopup(`<b>${svgEsc(P.apt.icao)}</b> ${svgEsc(P.apt.name)}<br>Elev ${fmtK(P.apt.alt)} ft`);
     } else { const ndb=NDB_TYPES.has(P.nav.type);
       L.circle([P.lat,P.lon],{radius:(P.r||40)*NM,color:ndb?"var(--warn)":"var(--accent)",weight:1,opacity:.3,fill:false,dashArray:"4 6",interactive:false}).addTo(MAP);
       L.circleMarker([P.lat,P.lon],{radius:6,color:ndb?"var(--warn)":"var(--accent)",fillColor:"var(--panel)",fillOpacity:1,weight:3}).addTo(MAP)
         .bindTooltip(P.nav.ident,{permanent:true,direction:side(P),offset:off(side(P)),className:"maplbl"})
-        .bindPopup(`<b>${P.nav.ident}</b> ${P.nav.name} ${P.nav.type}<br>${fmtFreq(P.nav)} ${morse(P.nav.ident)}`); } }
+        .bindPopup(`<b>${svgEsc(P.nav.ident)}</b> ${svgEsc(P.nav.name)} ${svgEsc(P.nav.type)}<br>${fmtFreq(P.nav)} ${morse(P.nav.ident)}`); } }
   for(const [k,x,c] of [["TOC",sel.climb.d,"var(--good)"],["TOD",total-sel.descent.d,"var(--violet)"]]){
     const p=route.pointAt(x/total);
     L.circleMarker([p.lat,p.lon],{radius:5,color:"var(--panel)",fillColor:c,fillOpacity:1,weight:2}).addTo(MAP).bindTooltip(`${k} — ${nm(x).toFixed(1)} NM from ${X.dep.icao}`,{direction:"top",className:"maplbl"}); }
@@ -384,7 +384,7 @@ function tafHtml(t){ return t?t.replace(/\s+(?=(FM\d{6}|TEMPO|BECMG|PROB\d{2}))/
 /* ---------------------------------------------------------------- airport card */
 function airportCard(B,X,{collapsed=false,eta=null,label="ETA"}={}){
   if(!B) return "";
-  const {a,role}=B, head=`<h2>${role} — ${a.icao} ${a.name}</h2>`;
+  const {a,role}=B, head=`<h2>${role} — ${svgEsc(a.icao)} ${svgEsc(a.name)}</h2>`;
   if(!HAS_SERVER) return `<div class="card">${head}<p class="note">Start the app with <code>python server.py</code> to load runways, ILS, charts and live weather.</p></div>`;
   if(B.missing) return `<div class="card">${head}<p class="note">Airport data unavailable${B.error?": "+B.error:""}.</p></div>`;
   const {info,var_,wx,met,best,ilsBest,freqs,xwLimit,m=X.m}=B;
@@ -432,7 +432,7 @@ function airportCard(B,X,{collapsed=false,eta=null,label="ETA"}={}){
     :`<p class="note">No ILS or localizer on record.</p>`;
   // ---- frequencies (all), radio aids, charts
   const fq=B.fq.slice().sort((p,q)=>(FREQ_ORDER.indexOf(p.type)+99)%99-(FREQ_ORDER.indexOf(q.type)+99)%99);
-  const fqHtml=fq.length?`<div class="chips">${fq.map(f=>`<span class="chip" data-copy="${fmtMHz(f)}">${f.type} <b>${fmtMHz(f)}</b>${f.desc&&f.desc!==f.type?` <span class="note">${f.desc}</span>`:""}</span>`).join("")}</div>`:`<p class="note">No frequencies on record.</p>`;
+  const fqHtml=fq.length?`<div class="chips">${fq.map(f=>`<span class="chip" data-copy="${fmtMHz(f)}">${f.type} <b>${fmtMHz(f)}</b>${f.desc&&f.desc!==f.type?` <span class="note">${svgEsc(f.desc)}</span>`:""}</span>`).join("")}</div>`:`<p class="note">No frequencies on record.</p>`;
   const near=NAV.loaded?navaidsNear(a.lat,a.lon,25,n=>VOR_TYPES.has(n.type)||NDB_TYPES.has(n.type)||n.type==="DME").slice(0,6):[];
   const nearHtml=`<div class="chips">${near.map(({n,d})=>`<span class="chip" data-copy="${fmtFreq(n)}"><b>${n.ident}</b> ${n.type} ${fmtFreq(n)} · ${d.toFixed(1)} NM ${fmtBrg(course(a,n)-var_)}° <span class="morse">${morse(n.ident)}</span></span>`).join("")}</div>`;
   let chHtml;
@@ -1020,7 +1020,7 @@ function airportsView(X,cards){
     const end=B&&!B.missing?(k==="dep"&&typeof chosenDepRunway==="function"?chosenDepRunway(B):B.best):null;
     const cat=met?.cat?`<span class="fcat ${met.cat.toLowerCase()}">${met.cat}</span>`:`<span class="fcat none">—</span>`;
     return `<button type="button" class="aptrow" data-apt="${k}" aria-selected="${k===sel}">${cat}
-      <span class="aptname"><b>${a.icao}</b> <span>${label} · ${a.name}</span></span>
+      <span class="aptname"><b>${svgEsc(a.icao)}</b> <span>${label} · ${svgEsc(a.name)}</span></span>
       <span class="aptmeta">${met?windTxt(met):"no METAR"}${end?` · RWY ${end.e.id}`:""}</span></button>`;
   };
   return `<div class="aptsplit">

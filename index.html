@@ -185,7 +185,7 @@
 <script src="shell.js?v=2026.10.18a"></script>
 <script src="data.js?v=2026.10.18a"></script>
 <script src="routeimport.js?v=2026.10.19c"></script>
-<script src="nav.js?v=2026.10.19c"></script>
+<script src="nav.js?v=2026.10.19d"></script>
 <script src="acpicker.js?v=2026.10.17b"></script>
 <script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
@@ -302,12 +302,15 @@ const $=id=>document.getElementById(id);
 function status(t){ $("status").textContent=t; }
 const HAS_SERVER = XD.ok;      // python server.py or offline data packs (data.js)
 
+// OurAirports is user-contributed: names, places and codes never need < > " — drop them so no text can become markup
+const aptText=v=>v==null?v:String(v).replace(/[<>"]/g,"");
 async function loadAirports(){
   if(HAS_SERVER){ try{
     const rows=await XD.airports();
-    DB.airports=rows.map(r=>({icao:r[0],name:r[1],lat:r[2],lon:r[3],alt:r[4],country:r[5],loc:r[6],iata:r[7],aliases:r[8]||[]}));
+    DB.airports=rows.map(r=>({icao:aptText(r[0]),name:aptText(r[1]),lat:r[2],lon:r[3],alt:r[4],country:aptText(r[5]),loc:aptText(r[6]),
+      iata:aptText(r[7]),aliases:(r[8]||[]).map(aptText)}));
     DB.aptSource="OurAirports"; return; }catch(e){ console.warn("OurAirports data failed, using OpenAP list",e); } }
-  DB.airports=parseCSV(await openap("nav/airports.csv")).map(a=>({icao:a.icao,lat:+a.lat,lon:+a.lon,alt:+a.alt||0,country:a.country,name:a.name,loc:a.location,iata:""}));
+  DB.airports=parseCSV(await openap("nav/airports.csv")).map(a=>({icao:aptText(a.icao),lat:+a.lat,lon:+a.lon,alt:+a.alt||0,country:aptText(a.country),name:aptText(a.name),loc:aptText(a.location),iata:""}));
   DB.aptSource="OpenAP";
 }
 
@@ -795,7 +798,7 @@ function aptSearch(e){
   const res=[], exact=DB.aptIndex[q]; if(exact) res.push(exact);
   for(const a of DB.airports){ if(a===exact) continue;
     if(a.icao.toUpperCase().startsWith(q)||(a.iata&&a.iata===q)||a.name.toUpperCase().includes(q)||(a.loc||"").toUpperCase().includes(q)){ res.push(a); if(res.length>=30) break; } }
-  $("aptList").innerHTML=res.map(a=>`<option value="${a.icao}">${a.name} — ${a.loc||""}, ${a.country}${a.iata?" ("+a.iata+")":""}</option>`).join("");
+  $("aptList").innerHTML=res.map(a=>`<option value="${svgEsc(a.icao)}">${svgEsc(a.name)} — ${svgEsc(a.loc||"")}, ${svgEsc(a.country)}${a.iata?" ("+svgEsc(a.iata)+")":""}</option>`).join("");
 }
 function resolveApt(id){ const v=$(id).value.trim().toUpperCase().split(/\s/)[0]; return DB.aptIndex[v]; }
 
