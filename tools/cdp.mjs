@@ -42,6 +42,10 @@ function sweepProfiles() {
 let swept = false;
 // calls still waiting for the browser (for diagnosing a stalled run): id → { method, since, what }
 export const inFlight = new Map();
+// requests the interceptor has paused and not yet released (a forgotten one hangs the app's fetch): requestId → { url, since, error? }
+export const paused = new Map();
+// the page a check is driving, so a timeout can ask it where it got to
+export let lastPage = null;
 let callSeq = 0;
 
 export async function launch({ width = 1440, height = 900, mobile = false, scheme = "dark", port = 8770, query = "" } = {}) {
@@ -51,7 +55,9 @@ export async function launch({ width = 1440, height = 900, mobile = false, schem
   // Start the browser and wait for its DevTools endpoint to list a page. Every poll is bounded (a browser can accept
   // the connection and never answer while starting up, which used to hang a whole run); three attempts of at most
   // 20 s each, so a stuck start is retried well inside a check's 180 s budget (Edge normally answers in 1–2 s).
-  const killTree = p => { if (process.platform === "win32") spawnSync("taskkill", ["/PID", String(p.pid), "/T", "/F"], { stdio: "ignore" }); else p.kill(); };
+  // only while it is still running: once it has exited, Windows may already have given its PID to another process
+  const killTree = p => { if (p.exitCode !== null || p.signalCode !== null) return;
+    if (process.platform === "win32") spawnSync("taskkill", ["/PID", String(p.pid), "/T", "/F"], { stdio: "ignore" }); else p.kill(); };
   let proc, prof, list, page0;
   const key = ++callSeq;
   inFlight.set(key, { method: "launch", since: Date.now(), what: "waiting for the browser's DevTools endpoint" });
@@ -141,6 +147,11 @@ export async function launch({ width = 1440, height = 900, mobile = false, schem
   };
   await send("Page.enable"); await send("Runtime.enable"); await send("Network.enable"); await send("Network.setCacheDisabled", { cacheDisabled: true });
   await page.setViewport(width, height, mobile); await page.setScheme(scheme);
+  paused.clear(); lastPage = page;
+  // the app's own files that failed to load (a missing script breaks the page in ways that look like app bugs)
+  page.loadFailures = []; const reqUrl = new Map();
+  page.on("Network.requestWillBeSent", p => reqUrl.set(p.requestId, p.request.url));
+  page.on("Network.loadingFailed", p => { const u = reqUrl.get(p.requestId) || ""; if (u.startsWith(page.origin) && !p.canceled) page.loadFailures.push(`${u.slice(page.origin.length)} (${p.errorText})`); });
   return page;
 }
 
@@ -169,11 +180,14 @@ export async function replay(page, file) {
   if (!existsSync(file)) throw new Error(`missing fixtures ${file} (run: node tools/regress.mjs record)`);
   const store = JSON.parse(readFileSync(file, "utf8"));
   page.on("Fetch.requestPaused", async ({ requestId, request }) => {
-    if (passThrough(request.url, page.origin)) return page.send("Fetch.continueRequest", { requestId });
+    paused.set(requestId, { url: request.url, since: Date.now() });
+    const release = (method, params) => page.send(method, { requestId, ...params })
+      .then(r => { if (r?.error) paused.get(requestId).error = r.error.message; else paused.delete(requestId); }, e => { paused.get(requestId).error = e.message; });
+    if (passThrough(request.url, page.origin)) return release("Fetch.continueRequest");
     const hit = store[request.method + " " + request.url];
-    if (!hit) { page.misses.push(request.method + " " + request.url); return page.send("Fetch.failRequest", { requestId, errorReason: "Failed" }); }
-    if (hit.error) return page.send("Fetch.failRequest", { requestId, errorReason: "Failed" });
-    await page.send("Fetch.fulfillRequest", { requestId, responseCode: hit.status, responseHeaders: hit.headers, body: hit.bodyBase64 });
+    if (!hit) { page.misses.push(request.method + " " + request.url); return release("Fetch.failRequest", { errorReason: "Failed" }); }
+    if (hit.error) return release("Fetch.failRequest", { errorReason: "Failed" });
+    return release("Fetch.fulfillRequest", { responseCode: hit.status, responseHeaders: hit.headers, body: hit.bodyBase64 });
   });
   await page.send("Fetch.enable", { patterns: [{ urlPattern: "*", requestStage: "Request" }] });
 }
@@ -181,13 +195,15 @@ export async function replay(page, file) {
 // Drive the existing form exactly like a user (the way tools/shoot.mjs does) and wait for the result.
 export async function planFlight(page, f, { etd = ETD, alt = "" } = {}) {
   return page.eval(`(async()=>{ const wait=ms=>new Promise(r=>setTimeout(r,ms)), $=id=>document.getElementById(id);
-    for(let i=0;i<240&&$('go').disabled;i++) await wait(250); await window.NAV_READY;
-    const s=$('ac'); s.value=${JSON.stringify(f.ac)}; s.dispatchEvent(new Event('change'));
+    window.__pf='waiting for the form'; for(let i=0;i<240&&$('go').disabled;i++) await wait(250);
+    window.__pf='waiting for NAV_READY';
+    if(await Promise.race([Promise.resolve(window.NAV_READY).then(()=>0,()=>0), wait(60000).then(()=>1)])) return 'navaid data did not load in 60 s';
+    window.__pf='loading the aircraft'; const s=$('ac'); s.value=${JSON.stringify(f.ac)}; s.dispatchEvent(new Event('change'));
     for(let i=0;i<120&&(!MODEL||MODEL.id!==${JSON.stringify(f.ac)});i++) await wait(250);
     $('nav').value=${JSON.stringify(f.nav)}; $('dep').value=${JSON.stringify(f.dep)}; $('arr').value=${JSON.stringify(f.arr)};
     $('alt').value=${JSON.stringify(alt)}; $('etd').value=${JSON.stringify(etd)};
-    window.LAST_X=null; $('err').textContent=''; $('go').click();
+    window.LAST_X=null; $('err').textContent=''; window.__pf='planning'; $('go').click();
     for(let i=0;i<1200&&!window.LAST_X&&!$('err').textContent;i++) await wait(250);
-    for(let i=0;i<120&&$('go').disabled;i++) await wait(250);
-    return $('err').textContent; })()`);
+    window.__pf='waiting for Plan flight to re-enable'; for(let i=0;i<120&&$('go').disabled;i++) await wait(250);
+    window.__pf='done'; return $('err').textContent; })()`);
 }

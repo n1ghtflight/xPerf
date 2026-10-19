@@ -5,7 +5,7 @@ import { spawnSync, spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
-import { launch, replay, planFlight, FLIGHTS, inFlight } from "./cdp.mjs";
+import { launch, replay, planFlight, FLIGHTS, inFlight, paused, lastPage } from "./cdp.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -21,7 +21,10 @@ async function open(flightKey = "c172", { plan = false, width = 1440, height = 9
   const page = await launch({ port, width, height, mobile, scheme, query: mode === "packs" ? "data=packs" : "" });
   await replay(page, join(here, "regress", "fixtures", `${mode}-${flightKey}.json`));
   await page.goto("/");
-  await page.eval(`(async()=>{ for(let i=0;i<240&&document.getElementById('go').disabled;i++) await new Promise(r=>setTimeout(r,250)); })()`);
+  const loaded = await page.eval(`(async()=>{ for(let i=0;i<240&&document.getElementById('go').disabled;i++) await new Promise(r=>setTimeout(r,250));
+    return document.getElementById('go').disabled ? document.getElementById('status').textContent : ""; })()`);
+  if (page.loadFailures.length) { await page.close(); throw new Error("app files failed to load: " + page.loadFailures.join(", ")); }
+  if (loaded) { await page.close(); throw new Error(`app data did not load in 60 s (status: ${loaded})`); }
   if (plan) { const err = await planFlight(page, FLIGHTS[flightKey]); expect(!err, `plan ${flightKey} failed: ${err}`); }
   return page;
 }
@@ -799,16 +802,23 @@ check("route-map-fitbtn", async () => {
 });
 
 /* ---------------- runner ---------------- */
-let failed = 0;
+let failed = 0, running = null;
+// a run that ends mid-check (event loop drained, or killed) must say so, not just stop printing
+process.on("exit", code => { if (running) console.log(`ABORT ${running}: the run ended during this check (exit code ${code})`); });
 for (const c of checks) {
   if (only && !only.has(c.name)) continue;
+  running = c.name;
   const t = Date.now();
   // a hung headless browser must fail the check, not freeze the whole run
   let timer;
-  const limit = new Promise((_, no) => { timer = setTimeout(() => no(new Error("timed out after 180 s; waiting on: " +
-    ([...inFlight.values()].map(c => `${c.method} for ${Math.round((Date.now() - c.since) / 1000)} s ${c.what}`).join(" | ") || "no browser call (test code)"))), 180000); });
+  const limit = new Promise((_, no) => { timer = setTimeout(async () => {
+    const calls = [...inFlight.values()].map(c => `${c.method} for ${Math.round((Date.now() - c.since) / 1000)} s ${c.what}`).join(" | ") || "no browser call (test code)";
+    const held = [...paused.values()].filter(p => Date.now() - p.since > 3000).map(p => `${p.url.replace(/^https?:\/\/[^/]+/, "")} (${Math.round((Date.now() - p.since) / 1000)} s${p.error ? ", " + p.error : ""})`);
+    // the stalled evaluate does not block a second one; ask the page where it got to (bounded: the page may be wedged)
+    const where = lastPage ? await Promise.race([lastPage.eval(`JSON.stringify({step:window.__pf||null,status:document.getElementById('status')?.textContent?.slice(0,120)||null})`).catch(e => "eval failed: " + e.message), new Promise(r => setTimeout(() => r("page did not answer in 5 s"), 5000))]) : "no page";
+    no(new Error(`timed out after 180 s; waiting on: ${calls}; requests held by the interceptor: ${held.join(", ") || "none"}; page: ${where}`)); }, 180000); });
   try { await Promise.race([c.fn(), limit]); console.log(`PASS ${c.name} (${((Date.now() - t) / 1000).toFixed(1)}s)`); }
   catch (e) { failed++; console.log(`FAIL ${c.name}: ${e.message}`); }
-  finally { clearTimeout(timer); }
+  finally { clearTimeout(timer); running = null; }
 }
 process.exit(failed ? 1 : 0);
