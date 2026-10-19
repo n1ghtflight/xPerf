@@ -98,7 +98,7 @@ check("phone-tabbar", async () => {
     expect(sidebarW < 1, "sidebar should be hidden on phones, width " + sidebarW);
     await page.click(`.tabbar [data-view="more"]`); await settle(page);
     const more = await page.eval(`[...document.querySelectorAll('.moresheet [data-view]')].filter(b=>b.getClientRects().length).map(b=>b.textContent.trim())`);
-    expect(JSON.stringify(more) === JSON.stringify(["Fuel & levels", "FS2024 setup", "Settings"]), "More sheet: " + JSON.stringify(more));
+    expect(JSON.stringify(more) === JSON.stringify(["Takeoff", "Fuel & levels", "FS2024 setup", "Settings"]), "More sheet: " + JSON.stringify(more));
   } finally { await page.close(); }
 });
 
