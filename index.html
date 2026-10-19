@@ -15,7 +15,7 @@
 <meta name="theme-color" content="#efeff0" media="(prefers-color-scheme: light)">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.19a">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.19c">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.19d">
 <link rel="stylesheet" href="vendor/leaflet-1.9.4/leaflet.min.css">
 <script src="vendor/leaflet-1.9.4/leaflet.min.js"></script>
 </head>
@@ -58,7 +58,7 @@
     <a class="nav" href="#overview" data-view="overview" data-tip="Overview" data-kbd="G O"><svg class="i"><use href="#i-overview"/></svg><span class="lbl">Overview</span></a>
     <a class="nav" href="#route" data-view="route" data-tip="Route &amp; nav log" data-kbd="G R"><svg class="i"><use href="#i-route"/></svg><span class="lbl">Route &amp; nav log</span></a>
     <a class="nav" href="#airports" data-view="airports" data-tip="Airports &amp; weather" data-kbd="G A"><svg class="i"><use href="#i-airports"/></svg><span class="lbl">Airports &amp; weather</span></a>
-    <a class="nav" href="#takeoff" data-view="takeoff" data-tip="Takeoff" data-kbd="G T"><svg class="i"><use href="#i-takeoff"/></svg><span class="lbl">Takeoff</span></a>
+    <a class="nav" href="#takeoff" data-view="takeoff" data-tip="Takeoff &amp; landing" data-kbd="G T"><svg class="i"><use href="#i-takeoff"/></svg><span class="lbl">Takeoff &amp; landing</span></a>
     <a class="nav" href="#profile" data-view="profile" data-tip="Profile" data-kbd="G P"><svg class="i"><use href="#i-profile"/></svg><span class="lbl">Profile</span></a>
     <a class="nav" href="#fuel" data-view="fuel" data-tip="Fuel &amp; levels" data-kbd="G F"><svg class="i"><use href="#i-fuel"/></svg><span class="lbl">Fuel &amp; levels</span></a>
     <a class="nav" href="#setup" data-view="setup" data-tip="FS2024 setup" data-kbd="G S"><svg class="i"><use href="#i-setup"/></svg><span class="lbl">FS2024 setup</span></a>
@@ -175,14 +175,14 @@
   <button data-view="more"><svg class="i"><use href="#i-more"/></svg><span>More</span></button>
 </nav>
 <div class="moresheet" id="moreSheet" hidden>
-  <button data-view="takeoff"><svg class="i"><use href="#i-takeoff"/></svg><span>Takeoff</span></button>
+  <button data-view="takeoff"><svg class="i"><use href="#i-takeoff"/></svg><span>Takeoff &amp; landing</span></button>
   <button data-view="fuel"><svg class="i"><use href="#i-fuel"/></svg><span>Fuel &amp; levels</span></button>
   <button data-view="setup"><svg class="i"><use href="#i-setup"/></svg><span>FS2024 setup</span></button>
   <button data-view="settings"><svg class="i"><use href="#i-settings"/></svg><span>Settings</span></button>
 </div>
 </div>
 
-<script src="shell.js?v=2026.10.18a"></script>
+<script src="shell.js?v=2026.10.19a"></script>
 <script src="data.js?v=2026.10.18a"></script>
 <script src="routeimport.js?v=2026.10.19c"></script>
 <script src="nav.js?v=2026.10.19d"></script>
@@ -190,8 +190,8 @@
 <script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
 <script src="chips.js?v=2026.10.17f"></script>
-<script src="toperf.js?v=2026.10.18b"></script>
-<script src="takeoff.js?v=2026.10.18f"></script>
+<script src="toperf.js?v=2026.10.19a"></script>
+<script src="takeoff.js?v=2026.10.19b"></script>
 <script src="blueprint.js?v=2026.10.17c"></script>
 <script src="overview.js?v=2026.10.18a"></script>
 <script src="palette.js?v=2026.10.17b"></script>
@@ -1036,7 +1036,7 @@ function render(X){
   X.legs=navLegs(X);
   X.briefs={dep:airportBrief("Departure",dep,X.info?.dep,X,sel.tow),arr:airportBrief("Arrival",arr,X.info?.arr,X,sel.land),
     alt:X.altApt?airportBrief(`Alternate (${Math.round(nm(gcDist(arr,X.altApt)))} NM from ${arr.icao})`,X.altApt,X.info?.alt,X,sel.land):null};
-  X.takeoff=takeoffResult(X);
+  X.takeoff=takeoffResult(X); X.landing=landingResult(X);
   const climbFpm=Math.round(fpm((crzFt-dep.alt)*FT/c.t)/10)*10, descFpm=Math.round(fpm((crzFt-arr.alt)*FT/d.t)/10)*10;
   const html=`
   <div class="tabpanel" data-tab="overview">

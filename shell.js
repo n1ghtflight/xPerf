@@ -8,7 +8,7 @@ const Shell=(()=>{
   const root=document.documentElement, THEMES=["system","dark","light"];
   // view links and tab buttons; #surface also carries data-view (the current view, for CSS) but is not a control
   const NAV_CTL="a[data-view],button[data-view]";
-  const VIEWS=[["overview","Overview"],["route","Route & nav log"],["airports","Airports & weather"],["takeoff","Takeoff"],["profile","Profile"],
+  const VIEWS=[["overview","Overview"],["route","Route & nav log"],["airports","Airports & weather"],["takeoff","Takeoff & landing"],["profile","Profile"],
                ["fuel","Fuel & levels"],["setup","FS2024 setup"],["settings","Settings"]];
   const PHONE_TABS=["overview","route","airports","profile","more"];
   const CHORDS={o:"overview",r:"route",a:"airports",t:"takeoff",p:"profile",f:"fuel",s:"setup"};

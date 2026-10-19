@@ -1,11 +1,13 @@
 "use strict";
 /* =====================================================================
-   Takeoff view: V1/VR/V2, reduced-thrust temperature, flaps and required vs available runway for the departure
-   runway, from the plan (aircraft, takeoff weight, runway chosen in FS2024 setup, METAR). The model is toperf.js;
-   per-type data comes from data/to_ref.json + data/to_tune.json through XD. Airliners (OpenAP) only.
-   Also the Overview tile and the FS2024-setup row that summarise it. For simulation only.
+   Takeoff & landing view. Departure side: V1/VR/V2, reduced-thrust temperature, flaps and required vs available
+   runway for the departure runway chosen in FS2024 setup. Arrival side: VREF/VAPP, suggested autobrake and landing
+   distance (dispatch and at arrival) for the runway of the approach chosen in FS2024 setup. Inputs come from the plan
+   and the METARs; the model is toperf.js; per-type data comes from data/to_ref.json + data/to_tune.json through XD.
+   Airliners (OpenAP) only. Also the Overview tile and the FS2024-setup boxes that summarise it. For simulation only.
    ===================================================================== */
 const TO_OPTS_KEY="xperf.to.opts", TO_OPT_DEFAULTS={flap:"optimum",thrust:"reduced",packs:true,antiIce:"off"};
+const LD_OPTS_KEY="xperf.ldg.opts", LD_OPT_DEFAULTS={flap:"default",autobrake:"suggested",reverse:"idle"}, TO_SIDE_KEY="xperf.to.side";
 let TO_DATA=null;   // {ref, tune} | {error}
 // loaded once the page's scripts have all run (XD's fetch helper lives in index.html's inline script)
 if(typeof document!=="undefined") document.addEventListener("DOMContentLoaded",()=>{
@@ -16,10 +18,15 @@ if(typeof document!=="undefined") document.addEventListener("DOMContentLoaded",(
 function toOpts(){ let o={}; try{ o=JSON.parse(localStorage.getItem(TO_OPTS_KEY)||"{}")||{}; }catch(_){}
   return {...TO_OPT_DEFAULTS,...o}; }
 function setToOpt(k,v){ const o=toOpts(); o[k]=v; try{ localStorage.setItem(TO_OPTS_KEY,JSON.stringify(o)); }catch(_){} }
+function ldOpts(){ let o={}; try{ o=JSON.parse(localStorage.getItem(LD_OPTS_KEY)||"{}")||{}; }catch(_){}
+  return {...LD_OPT_DEFAULTS,...o}; }
+function setLdOpt(k,v){ const o=ldOpts(); o[k]=v; try{ localStorage.setItem(LD_OPTS_KEY,JSON.stringify(o)); }catch(_){} }
+function toSide(){ try{ return localStorage.getItem(TO_SIDE_KEY)==="arr"?"arr":"dep"; }catch(_){ return "dep"; } }
 
 // typed values outside these ranges are ignored (the plan value stays); keys set per runway live in overrides.byRwy[id]
-const TO_RANGES={towKg:[1,2e6],lengthFt:[1,25000],elevFt:[-1500,15000],slopePct:[-5,5],oat:[-60,60],qnh:[850,1100],windKt:[-60,60],intersectionFt:[0,25000]};
-const TO_RWY_KEYS=new Set(["lengthFt","elevFt","slopePct","windKt","intersectionFt","lineup"]);
+const TO_RANGES={towKg:[1,2e6],lwKg:[1,2e6],lengthFt:[1,25000],ldaFt:[1,25000],elevFt:[-1500,15000],slopePct:[-5,5],oat:[-60,60],qnh:[850,1100],
+  windKt:[-60,60],gustKt:[0,60],intersectionFt:[0,25000]};
+const TO_RWY_KEYS=new Set(["lengthFt","elevFt","slopePct","windKt","intersectionFt","lineup"]), LD_RWY_KEYS=new Set(["ldaFt","elevFt","slopePct","windKt","gustKt"]);
 const toValid=(k,v)=>{ const r=TO_RANGES[k]; return !r||(typeof v==="number"&&v>=r[0]&&v<=r[1]); };
 
 // Plan → model input. end = a runway end from airportBrief() ({r,e,o}); overrides = values typed in the view.
@@ -53,6 +60,39 @@ function takeoffResult(X){
   return {ac,input,src,opts,end,B,result:TOPerf.compute(ac,input)};
 }
 
+// Plan → landing model input for an arrival runway end ({r,e,o}); overrides = values typed on the arrival side.
+function toLandingInputs(X,end,overrides,opts){
+  const B=X.briefs.arr, met=B.met||null, src={}, o0=overrides||{};
+  const ov={...o0,...(o0.byRwy?.[end.e.id]||{})}; delete ov.byRwy;
+  for(const k of Object.keys(ov)) if(!toValid(k,ov[k])) delete ov[k];
+  const elev=end.e.elev??B.a.alt??0, stamp=met?.raw?.match(/\b\d{2}(\d{4})Z\b/)?.[1];
+  const metSrc=met?`METAR ${stamp?stamp+"Z ":""}(now)`:"assumed — no METAR";
+  const hw=met&&!met.vrb&&met.wdir!=null&&met.wspd?met.wspd*Math.cos((met.wdir-(end.e.hdgT??0))*Math.PI/180):0;
+  const gust=met&&met.wgst&&met.wspd?Math.max(0,met.wgst-met.wspd):0;
+  const slope=end.o?.elev!=null&&end.e.elev!=null&&end.r.length?(end.o.elev-end.e.elev)/end.r.length*100:0;
+  const base={
+    lwKg:[X.sel.land,"plan"], ldaFt:[Math.max(0,end.r.length-(end.e.dthr||0)),"setup"], elevFt:[elev,"runway ends"], slopePct:[slope,"runway ends"],
+    oat:[met?.temp??Math.round(TOPerf.isaAt(elev)),metSrc], qnh:[met?.qnh??1013.25,metSrc], windKt:[hw,metSrc], gustKt:[gust,metSrc], wet:[!!met?.wet,metSrc]};
+  const input={};
+  for(const [k,[v,s]] of Object.entries(base)){ const o=ov[k]; input[k]=o!=null&&o!==""?o:v; src[k]=o!=null&&o!==""?"edited":s; }
+  Object.assign(input,{reverse:opts.reverse||"idle", flap:opts.flap||"default", autobrake:opts.autobrake||"suggested"});
+  return {input,src};
+}
+
+// Everything the arrival side, tile and setup box show. Runway = the approach chosen in FS2024 setup, else the best one.
+function landingResult(X){
+  const m=X.m; if(!m||m.kind!=="openap") return {ga:true};
+  if(!TO_DATA) return {pending:true};
+  if(TO_DATA.error) return {error:"Landing data unavailable: "+TO_DATA.error};
+  const B=X.briefs?.arr; if(!B||B.missing||!B.ends?.length) return {norunway:true};
+  const ref=TO_DATA.ref[m.code]; if(!ref) return {error:`No landing reference data for ${String(m.code).toUpperCase()}.`};
+  const ap=typeof chosenApproach==="function"?chosenApproach(B).sel:null;
+  const end=(ap?.rwy&&B.ends.find(x=>rwyKey(x.e.id)===ap.rwy))||B.best; if(!end) return {norunway:true};
+  const state=X.toState||(X.toState={overrides:{}}), ov=state.ldg||(state.ldg={}), opts=ldOpts();
+  const ac=TOPerf.acFromModel(m,ref,TO_DATA.tune[m.code]||null), {input,src}=toLandingInputs(X,end,ov,opts);
+  return {ac,input,src,opts,end,B,approach:ap,result:TOPerf.computeLanding(ac,input)};
+}
+
 /* ---------------------------------------------------------------- rendering */
 const toFt=(ft,cls="")=>`<span class="num ${cls}">${fmtK(ft)} ft</span> <span class="note num">· ${fmtK(ft*0.3048)} m</span>`;
 const toKt=v=>Math.round(v), toFtTxt=v=>Number.isFinite(v)?fmtK(v):"—";   // Infinity = cannot accelerate / climb on one engine
@@ -81,18 +121,36 @@ function toRunwayBar(T){
   <div class="to-rwy-labels num"><span style="left:${X(used+s.v1Ft)/10}%">V1</span><span style="left:${Math.min(X(end)/10,88)}%">${toFtTxt(s.requiredFt)} ft required</span></div>`;
 }
 
+// form controls for one side: ns "to" (departure) or "ld" (arrival) → data-to / data-ld, data-to-opt / data-ld-opt, …-reset
+const toField=(ns,src)=>(k,label,val,unit)=>`<label class="to-field"><span class="k">${label}</span>
+      <span class="to-inrow"><input class="num" data-${ns}="${k}" inputmode="decimal" value="${val}" aria-label="${label}"><span class="u">${unit}</span></span>
+      <span class="to-src">${src[k]==="edited"?`edited · <button class="to-reset" data-${ns}-reset="${k}">reset</button>`:svgEsc(src[k]||"")}</span></label>`;
+const toSeg=ns=>(key,label,items,cur)=>`<div class="to-opt"><span class="k">${label}</span><div class="seg" role="group" aria-label="${label}">${items.map(([v,t])=>
+      `<button type="button" data-${ns}-opt="${key}" data-v="${svgEsc(v)}" aria-pressed="${String(cur)===String(v)}">${svgEsc(t)}</button>`).join("")}</div></div>`;
+const toBig=(k,v,u,cls="",sub="")=>`<div class="to-stat"><div class="k">${k}</div><div class="v num ${cls}">${v}${u?`<small>${u}</small>`:""}</div>${sub?`<div class="s">${sub}</div>`:""}</div>`;
+const toMsg=t=>`<div class="card"><p class="note">${t}</p></div>`;
+
+// header with the Departure / Arrival switch, then that side
 function takeoffView(X){
-  const T=X.takeoff, head=sub=>`<div class="to-head"><h2 class="viewtitle">Takeoff${sub?` <span class="note">${sub}</span>`:""}</h2>${T&&T.result?`<span class="badge warn">XPerf estimate · for simulation only</span>${T.result.tuned?`<span class="badge ok">tuned to ${T.ac.family==="airbus"?"Airbus":"Boeing"} airport-planning charts</span>`:""}`:""}</div>`;
-  if(!T||T.ga) return head()+`<div class="card"><p class="note">Takeoff data is for airliners. For this aircraft see the runway check in <a href="#airports" data-open="airports">Airports &amp; weather</a>.</p></div>`;
-  if(T.pending) return head()+`<div class="card"><p class="note">Loading takeoff data…</p></div>`;
-  if(T.error) return head()+`<div class="card"><p class="note">${svgEsc(T.error)}</p></div>`;
-  if(T.norunway) return head()+`<div class="card"><p class="note">No runway data for the departure airport — takeoff data needs a runway.</p></div>`;
+  const T=X.takeoff, L=X.landing, side=toSide();
+  const head=`<div class="to-head"><h2 class="viewtitle">Takeoff &amp; landing</h2>`;
+  if(!T||T.ga) return head+`</div>`+toMsg(`Takeoff and landing data are for airliners. For this aircraft see the runway checks in <a href="#airports" data-open="airports">Airports &amp; weather</a>.`);
+  const lab=(R,apt)=>R?.end?`${svgEsc(apt.icao)} ${svgEsc(R.end.e.id)}`:svgEsc(apt.icao);
+  const sw=`<div class="seg to-side" role="group" aria-label="Departure or arrival">
+      <button type="button" data-to-side="dep" aria-pressed="${side==="dep"}">Takeoff · ${lab(T,X.dep)}</button>
+      <button type="button" data-to-side="arr" aria-pressed="${side==="arr"}">Landing · ${lab(L,X.arr)}</button></div>`;
+  const R=side==="arr"?L:T, tuned=R?.result?.tuned;
+  const badges=R?.result?`<span class="badge warn">XPerf estimate · for simulation only</span>${tuned?`<span class="badge ok">tuned to ${R.ac.family==="airbus"?"Airbus":"Boeing"} airport-planning charts</span>`:""}`:"";
+  return head+sw+badges+`</div>`+(side==="arr"?landingBody(X):takeoffBody(X));
+}
+
+function takeoffBody(X){
+  const T=X.takeoff;
+  if(T.pending) return toMsg("Loading takeoff data…");
+  if(T.error) return toMsg(svgEsc(T.error));
+  if(T.norunway) return toMsg("No runway data for the departure airport — takeoff data needs a runway.");
   const {ac,input,src,result:r,end,B}=T, s=r.selected, ov=X.toState.overrides, code=String(X.m.code).toUpperCase();
-  const field=(k,label,val,unit,{step="any"}={})=>`<label class="to-field"><span class="k">${label}</span>
-      <span class="to-inrow"><input class="num" data-to="${k}" inputmode="decimal" value="${val}" aria-label="${label}"><span class="u">${unit}</span></span>
-      <span class="to-src">${src[k]==="edited"?`edited · <button class="to-reset" data-to-reset="${k}">reset</button>`:svgEsc(src[k]||"")}</span></label>`;
-  const seg=(key,label,items,cur)=>`<div class="to-opt"><span class="k">${label}</span><div class="seg" role="group" aria-label="${label}">${items.map(([v,t])=>
-      `<button type="button" data-to-opt="${key}" data-v="${v}" aria-pressed="${String(cur)===String(v)}">${t}</button>`).join("")}</div></div>`;
+  const field=toField("to",src), seg=toSeg("to");
   const wetCur=ov.wet!=null?ov.wet:input.wet;
   const inputs=`<div class="to-box"><h3>From your plan <span class="note">edit any value</span></h3>
       <div class="to-ac"><b>${svgEsc(X.m.label||code)}</b> <span class="note">${svgEsc(ac.engine||"")} · OpenAP</span></div>
@@ -117,7 +175,7 @@ function takeoffView(X){
         <label class="to-field"><span class="k">Line-up</span><select data-to="lineup" aria-label="Line-up allowance">${[["none","None"],["90","90° turn"],["180","180° turn"]].map(([v,t])=>`<option value="${v}" ${input.lineup===v?"selected":""}>${t}</option>`).join("")}</select></label>
       </div>
     </div>`;
-  const big=(k,v,u,cls="",sub="")=>`<div class="to-stat"><div class="k">${k}</div><div class="v num ${cls}">${v}${u?`<small>${u}</small>`:""}</div>${sub?`<div class="s">${sub}</div>`:""}</div>`;
+  const big=toBig;
   const results=`<div class="to-box"><h3>Takeoff data · RWY ${svgEsc(end.e.id)} <span class="note">${r.optimum===s.flap?`optimum flaps ${svgEsc(s.flap)}`:`flaps ${svgEsc(s.flap)} (optimum ${svgEsc(r.optimum)})`}</span></h3>
       <div class="to-big">
         ${big("V1",toKt(s.v1),"kt")}${big("VR",toKt(s.vr),"kt")}${big("V2",toKt(s.v2),"kt")}
@@ -144,7 +202,86 @@ function takeoffView(X){
     <div class="callout warn"><svg class="i"><use href="#i-alert"/></svg><div><b>Estimated with a generic jet model from OpenAP data${r.tuned?", field length tuned to the manufacturer's airport-planning charts":""}.</b>
       Speeds typically within ±5–8 kt and distances ±10–15 %${r.tuned?" (±5 % against the charts)":""}; not the manufacturer's takeoff tables. Trim is not computed. If your aircraft's EFB calculates takeoff data, use that.
       The runway check in Airports &amp; weather uses a simpler method, so its distances differ.</div></div>`;
-  return head(`${B.a.icao} ${svgEsc(end.e.id)} · ${code}`)+`<div class="to-grid"><div class="to-col">${inputs}</div><div class="to-col">${results}</div></div>`;
+  return `<div class="to-grid"><div class="to-col">${inputs}</div><div class="to-col">${results}</div></div>`;
+}
+
+const LD_LIMITS="Contaminated runway, autoland, brake energy, go-around climb";
+function ldStatusHtml(L){ const r=L.result, s=r.selected;
+  if(r.status==="nofit") return !r.suggested?`<span class="bad">Does not fit — no autobrake setting stops within the runway with the 15 % margin</span>`
+    :`<span class="bad">Autobrake ${svgEsc(s.name)} does not fit — use ${svgEsc(r.suggested)} or higher</span>`;
+  if(r.status==="tight") return `<span class="warn">Fits at arrival with ${svgEsc(s.name)}, but the runway is shorter than the dispatch requirement (${toFtTxt(r.dispatchFt)} ft)</span>`;
+  return `<span class="good">Autobrake ${svgEsc(s.name)} stops in ${toFtTxt(s.actualFt)} ft (× 1.15 = ${toFtTxt(s.arrivalFt)} ft) of ${fmtK(r.ldaFt)} ft</span>`; }
+
+function ldRunwayBar(L){
+  const r=L.result, s=r.selected, lda=r.ldaFt;
+  const fin=[lda,s.arrivalFt,r.dispatchFt].filter(Number.isFinite), span=Math.max(...fin,1)*1.03;
+  const X=ft=>(Math.min(Math.max(ft,0),span)/span*1000).toFixed(1), over=s.arrivalFt>lda;
+  return `<svg class="to-rwy" viewBox="0 0 1000 78" preserveAspectRatio="none" role="img" aria-label="Runway ${svgEsc(L.end.e.id)}: stops in ${toFtTxt(s.actualFt)} ft of ${fmtK(lda)} ft available">
+    <rect x="0" y="24" width="${X(lda)}" height="18" rx="3" fill="var(--active)"/>
+    <rect x="${X(r.airFt)}" y="48" width="${Math.max(0,X(s.actualFt)-X(r.airFt)).toFixed(1)}" height="5" rx="2" fill="var(--accent)"/>
+    <rect x="0" y="48" width="${X(r.airFt)}" height="5" rx="2" fill="var(--line-strong)"/>
+    <line x1="${X(s.arrivalFt)}" x2="${X(s.arrivalFt)}" y1="14" y2="66" stroke="${over?"var(--bad)":"var(--text)"}" stroke-width="2" vector-effect="non-scaling-stroke"/>
+    <line x1="${X(r.dispatchFt)}" x2="${X(r.dispatchFt)}" y1="14" y2="66" stroke="var(--text-3)" stroke-width="1.5" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>
+  </svg>
+  <div class="to-rwy-labels num"><span style="left:${Math.min(X(r.airFt)/10,90)}%">TD</span><span style="left:${Math.min(X(s.arrivalFt)/10,88)}%">× 1.15</span></div>`;
+}
+
+function landingBody(X){
+  const L=X.landing;
+  if(!L||L.pending) return toMsg("Loading landing data…");
+  if(L.error) return toMsg(svgEsc(L.error));
+  if(L.norunway) return toMsg("No runway data for the arrival airport — landing data needs a runway.");
+  const {ac,input,src,result:r,end,B,approach}=L, s=r.selected, ov=X.toState.ldg, code=String(X.m.code).toUpperCase();
+  const field=toField("ld",src), seg=toSeg("ld"), wetCur=ov.wet!=null?ov.wet:input.wet;
+  const rule=ac.vappRule==="airbus"?"headwind ÷ 3, 5–15 kt":"½ headwind + gust, 5–20 kt";
+  const inputs=`<div class="to-box"><h3>From your plan <span class="note">edit any value</span></h3>
+      <div class="to-ac"><b>${svgEsc(X.m.label||code)}</b> <span class="note">${svgEsc(ac.engine||"")} · OpenAP</span></div>
+      <div class="to-field wide"><span class="k">Runway</span><span class="to-rwyname"><b>RWY ${svgEsc(end.e.id)}</b>${approach?` · ${svgEsc(approach.name)}`:""}</span>
+        <span class="to-src">from the approach chosen in <a href="#setup" data-open="setup">FS2024 setup</a></span></div>
+      ${field("lwKg","Landing weight",Math.round(input.lwKg),"kg")}
+      ${field("ldaFt","Landing distance available",Math.round(input.ldaFt),"ft")}
+      ${field("elevFt","Elevation",Math.round(input.elevFt),"ft")}
+      ${field("slopePct","Slope (+ uphill)",(+input.slopePct).toFixed(2),"%")}
+      ${field("oat","OAT",input.oat,"°C")}
+      ${field("qnh","QNH",Math.round(input.qnh*10)/10,"hPa")}
+      ${field("windKt","Headwind (− tail)",Math.round(input.windKt),"kt")}
+      ${field("gustKt","Gust increment",Math.round(input.gustKt),"kt")}
+      ${B.met?`<p class="note to-raw">${svgEsc(B.met.raw||"")}</p><p class="note">Current METAR — check the ATIS before landing.</p>`:`<p class="note">No METAR — standard atmosphere, calm wind and a dry runway assumed; type the expected values.</p>`}
+    </div>
+    <div class="to-box"><h3>Options</h3>
+      ${seg("flap","Landing flaps",ac.landingFlaps.map(f=>[f.default?"default":f.name,f.name]),input.flap==="default"?"default":input.flap)}
+      ${seg("autobrake","Autobrake",[["suggested","Suggested"],...ac.autobrake.map(a=>[a.name,a.name])],input.autobrake)}
+      ${seg("reverse","Reversers",[["max","Max"],["idle","Idle"],["none","None"]],input.reverse)}
+      ${seg("wet","Runway",[["false","Dry"],["true","Wet"]],String(!!wetCur))}
+    </div>`;
+  const results=`<div class="to-box"><h3>Landing data · RWY ${svgEsc(end.e.id)} <span class="note">flaps ${svgEsc(r.flap)}</span></h3>
+      <div class="to-big">
+        ${toBig("VREF",toKt(r.vref),"kt")}
+        ${toBig("VAPP",toKt(r.vapp),"kt","acc",`<span title="Wind additive: ${rule}">+${toKt(r.additive)} kt additive</span>`)}
+        ${toBig("Flaps",svgEsc(r.flap),"")}
+        ${toBig("Autobrake",svgEsc(s.name),"",r.status==="nofit"?"bad":"",input.autobrake==="suggested"?"suggested":"chosen")}
+      </div>
+      <p class="to-status">${ldStatusHtml(L)}</p>
+      ${r.notes.map(n=>`<p class="note warn">${svgEsc(n)}</p>`).join("")}
+    </div>
+    <div class="to-box"><h3>Runway ${svgEsc(end.e.id)} <span class="note">${toFt(r.ldaFt)} available</span></h3>
+      ${ldRunwayBar(L)}
+      <div class="to-legend"><span><i style="background:var(--line-strong)"></i>Air distance from 50 ft · ${toFtTxt(r.airFt)} ft</span>
+        <span><i style="background:var(--accent)"></i>Stop with ${svgEsc(s.name)} · ${toFtTxt(s.actualFt)} ft</span>
+        <span><i class="dash"></i>Dispatch requirement · ${toFtTxt(r.dispatchFt)} ft</span>
+        <span>Margin <b class="num ${r.ldaFt-s.arrivalFt<0?"bad":""}">${toFtTxt(r.ldaFt-s.arrivalFt)} ft</b></span></div>
+    </div>
+    <div class="to-box"><h3>Limits checked</h3><div class="to-limits">
+      <span class="${r.dispatchOK?"good":"bad"}">●</span><span>Dispatch: max braking, no reverse, × 1.67${input.wet?" × 1.15 wet":""}</span><span class="note num">${toFtTxt(r.dispatchFt)} of ${fmtK(r.ldaFt)} ft</span>
+      <span class="${s.fits?"good":"bad"}">●</span><span>At arrival: ${svgEsc(s.name)}, reversers ${svgEsc(input.reverse)}, × 1.15</span><span class="note num">${toFtTxt(s.arrivalFt)} of ${fmtK(r.ldaFt)} ft</span>
+      <span class="warn">●</span><span>${LD_LIMITS}</span><span class="note">not modelled</span></div></div>
+    <div class="to-box"><h3>Every autobrake setting</h3><div class="tblwrap"><table><tr><th>Autobrake</th><th>Decel m/s²</th><th>Stop ft</th><th>× 1.15 ft</th><th>Fits</th></tr>
+      ${r.byAutobrake.map(a=>`<tr class="${a===s?"pick":""}"><td>${svgEsc(a.name)}${a.name===r.suggested?" ★":""}</td><td>${a.decel==null?"max":a.decel.toFixed(1)}</td>
+        <td>${toFtTxt(a.actualFt)}</td><td class="${a.fits?"":"bad"}">${toFtTxt(a.arrivalFt)}</td><td class="${a.fits?"good":"bad"}">${a.fits?"yes":"no"}</td></tr>`).join("")}</table></div></div>
+    <div class="callout warn"><svg class="i"><use href="#i-alert"/></svg><div><b>Estimated with a generic jet model from OpenAP data${r.tuned?", dispatch distance tuned to the manufacturer's airport-planning charts":""}.</b>
+      Speeds typically within ±5 kt and distances ±10–15 %${r.tuned?" (dispatch ±5 % against the charts)":""}; autobrake rates are generic for the aircraft family. Not the manufacturer's landing tables.
+      The runway check in Airports &amp; weather uses a simpler method, so its distances differ.</div></div>`;
+  return `<div class="to-grid"><div class="to-col">${inputs}</div><div class="to-col">${results}</div></div>`;
 }
 
 /* ---------------------------------------------------------------- summaries (Overview tile, FS2024 setup row) */
@@ -165,10 +302,12 @@ function takeoffSetupRow(X){
 
 /* ---------------------------------------------------------------- interaction */
 function refreshTakeoff(X){
-  X.takeoff=takeoffResult(X);
+  X.takeoff=takeoffResult(X); X.landing=landingResult(X);
   if(typeof document==="undefined") return;
   // re-rendering replaces the controls: put focus back on the same control (typing Tab moves on as expected)
-  const a=document.activeElement, key=a?.dataset?.to?`[data-to="${a.dataset.to}"]`:a?.dataset?.toOpt?`[data-to-opt="${a.dataset.toOpt}"][data-v="${a.dataset.v}"]`:null;
+  const a=document.activeElement, d=a?.dataset||{};
+  const key=d.to?`[data-to="${d.to}"]`:d.ld?`[data-ld="${d.ld}"]`:d.toOpt?`[data-to-opt="${d.toOpt}"][data-v="${d.v}"]`
+    :d.ldOpt?`[data-ld-opt="${d.ldOpt}"][data-v="${d.v}"]`:d.toSide?`[data-to-side="${d.toSide}"]`:null;
   const panel=document.querySelector('.tabpanel[data-tab="takeoff"]'); if(panel) panel.innerHTML=takeoffView(X);
   if(key&&panel) panel.querySelector(key)?.focus({preventScroll:true});
   const tile=document.querySelector('[data-tile="takeoff"]'); if(tile) tile.outerHTML=takeoffTile(X)||"<span data-tile=\"takeoff\" hidden></span>";
@@ -177,7 +316,16 @@ function refreshTakeoff(X){
 if(typeof document!=="undefined"){
   const X=()=>window.LAST_X;
   document.addEventListener("click",e=>{
-    const b=e.target.closest?.("[data-to-opt]"), r=e.target.closest?.("[data-to-reset]"); if(!X()||!(b||r)) return;
+    if(!X()) return;
+    const sd=e.target.closest?.("[data-to-side]");
+    if(sd){ e.preventDefault(); try{ localStorage.setItem(TO_SIDE_KEY,sd.dataset.toSide); }catch(_){} refreshTakeoff(X()); return; }
+    const lb=e.target.closest?.("[data-ld-opt]"), lr=e.target.closest?.("[data-ld-reset]");
+    if(lb||lr){ e.preventDefault(); const ov=X().toState.ldg;
+      if(lr){ const k=lr.dataset.ldReset; delete ov[k]; if(ov.byRwy) for(const id in ov.byRwy) delete ov.byRwy[id][k]; }
+      else if(lb.dataset.ldOpt==="wet") ov.wet=lb.dataset.v==="true";
+      else setLdOpt(lb.dataset.ldOpt,lb.dataset.v);
+      refreshTakeoff(X()); return; }
+    const b=e.target.closest?.("[data-to-opt]"), r=e.target.closest?.("[data-to-reset]"); if(!(b||r)) return;
     e.preventDefault();
     if(r){ const k=r.dataset.toReset, ov=X().toState.overrides; delete ov[k]; if(ov.byRwy) for(const id in ov.byRwy) delete ov.byRwy[id][k]; }
     else if(b.dataset.toOpt==="wet") X().toState.overrides.wet=b.dataset.v==="true";
@@ -185,7 +333,13 @@ if(typeof document!=="undefined"){
     refreshTakeoff(X());
   });
   document.addEventListener("change",e=>{
-    const t=e.target; if(!t?.dataset?.to||!X()) return;
+    const t=e.target; if(!X()) return;
+    if(t?.dataset?.ld){
+      const all=X().toState.ldg, k=t.dataset.ld, id=X().landing?.end?.e?.id;
+      const ov=LD_RWY_KEYS.has(k)&&id?((all.byRwy||(all.byRwy={}))[id]||(all.byRwy[id]={})):all;
+      const v=parseFloat(String(t.value).replace(",",".")); if(t.value.trim()===""||!toValid(k,v)) delete ov[k]; else ov[k]=v;
+      refreshTakeoff(X()); return; }
+    if(!t?.dataset?.to) return;
     const all=X().toState.overrides, k=t.dataset.to, id=X().takeoff?.end?.e?.id;
     const ov=TO_RWY_KEYS.has(k)&&id?((all.byRwy||(all.byRwy={}))[id]||(all.byRwy[id]={})):all;
     if(k==="lineup") ov.lineup=t.value;

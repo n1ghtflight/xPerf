@@ -340,3 +340,40 @@ test("tuned landing matches the charts within 5 %", () => {
       assert.ok(Math.abs(r.errPct) <= 5, `${c} ${JSON.stringify(r.point)}: model ${Math.round(r.modelFt)} vs chart ${r.chartFt} (${r.errPct.toFixed(1)} %)`);
   }
 });
+
+/* ---------------------------------------------------------------- plan → landing inputs (takeoff.js) */
+const toLandingInputs = (...a) => { assert.ok(ctx.toLandingInputs, "toLandingInputs not defined"); return ctx.toLandingInputs(...a); };
+const arrMetar = { temp: 20, qnh: 1012, wdir: 250, wspd: 12, wgst: 22, vrb: false, wet: false, raw: "KLAX 190353Z 25012G22KT 10SM FEW020 20/14 A2989" };
+const arrX = (met, elev = 125) => ({ m: { kind: "openap", code: "a20n" }, sel: { tow: 70000, land: 62000 }, briefs: { arr: { a: { icao: "KLAX", alt: elev }, met } } });
+const end25L = (elev = 125) => ({ r: { length: 11095 }, e: { id: "25L", elev, hdgT: 250, dthr: 1000 }, o: { elev: elev - 30 } });
+const LOPTS = { flap: "default", autobrake: "suggested", reverse: "idle" };
+
+test("landing: METAR wind, gust and sources flow through", () => {
+  const { input, src } = toLandingInputs(arrX(arrMetar), end25L(), {}, LOPTS);
+  assert.ok(Math.abs(input.windKt - 12) < 0.01); assert.equal(input.gustKt, 10); assert.equal(input.oat, 20); assert.equal(input.qnh, 1012);
+  assert.equal(input.lwKg, 62000); assert.equal(src.lwKg, "plan"); assert.equal(src.oat, "METAR 0353Z (now)");
+  assert.ok(input.slopePct < 0); assert.equal(input.reverse, "idle"); assert.equal(input.autobrake, "suggested");
+});
+
+test("landing: LDA subtracts the displaced threshold", () => {
+  assert.equal(toLandingInputs(arrX(arrMetar), end25L(), {}, LOPTS).input.ldaFt, 10095);
+});
+
+test("landing: no METAR assumes ISA, calm and dry", () => {
+  const { input, src } = toLandingInputs(arrX(null, 1000), end25L(1000), {}, LOPTS);
+  assert.equal(input.oat, 13); assert.equal(input.windKt, 0); assert.equal(input.gustKt, 0); assert.equal(input.wet, false);
+  for (const k of ["oat", "qnh", "windKt", "wet"]) assert.equal(src[k], "assumed — no METAR", k);
+});
+
+test("landing: out-of-range overrides are ignored, runway ones stay with their runway", () => {
+  const ov = { lwKg: 0, byRwy: { "25L": { ldaFt: -5 }, "24R": { ldaFt: 8000 } } };
+  const { input, src } = toLandingInputs(arrX(arrMetar), end25L(), ov, LOPTS);
+  assert.equal(input.lwKg, 62000); assert.equal(input.ldaFt, 10095); assert.notEqual(src.ldaFt, "edited");
+  const e24 = { ...end25L(), e: { id: "24R", elev: 125, hdgT: 250, dthr: 0 } };
+  assert.equal(toLandingInputs(arrX(arrMetar), e24, ov, LOPTS).input.ldaFt, 8000);
+});
+
+test("landing: GA aircraft gets the pointer", () => {
+  assert.ok(ctx.landingResult, "landingResult not defined");
+  assert.equal(ctx.landingResult({ m: { kind: "apm" } }).ga, true);
+});
