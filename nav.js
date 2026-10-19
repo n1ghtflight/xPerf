@@ -217,8 +217,9 @@ let MAP=null;
 function drawMap(X){
   const el=document.getElementById("map"); if(!el||typeof L==="undefined") return;
   if(MAP){ MAP.remove(); MAP=null; }
-  // fractional zoom so the route fills the frame instead of snapping one level too far out
-  MAP=L.map(el,{zoomControl:true,attributionControl:true,zoomSnap:0.25,zoomDelta:0.5});
+  // whole zoom levels: at fractional zoom Chrome scales the 256 px tiles and rounding leaves seams between them
+  // (a faint box or grid over the map). The map fills the window, so the route still fills the frame.
+  MAP=L.map(el,{zoomControl:true,attributionControl:true,zoomSnap:1,zoomDelta:1});
   const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,className:"tiles-dark",
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
   const topo=L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",{maxZoom:17,subdomains:"abc",
@@ -226,6 +227,14 @@ function drawMap(X){
   let pref="osm"; try{ pref=localStorage.getItem("xperf.map")||"osm"; }catch(_){}
   (pref==="topo"?topo:osm).addTo(MAP);
   L.control.layers({"Map (dark)":osm,"Terrain (OpenTopoMap)":topo},null,{position:"topright"}).addTo(MAP);
+  // back to the whole route after zooming or panning by hand
+  const Fit=L.Control.extend({options:{position:"topleft"},onAdd(){
+    const d=L.DomUtil.create("div","leaflet-bar leaflet-control-fit");
+    d.innerHTML=`<a href="#" role="button" aria-label="Fit the whole route" data-tip="Fit the whole route"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></a>`;
+    L.DomEvent.disableClickPropagation(d);
+    L.DomEvent.on(d.firstChild,"click",e=>{ L.DomEvent.preventDefault(e); fitRouteMap(); });
+    return d; }});
+  new Fit().addTo(MAP);
   MAP.on("baselayerchange",e=>{ try{ localStorage.setItem("xperf.map",e.layer===topo?"topo":"osm"); }catch(_){} });
   const {route,total,sel}=X, line=[];
   for(const Lg of route.legs){ const n=Math.max(2,Math.ceil(Lg.d/NM/20)); for(let k=0;k<=n;k++){ const p=gcInterp(Lg.a,Lg.b,k/n); line.push([p.lat,p.lon]); } }

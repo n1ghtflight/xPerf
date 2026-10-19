@@ -15,7 +15,7 @@
 <meta name="theme-color" content="#efeff0" media="(prefers-color-scheme: light)">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.19a">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.19d">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.19g">
 <link rel="stylesheet" href="vendor/leaflet-1.9.4/leaflet.min.css">
 <script src="vendor/leaflet-1.9.4/leaflet.min.js"></script>
 </head>
@@ -183,9 +183,9 @@
 </div>
 
 <script src="shell.js?v=2026.10.19a"></script>
-<script src="data.js?v=2026.10.18a"></script>
+<script src="data.js?v=2026.10.19e"></script>
 <script src="routeimport.js?v=2026.10.19c"></script>
-<script src="nav.js?v=2026.10.19l"></script>
+<script src="nav.js?v=2026.10.19m"></script>
 <script src="acpicker.js?v=2026.10.17b"></script>
 <script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
@@ -332,7 +332,8 @@ async function init(){
     Chips.buildSegs(); Chips.syncForm();
     AcPicker.init();          // searchable picker over the list (restores the last aircraft used)
     status(`${Object.keys(GA_NAMES).length+Object.keys(AC_NAMES).length} aircraft types · ${DB.airports.length.toLocaleString()} airports (${DB.aptSource})${XD.mode==="packs"?" · "+await XD.label().catch(()=>"offline packs unavailable"):""}`);
-    Shell.setData(XD.mode==="packs"?"● Offline packs":"● Live data");
+    // the website runs on the packs: show their AIRAC cycle (it is online, "offline packs" read as a fault)
+    Shell.setData(XD.mode==="packs"?`● AIRAC ${await XD.cycle().catch(()=>"?")}`:"● Live data");
     XD.label().then(t=>{ $("dataInfo").textContent=`${DB.airports.length.toLocaleString()} airports (${DB.aptSource}) · ${Object.keys(GA_NAMES).length+Object.keys(AC_NAMES).length} aircraft types · data: ${t==="server"?"live from the local server":t}`; }).catch(()=>{});
     $("go").disabled=false; onAircraft();
     window.NAV_READY=loadNavaids();

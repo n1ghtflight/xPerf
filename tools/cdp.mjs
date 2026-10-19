@@ -48,14 +48,29 @@ export async function launch({ width = 1440, height = 900, mobile = false, schem
   if (!swept) { swept = true; sweepProfiles(); }
   const exe = BROWSERS.find(p => existsSync(p));
   if (!exe) throw new Error("no Chromium browser found; set BROWSER");
-  const dbg = 9500 + Math.floor(Math.random() * 400), prof = mkdtempSync(join(tmpdir(), "xperf-cdp-"));
-  // extensions (some are force-installed by machine policy) inject scripts and requests that are not the app's
-  const proc = spawn(exe, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--disable-extensions", "--disable-component-extensions-with-background-pages", `--remote-debugging-port=${dbg}`,
-    `--user-data-dir=${prof}`, "about:blank"], { stdio: "ignore" });
-  let list;
-  for (let i = 0; i < 80 && !list; i++) { try { list = await (await fetch(`http://127.0.0.1:${dbg}/json/list`)).json(); } catch { await sleep(250); } }
-  if (!list) throw new Error("browser did not expose CDP");
-  const ws = new WebSocket(list.find(t => t.type === "page").webSocketDebuggerUrl);
+  // Start the browser and wait for its DevTools endpoint to list a page. Every poll is bounded (a browser can accept
+  // the connection and never answer while starting up, which used to hang a whole run); two attempts.
+  const killTree = p => { if (process.platform === "win32") spawnSync("taskkill", ["/PID", String(p.pid), "/T", "/F"], { stdio: "ignore" }); else p.kill(); };
+  let proc, prof, list, page0;
+  const key = ++callSeq;
+  inFlight.set(key, { method: "launch", since: Date.now(), what: "waiting for the browser's DevTools endpoint" });
+  try {
+    for (let attempt = 1; attempt <= 2 && !page0; attempt++) {
+      const dbg = 9500 + Math.floor(Math.random() * 400);
+      prof = mkdtempSync(join(tmpdir(), "xperf-cdp-"));
+      // extensions (some are force-installed by machine policy) inject scripts and requests that are not the app's
+      proc = spawn(exe, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--disable-extensions", "--disable-component-extensions-with-background-pages", `--remote-debugging-port=${dbg}`,
+        `--user-data-dir=${prof}`, "about:blank"], { stdio: "ignore" });
+      for (let i = 0; i < 80 && !page0; i++) {
+        try { list = await (await fetch(`http://127.0.0.1:${dbg}/json/list`, { signal: AbortSignal.timeout(2000) })).json(); page0 = list.find(t => t.type === "page"); }
+        catch {}
+        if (!page0) await sleep(250);
+      }
+      if (!page0) { killTree(proc); try { rmSync(prof, { recursive: true, force: true }); } catch {} }
+    }
+  } finally { inFlight.delete(key); }
+  if (!page0) throw new Error("browser did not expose CDP (2 attempts)");
+  const ws = new WebSocket(page0.webSocketDebuggerUrl);
   // a stalled browser must fail loudly, naming the call, instead of hanging the run
   await new Promise((ok, no) => { const t = setTimeout(() => no(new Error("CDP connection did not open in 15 s")), 15000);
     ws.addEventListener("open", () => { clearTimeout(t); ok(); }); ws.addEventListener("error", () => { clearTimeout(t); no(new Error("CDP connection failed")); }); });
@@ -119,7 +134,7 @@ export async function launch({ width = 1440, height = 900, mobile = false, schem
     async close() {
       try { ws.close(); } catch {}
       // the whole process tree: Edge's renderer / GPU children can outlive the parent on Windows
-      if (process.platform === "win32") spawnSync("taskkill", ["/PID", String(proc.pid), "/T", "/F"], { stdio: "ignore" }); else proc.kill();
+      killTree(proc);
       for (let i = 0; i < 10; i++) { try { rmSync(prof, { recursive: true, force: true }); break; } catch { await sleep(200); } }
     },
   };

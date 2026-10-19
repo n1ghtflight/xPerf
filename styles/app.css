@@ -469,6 +469,7 @@ button.aptback{display:none;margin:0 0 10px;width:auto;padding:0 10px;height:var
 .leaflet-bar,.leaflet-control-layers{border:var(--hairline) solid var(--line)!important;border-radius:var(--r-sm)!important;box-shadow:var(--shadow)!important;overflow:hidden}
 .leaflet-bar a,.leaflet-bar a:hover{background:var(--tile)!important;color:var(--text)!important;border-bottom:var(--hairline) solid var(--line-soft)!important}
 .leaflet-bar a:hover{background:color-mix(in srgb,var(--tile) 88%,var(--text))!important}
+.leaflet-control-fit a{display:grid!important;place-items:center}
 .leaflet-control-layers-toggle{background-color:var(--tile)!important;filter:invert(var(--icon-invert,0))}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .leaflet-control-layers-toggle{--icon-invert:.85}}
 :root[data-theme="dark"] .leaflet-control-layers-toggle{--icon-invert:.85}

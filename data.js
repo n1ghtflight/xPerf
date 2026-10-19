@@ -137,6 +137,7 @@ const XD=(()=>{
     mode, native,
     ok: http||native,                 // data available at all (file:// has neither server nor packs)
     label: async()=>S?"server":`offline packs AIRAC ${(await manifest()).cycle}`,
+    cycle: async()=>S?null:(await manifest()).cycle,    // the packs' AIRAC cycle (null with the server)
     airports: ()=>S?get("/api/airports","json",90000):pack("airports.json"),
     navaids:  ()=>S?get("/api/navaids","json",90000):pack("navaids.json"),
     airways:  ()=>S?get("/api/airways","json",180000):pack("airways.json"),

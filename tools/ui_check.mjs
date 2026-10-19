@@ -707,6 +707,29 @@ check("escape-airport-text", async () => {
   } finally { await page.close(); }
 });
 
+// title-bar data chip: the AIRAC cycle on the packs build (the website), "Live data" with the local server
+check("data-chip", async () => {
+  const page = await open("c172");
+  try {
+    const r = await page.eval(`(async()=>{ const cyc=(await (await fetch('packs/current.json')).json()).cycle; return {chip:document.getElementById('dataChip').textContent, cyc, mode:XD.mode}; })()`);
+    const want = r.mode === "packs" ? `● AIRAC ${r.cyc}` : "● Live data";
+    expect(r.chip === want, `chip says “${r.chip}”, expected “${want}”`);
+  } finally { await page.close(); }
+});
+
+// after zooming in by hand, the map's fit-route button brings the whole route back into view
+check("route-map-fitbtn", async () => {
+  const page = await open("c172", { plan: true });
+  try {
+    await page.eval(`Shell.showView('route')`); await page.eval(`new Promise(r=>setTimeout(r,600))`);
+    const inView = () => page.eval(`LAST_X.route.points.every(p=>MAP.getBounds().contains([p.lat,p.lon]))`);
+    await page.eval(`MAP.setZoom(MAP.getZoom()+3,{animate:false}); new Promise(r=>setTimeout(r,300))`);
+    expect(!(await inView()), "zooming in did not push the route out of view (test setup)");
+    await page.click("#map .leaflet-control-fit a"); await page.eval(`new Promise(r=>setTimeout(r,600))`);
+    expect(await inView(), "fit-route button did not bring the whole route back");
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {
