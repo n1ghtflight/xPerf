@@ -656,6 +656,28 @@ check("route-map-fill", async () => {
   } finally { await page.close(); }
 });
 
+// a SID / STAR that adds nothing to draw is named on the map at its airport; a navaid on the airport keeps a readable label
+check("route-procs", async () => {
+  // live data (no replay): this route needs the A320 from OpenAP and KSFO / KSEA procedures from the server
+  const page = await launch({ port, query: mode === "packs" ? "data=packs" : "" });
+  await page.goto("/");
+  await page.eval(`(async()=>{ for(let i=0;i<240&&document.getElementById('go').disabled;i++) await new Promise(r=>setTimeout(r,250)); await window.NAV_READY; })()`);
+  try {
+    await page.eval(`(async()=>{ const $=id=>document.getElementById(id);
+      $('ac').value='oap:a320'; $('ac').dispatchEvent(new Event('change')); for(let i=0;i<120&&(!MODEL||MODEL.id!=='oap:a320');i++) await new Promise(r=>setTimeout(r,250));
+      $('etd').value='2026-10-20T12:00'; $('nav').value='import'; $('route').value='KSFO GAPP7 SFO DCT RBL DCT LMT HAWKZ8 KSEA';
+      $('route').dispatchEvent(new Event('change',{bubbles:true})); window.LAST_X=null; $('go').click();
+      for(let i=0;i<1200&&!window.LAST_X&&!$('err').textContent;i++) await new Promise(r=>setTimeout(r,100)); })()`);
+    { const e = await page.eval(`document.getElementById("err").textContent`); expect(!e, "plan failed: " + e); }
+    await page.eval(`Shell.showView('route')`); await page.eval(`new Promise(r=>setTimeout(r,800))`);
+    const r = await page.eval(`(()=>{ const t=[...document.querySelectorAll('#map .leaflet-tooltip')].map(e=>({txt:e.textContent, left:e.classList.contains('leaflet-tooltip-left')}));
+      return {ksfo:t.find(x=>x.txt.startsWith('KSFO')), ksea:t.find(x=>x.txt.startsWith('KSEA')), sfo:t.find(x=>x.txt==='SFO')}; })()`);
+    expect(r.ksfo && /GAPP7 · radar vectors/.test(r.ksfo.txt), "KSFO label: " + JSON.stringify(r.ksfo));
+    expect(r.ksea && /HAWKZ8 · fly from chart/.test(r.ksea.txt), "KSEA label: " + JSON.stringify(r.ksea));
+    expect(r.sfo && r.sfo.left !== r.ksfo.left, "SFO label on the same side as KSFO's: " + JSON.stringify(r));
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {

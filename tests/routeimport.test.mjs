@@ -6,7 +6,7 @@ import vm from "node:vm";
 
 const ctx = vm.createContext({});
 vm.runInContext(readFileSync(new URL("../routeimport.js", import.meta.url), "utf8"), ctx);
-const { tokenizeRoute, parseCoord, resolveRoute, parseSimbriefXML } = ctx;
+const { tokenizeRoute, parseCoord, resolveRoute, parseSimbriefXML, routeProcedures, procedureLabel } = ctx;
 // values built inside the vm realm have its Array prototype: compare as plain data
 const eq = (a, b) => assert.deepEqual(JSON.parse(JSON.stringify(a)), b);
 
@@ -125,4 +125,39 @@ test("SimBrief error document throws its status message", () => {
   const xml = `<OFP><fetch><userid></userid><status>Error: Unknown UserID</status></fetch></OFP>`;
   assert.throws(() => parseSimbriefXML(xml), /Unknown UserID/);
   assert.throws(() => parseSimbriefXML("<html>nope</html>"), /SimBrief/);
+});
+
+// ---- SIDs / STARs named in the route that add nothing to draw (vector departures, arrivals flown from the chart)
+const KSFO = { icao: "KSFO", lat: 37.619, lon: -122.375 }, KSEA = { icao: "KSEA", lat: 47.449, lon: -122.309 };
+
+test("skipped procedures remember where they were in the route", () => {
+  const r = resolveRoute("KPAO SSTIK3 SJC SAC BDEGA3 KTRK", lookups());
+  eq(r.skipped.map(s => [s.id, s.at]), [["SSTIK3", 0], ["BDEGA3", 2]]);
+});
+
+test("a pasted route: the SID before the first point and the STAR after the last are reported, not drawn", () => {
+  const r = resolveRoute("KPAO SSTIK3 SJC SAC BDEGA3 KTRK", lookups());
+  eq(routeProcedures(r, APTS.KPAO, APTS.KTRK), [{ end: "dep", name: "SSTIK3", drawn: false }, { end: "arr", name: "BDEGA3", drawn: false }]);
+});
+
+test("a SimBrief plan: a SID whose only fix is on the airport is not drawn, a STAR with real fixes is", () => {
+  const sb = { route: "GAPP7 SFO DCT DEDHD DCT RBL DCT LMT HAWKZ8", points: [
+    { id: "SFO", lat: 37.6195, lon: -122.3739, via: "GAPP7", sidstar: true },
+    { id: "DEDHD", lat: 38.3355, lon: -122.1128, via: null }, { id: "LMT", lat: 42.153, lon: -121.728, via: null },
+    { id: "HAWKZ", lat: 46.2, lon: -122.0, via: "HAWKZ8", sidstar: true }, { id: "OLM", lat: 46.97, lon: -122.9, via: "HAWKZ8", sidstar: true }] };
+  eq(routeProcedures({ sb, points: sb.points, skipped: [] }, KSFO, KSEA),
+    [{ end: "dep", name: "GAPP7", drawn: false }, { end: "arr", name: "HAWKZ8", drawn: true }]);
+});
+
+test("no procedures named: nothing to report", () => {
+  eq(routeProcedures(resolveRoute("KPAO SJC V334 SAC KTRK", lookups()), APTS.KPAO, APTS.KTRK), []);
+});
+
+test("the label claims radar vectors only when the FAA lists a conventional procedure with no fixes", () => {
+  const faa = [{ code: "GAPP7.GAP", rnav: false, ends: [] }, { code: "SFO5.SFO", rnav: false, ends: [{ fix: "SFO" }] },
+    { code: "TRUKN2.TRUKN", rnav: true, ends: [{ fix: "DEDHD" }] }];
+  assert.equal(procedureLabel("GAPP7", faa), "GAPP7 · radar vectors");
+  assert.equal(procedureLabel("SFO5", faa), "SFO5 · fly from chart");
+  assert.equal(procedureLabel("NALE1E", null), "NALE1E · fly from chart");
+  assert.equal(procedureLabel("<b>", null), "&lt;b&gt; · fly from chart");
 });

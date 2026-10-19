@@ -235,18 +235,26 @@ function drawMap(X){
     const a=route.points[i], b=route.points[i+1], mpt=gcInterp(a,b,0.5);
     L.marker([mpt.lat,mpt.lon],{icon:L.divIcon({className:"awylbl",html:Lm.awy,iconSize:null}),interactive:false}).addTo(MAP); });
   const first=route.points[0], lastP=route.points[route.points.length-1];
+  // airport labels sit on the outside of the route so they don't cover the first/last station
+  const aptSide=A=>(A===first?first.lon<=lastP.lon:lastP.lon<first.lon)?"left":"right";
+  // a navaid or fix on the airport (e.g. SFO VOR on KSFO) takes the other side, so both labels stay readable
+  const side=P=>{ const A=[first,lastP].find(A=>A!==P&&gcDist(A,P)/NM<2); return A?(aptSide(A)==="left"?"right":"left"):"right"; };
+  const off=d=>[d==="left"?-6:6,0];
+  // a SID / STAR the route names that adds nothing to draw (vectors, or only a fix on the airport): say so at the airport
+  const procs=route.plan?.imp?routeProcedures(route.plan.imp,X.dep,X.arr).filter(p=>!p.drawn):[];
+  const procNote=end=>{ const p=procs.find(q=>q.end===end); if(!p) return "";
+    return `<span class="maplbl-sub">${procedureLabel(p.name,end==="dep"?X.info?.dep?.procs?.sids:X.info?.arr?.procs?.stars)}</span>`; };
   for(const P of route.points){
-    if(P.kind==="fix"){ L.circleMarker([P.lat,P.lon],{radius:3,color:"var(--text-3)",fillColor:"var(--text-3)",fillOpacity:1,weight:1}).addTo(MAP).bindTooltip(P.id,{direction:"right",className:"maplbl"}); continue; }
+    if(P.kind==="fix"){ const d=side(P); L.circleMarker([P.lat,P.lon],{radius:3,color:"var(--text-3)",fillColor:"var(--text-3)",fillOpacity:1,weight:1}).addTo(MAP).bindTooltip(P.id,{direction:d,offset:off(d),className:"maplbl"}); continue; }
     if(P.kind==="apt"){
-      // airport labels sit on the outside of the route so they don't cover the first/last station
-      const west=P===first?first.lon<=lastP.lon:lastP.lon<first.lon;
+      const d=aptSide(P);
       L.circleMarker([P.lat,P.lon],{radius:7,color:"var(--panel)",fillColor:"var(--good)",fillOpacity:1,weight:2}).addTo(MAP)
-        .bindTooltip(P.apt.icao,{permanent:true,direction:west?"left":"right",offset:[west?-6:6,0],className:"maplbl apt"})
+        .bindTooltip(P.apt.icao+procNote(P===first?"dep":"arr"),{permanent:true,direction:d,offset:off(d),className:"maplbl apt"})
         .bindPopup(`<b>${P.apt.icao}</b> ${P.apt.name}<br>Elev ${fmtK(P.apt.alt)} ft`);
     } else { const ndb=NDB_TYPES.has(P.nav.type);
       L.circle([P.lat,P.lon],{radius:(P.r||40)*NM,color:ndb?"var(--warn)":"var(--accent)",weight:1,opacity:.3,fill:false,dashArray:"4 6",interactive:false}).addTo(MAP);
       L.circleMarker([P.lat,P.lon],{radius:6,color:ndb?"var(--warn)":"var(--accent)",fillColor:"var(--panel)",fillOpacity:1,weight:3}).addTo(MAP)
-        .bindTooltip(P.nav.ident,{permanent:true,direction:"right",offset:[6,0],className:"maplbl"})
+        .bindTooltip(P.nav.ident,{permanent:true,direction:side(P),offset:off(side(P)),className:"maplbl"})
         .bindPopup(`<b>${P.nav.ident}</b> ${P.nav.name} ${P.nav.type}<br>${fmtFreq(P.nav)} ${morse(P.nav.ident)}`); } }
   for(const [k,x,c] of [["TOC",sel.climb.d,"var(--good)"],["TOD",total-sel.descent.d,"var(--violet)"]]){
     const p=route.pointAt(x/total);

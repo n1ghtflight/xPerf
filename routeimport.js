@@ -46,12 +46,37 @@ var resolveRoute=function(text,{dep,arr,findApt,findFix,airway}){
     }
     const cands=findFix(t);
     if(cands.length){ push(nearest(cands),null); continue; }
-    if(AWY.test(t)){ skipped.push({id:t,why:"airway"}); continue; }   // not in the data: fly direct to its exit fix
+    if(AWY.test(t)){ skipped.push({id:t,why:"airway",at:points.length}); continue; }   // not in the data: fly direct to its exit fix
     const a=findApt(t);
     if(a){ push({id:a.icao,lat:a.lat,lon:a.lon,kind:"apt",ref:a},null); continue; }
-    skipped.push({id:t,why:PROC.test(t)?"procedure":"unknown"});
+    skipped.push({id:t,why:PROC.test(t)?"procedure":"unknown",at:points.length});   // at: points resolved before it
   }
   return {from,to,points,skipped};
+};
+
+// SIDs / STARs the route names at either end, and whether they add anything to draw. A vector departure (no
+// fixes) or a procedure whose only fix sits on the airport leaves nothing on the map, so the map labels it instead.
+var routeProcedures=function(imp,dep,arr){
+  const PROC=/^[A-Z]{2,6}\d[A-Z]?$/, out=[];
+  const onApt=(p,a)=>!!a&&Math.hypot(p.lat-a.lat,(p.lon-a.lon)*Math.cos(a.lat*Math.PI/180))*60<2;   // within 2 NM
+  if(imp.sb){
+    const t=tokenizeRoute(imp.sb.route).filter(x=>x!==dep?.icao&&x!==arr?.icao);
+    const drawn=name=>imp.sb.points.some(p=>p.via===name&&!onApt(p,dep)&&!onApt(p,arr));
+    if(t.length&&PROC.test(t[0])) out.push({end:"dep",name:t[0],drawn:drawn(t[0])});
+    if(t.length>1&&PROC.test(t[t.length-1])) out.push({end:"arr",name:t[t.length-1],drawn:drawn(t[t.length-1])});
+    return out;
+  }
+  const procs=imp.skipped.filter(s=>s.why==="procedure"), n=imp.points.length;
+  const sid=procs.find(s=>s.at===0), star=procs.slice().reverse().find(s=>s.at===n&&s!==sid);
+  if(sid) out.push({end:"dep",name:sid.id,drawn:false});
+  if(star) out.push({end:"arr",name:star.id,drawn:false});
+  return out;
+};
+// map label for a procedure that isn't drawn: "radar vectors" only when the FAA lists it as conventional with no fixes
+var procedureLabel=function(name,faa){
+  const esc=x=>String(x).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const p=(faa||[]).find(x=>String(x.code||"").split(".")[0].toUpperCase()===String(name).toUpperCase());
+  return `${esc(name)} · ${p&&!p.rnav&&!(p.ends&&p.ends.length)?"radar vectors":"fly from chart"}`;
 };
 
 var parseSimbriefXML=function(xml){
