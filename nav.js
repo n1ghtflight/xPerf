@@ -251,9 +251,22 @@ function drawMap(X){
   for(const [k,x,c] of [["TOC",sel.climb.d,"var(--good)"],["TOD",total-sel.descent.d,"var(--violet)"]]){
     const p=route.pointAt(x/total);
     L.circleMarker([p.lat,p.lon],{radius:5,color:"var(--panel)",fillColor:c,fillOpacity:1,weight:2}).addTo(MAP).bindTooltip(`${k} — ${nm(x).toFixed(1)} NM from ${X.dep.icao}`,{direction:"top",className:"maplbl"}); }
-  const fit=()=>{ MAP.invalidateSize(); MAP.fitBounds(L.latLngBounds(line),{padding:[36,36]}); };
-  fit(); requestAnimationFrame(fit);
+  MAP._routeBounds=L.latLngBounds(line);
+  fitRouteMap(); requestAnimationFrame(fitRouteMap);
 }
+// the map fills the window below it (keeping the legend and the nav-log line in view), then shows the whole route
+function fitRouteMap(){
+  const el=document.getElementById("map"), host=document.getElementById("surface");
+  if(!MAP||!el||!el.offsetParent||!host) return;
+  const below=(el.parentElement.querySelector(".maplegend")?.offsetHeight||0)+(document.querySelector("#detlog summary")?.offsetHeight||0)+44;
+  const top=el.getBoundingClientRect().top-host.getBoundingClientRect().top+host.scrollTop;
+  const min=matchMedia("(max-width:767px)").matches?320:380;
+  el.style.height=Math.round(Math.max(min,host.clientHeight-top-below))+"px";
+  MAP.invalidateSize();
+  if(MAP._routeBounds) MAP.fitBounds(MAP._routeBounds,{padding:[36,36]});
+}
+let fitMapT=0;
+addEventListener("resize",()=>{ clearTimeout(fitMapT); fitMapT=setTimeout(()=>{ if(Shell.current()==="route") fitRouteMap(); },120); });
 
 /* ---------------------------------------------------------------- airport information */
 async function fetchAirportInfo(a){

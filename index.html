@@ -185,7 +185,7 @@
 <script src="shell.js?v=2026.10.18a"></script>
 <script src="data.js?v=2026.10.18a"></script>
 <script src="routeimport.js?v=2026.10.17a"></script>
-<script src="nav.js?v=2026.10.18a"></script>
+<script src="nav.js?v=2026.10.19a"></script>
 <script src="acpicker.js?v=2026.10.17b"></script>
 <script src="charts.js?v=2026.10.17a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
@@ -984,7 +984,7 @@ function currentTab(){ const t=Shell.store.get("xperf.tab"); return Shell.VIEWS.
 function showTab(name){ Shell.showView(name); }
 // Leaflet needs a visible container: draw the map the first time the Route view is shown, then just resize it
 document.addEventListener("xperf:view",e=>{ if(e.detail!=="route"||!window.LAST_X) return;
-  try{ if(!LAST_X._mapDrawn){ drawMap(LAST_X); LAST_X._mapDrawn=true; } else if(MAP){ MAP.invalidateSize(); } }catch(err){ console.warn("map",err); } });
+  try{ if(!LAST_X._mapDrawn){ drawMap(LAST_X); LAST_X._mapDrawn=true; } else fitRouteMap(); }catch(err){ console.warn("map",err); } });
 
 function planWarnings(X){
   const {m,dep,arr,total,sel}=X, c=sel.climb, d=sel.descent, cr=sel.cruise, crzFt=sel.ft, apm=m.kind==="apm";

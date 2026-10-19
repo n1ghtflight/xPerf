@@ -636,6 +636,26 @@ check("about-credits", async () => {
   } finally { await page.close(); }
 });
 
+// the route map fills the window below it (legend and nav-log line still on screen) and keeps the route in view
+check("route-map-fill", async () => {
+  const page = await open("c172", { plan: true, width: 1440, height: 1300 });
+  try {
+    await page.eval(`Shell.showView('route')`); await page.eval(`new Promise(r=>setTimeout(r,600))`);
+    const g = () => page.eval(`(()=>{ const m=document.getElementById('map'), s=document.getElementById('surface'), d=document.querySelector('#detlog summary');
+      const pts=LAST_X.route.points, b=MAP.getBounds();
+      return {h:m.offsetHeight, gap:Math.round(s.getBoundingClientRect().bottom-d.getBoundingClientRect().bottom), inView:pts.every(p=>b.contains([p.lat,p.lon]))}; })()`);
+    let r = await g();
+    expect(r.h > 700, "map did not grow with a tall window: " + r.h + " px");
+    expect(r.gap >= 0 && r.gap < 120, "map does not fill down to the bottom (nav-log line " + r.gap + " px above the edge)");
+    expect(r.inView, "route not fully in view");
+    await page.send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 760, deviceScaleFactor: 1, mobile: false });
+    await page.eval(`window.dispatchEvent(new Event('resize')); new Promise(r=>setTimeout(r,500))`);
+    r = await g();
+    expect(r.h >= 380 && r.h < 600, "map did not shrink back on a short window: " + r.h + " px");
+    expect(r.inView, "route not re-fitted after the resize");
+  } finally { await page.close(); }
+});
+
 /* ---------------- runner ---------------- */
 let failed = 0;
 for (const c of checks) {
