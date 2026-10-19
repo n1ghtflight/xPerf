@@ -663,6 +663,7 @@ function setupCardHtml(X){
       ${box("Heading bug",rwyHdg?rwyHdg+"°":"—",first?`then ${fmtBrg(first.mh)}° on course`:"")}
       ${box("Autopilot ALT",sel.ft>=18000?lvl(sel.ft):fmtK(sel.ft),`VS +${fmtK(climbFpm)} fpm`)}
       ${box("Transponder",xpdr,vfr?"VFR":"IFR")}
+      ${typeof takeoffSetupRow==="function"?takeoffSetupRow(X):""}
     </div>
     <div class="note" style="margin-top:6px">Speeds: ${speeds}. ${tp?`Takeoff distance <span class="${tpCol}">${fmtK(Math.round(tp.fact/FT))} ft</span> of ${fmtK(Math.round(tp.avail/FT))} ft available.`:""} Click any box to copy its value.</div>
 
