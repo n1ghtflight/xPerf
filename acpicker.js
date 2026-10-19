@@ -78,6 +78,7 @@ const AcPicker=(()=>{
     index();
     try{ const last=localStorage.getItem("xperf.ac"); if(last&&[...sel.options].some(o=>o.value===last)) sel.value=last; }catch(_){}
     sync();
+    sel.addEventListener("change",sync);   // whoever changes the aircraft, the search box shows it
     input.addEventListener("focus",()=>{ input.select(); open(); });
     input.addEventListener("click",()=>open());
     input.addEventListener("input",()=>{ if(list.hidden){ list.hidden=false; input.setAttribute("aria-expanded","true"); } active=-1; render(input.value); if(shown.length&&input.value.trim()) move(1); });
@@ -91,5 +92,5 @@ const AcPicker=(()=>{
     list.addEventListener("mousedown",e=>{ const el=e.target.closest(".acopt"); if(el){ e.preventDefault(); choose(+el.dataset.i); } });
     input.addEventListener("blur",()=>setTimeout(()=>{ if(document.activeElement!==input) close(); },120));
   }
-  return {init,sync,index,set};
+  return {init,sync,index,set,open};
 })();

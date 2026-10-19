@@ -326,7 +326,9 @@ body.replanning #results{opacity:.45;pointer-events:none;transition:opacity var(
 .chipmenu.list button:hover{background:var(--hover)}.chipmenu.list button.on{background:var(--selected)}
 .chipmenu.form{display:flex;flex-direction:column;gap:10px;padding:12px;min-width:300px}
 .chipmenu.form label{margin:0;display:flex;flex-direction:column;gap:4px}
-.chipmenu.ac{min-width:min(420px,calc(100vw - 16px))}
+.chipmenu.ac{min-width:min(420px,calc(100vw - 16px));max-height:none;overflow:visible}
+/* in the chip menu the list sits under the search box and scrolls on its own, so the box never scrolls away */
+.chipmenu.ac .aclist{position:static;margin-top:6px;border-color:var(--line);box-shadow:none;max-height:min(560px,calc(100dvh - 190px))}
 .routeedit{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:6px}
 .routeedit button.icon-btn{margin-bottom:6px}
 button.planbtn{display:flex;align-items:center;justify-content:center;gap:6px;margin:0;height:var(--h-control-lg)}

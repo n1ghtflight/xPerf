@@ -99,6 +99,7 @@ const Chips=(()=>{
     const r=btn.getBoundingClientRect(), w=Math.min(m.offsetWidth||260,innerWidth-16);
     m.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left))+"px"; m.style.top=(r.bottom+6)+"px";
     m.querySelector("input")?.focus();
+    if(k==="ac") AcPicker.open();   // search box on top, the full list below it (not left to the focus event)
   }
   function pick(v){
     const k=menuChip, sel=$(k); if(!sel) return;

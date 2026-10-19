@@ -387,6 +387,25 @@ check("first-visit", async () => {
 });
 
 /* ---------- final-review fixes (each written to fail first) ---------- */
+// editing the aircraft of a planned flight: search box on top and focused, a long list below it, no outer scroll
+check("ac-chip-layout", async () => {
+  const page = await open("b789", { plan: true, height: 800 });
+  try {
+    await page.click('[data-chip="ac"]'); await settle(page);
+    const r = await page.eval(`(()=>{ const m=document.getElementById('chipMenu'), i=document.getElementById('acSearch'), l=document.getElementById('acList');
+      const mr=m.getBoundingClientRect(), ir=i.getBoundingClientRect(), lr=l.getBoundingClientRect();
+      return { focused:document.activeElement===i, menuScroll:m.scrollTop, inputIn:ir.top>=mr.top&&ir.bottom<=mr.bottom,
+        listShown:!l.hidden, listH:Math.round(lr.height), listInMenu:lr.bottom<=mr.bottom+1, onScreen:lr.bottom<=innerHeight,
+        cur:(()=>{ const c=l.querySelector('.cur'); if(!c) return false; const cr=c.getBoundingClientRect(); return cr.top>=lr.top&&cr.bottom<=lr.bottom; })() }; })()`);
+    expect(r.focused, "search box not focused");
+    expect(/B789/.test(await page.eval(`document.getElementById('acSearch').value`)), "search box does not show the planned aircraft");
+    expect(r.menuScroll === 0 && r.inputIn, "search box scrolled out of the menu: " + JSON.stringify(r));
+    expect(r.listShown && r.listH >= 300, "aircraft list too short: " + JSON.stringify(r));
+    expect(r.listInMenu && r.onScreen, "aircraft list spills out of the menu or the window: " + JSON.stringify(r));
+    expect(r.cur, "current aircraft not scrolled into view in the list");
+  } finally { await page.close(); }
+});
+
 check("ac-chip", async () => {
   const page = await open("c172", { plan: true });
   try {

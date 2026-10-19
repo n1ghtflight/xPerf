@@ -49,19 +49,20 @@ export async function launch({ width = 1440, height = 900, mobile = false, schem
   const exe = BROWSERS.find(p => existsSync(p));
   if (!exe) throw new Error("no Chromium browser found; set BROWSER");
   // Start the browser and wait for its DevTools endpoint to list a page. Every poll is bounded (a browser can accept
-  // the connection and never answer while starting up, which used to hang a whole run); two attempts.
+  // the connection and never answer while starting up, which used to hang a whole run); three attempts of at most
+  // 20 s each, so a stuck start is retried well inside a check's 180 s budget (Edge normally answers in 1–2 s).
   const killTree = p => { if (process.platform === "win32") spawnSync("taskkill", ["/PID", String(p.pid), "/T", "/F"], { stdio: "ignore" }); else p.kill(); };
   let proc, prof, list, page0;
   const key = ++callSeq;
   inFlight.set(key, { method: "launch", since: Date.now(), what: "waiting for the browser's DevTools endpoint" });
   try {
-    for (let attempt = 1; attempt <= 2 && !page0; attempt++) {
+    for (let attempt = 1; attempt <= 3 && !page0; attempt++) {
       const dbg = 9500 + Math.floor(Math.random() * 400);
       prof = mkdtempSync(join(tmpdir(), "xperf-cdp-"));
       // extensions (some are force-installed by machine policy) inject scripts and requests that are not the app's
       proc = spawn(exe, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--disable-extensions", "--disable-component-extensions-with-background-pages", `--remote-debugging-port=${dbg}`,
         `--user-data-dir=${prof}`, "about:blank"], { stdio: "ignore" });
-      for (let i = 0; i < 80 && !page0; i++) {
+      for (const until = Date.now() + 20000; Date.now() < until && !page0;) {
         try { list = await (await fetch(`http://127.0.0.1:${dbg}/json/list`, { signal: AbortSignal.timeout(2000) })).json(); page0 = list.find(t => t.type === "page"); }
         catch {}
         if (!page0) await sleep(250);
@@ -69,7 +70,7 @@ export async function launch({ width = 1440, height = 900, mobile = false, schem
       if (!page0) { killTree(proc); try { rmSync(prof, { recursive: true, force: true }); } catch {} }
     }
   } finally { inFlight.delete(key); }
-  if (!page0) throw new Error("browser did not expose CDP (2 attempts)");
+  if (!page0) throw new Error("browser did not expose CDP (3 attempts)");
   const ws = new WebSocket(page0.webSocketDebuggerUrl);
   // a stalled browser must fail loudly, naming the call, instead of hanging the run
   await new Promise((ok, no) => { const t = setTimeout(() => no(new Error("CDP connection did not open in 15 s")), 15000);
