@@ -329,3 +329,14 @@ test("landing robust for every type and extreme inputs", () => {
 test("above MLW note", () => {
   assert.ok(land({ lwKg: acOf("a20n").mlw + 3000 }).notes.includes("Landing weight above MLW"));
 });
+
+test("tuned landing matches the charts within 5 %", () => {
+  const tuned = Object.entries(TUNE).filter(([, t]) => t.landing);
+  assert.ok(tuned.length >= 1, "no tuned landing types");
+  for (const [c, t] of tuned) {
+    assert.ok(t.landing.points.length >= 3, `${c}: ${t.landing.points.length} points`);
+    const ac = TOPerf().acFromModel(FIX[c], REF[c], t);
+    for (const r of TOPerf().landingTuningReport(ac, t.landing.points))
+      assert.ok(Math.abs(r.errPct) <= 5, `${c} ${JSON.stringify(r.point)}: model ${Math.round(r.modelFt)} vs chart ${r.chartFt} (${r.errPct.toFixed(1)} %)`);
+  }
+});

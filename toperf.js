@@ -177,11 +177,11 @@ var TOPerf=(()=>{
   /* ---------------------------------------------------------------- landing */
   const LDG={
     vrefFactor:1.23,          // VREF = 1.23 VSR in the landing configuration (CS/FAR 25.125)
-    glideDeg:3,               // standard approach path: 50 ft screen to the touchdown aim point
-    floatS:1.5,               // flare float at touchdown speed
-    tdBleedKt:5,              // speed bled off in the flare: touchdown ≈ threshold speed − 5 kt
-    transS:2,                 // spoilers / brakes coming in after touchdown
-    muBrake:{dry:0.40,wet:0.20},   // max anti-skid braking, wet about half of dry
+    glideDeg:3,               // certified (dispatch) air distance: 50 ft screen down a 3° path, as in flight-test data
+    opAirS:7,                 // operational air distance ≈ 7 s from the threshold (FAA AC 25-32 style: float, flare)
+    tdFactor:0.97,            // touchdown speed ≈ 97 % of the threshold speed (speed bled off in the flare)
+    transS:1,                 // ground spoilers / brakes coming in after touchdown
+    muBrake:{dry:0.45,wet:0.225},  // max anti-skid braking incl. ground-spoiler drag; wet about half of dry
     rev:{max:0.06,idle:0.015,none:0},   // reverse-thrust deceleration credit (g); only helps where braking is the limit
     dispatchDiv:0.6,          // dispatch: actual distance must fit in 60 % of LDA (CS/FAR 121.195(b) style) …
     dispatchWet:1.15,         // … and 115 % of that on a wet runway (121.195(d))
@@ -200,18 +200,20 @@ var TOPerf=(()=>{
     const clLand=2*(ac.malwKg||ac.mlw)*G/(RHO0*ac.S*(ac.vrefMLW*KT/C.vrefFactor)**2);
     const vref=LDG.vrefFactor*Math.sqrt(2*W/(RHO0*ac.S*clLand*flap.frac))/KT;
     const additive=ac.vappRule==="airbus"?Math.max(5,Math.min(15,Math.max(hw,0)/3)):Math.max(5,Math.min(20,0.5*Math.max(hw,0)+gust));
+    // chart tuning applies to the certified (dispatch) distance only — that is what the charts show
     const vapp=vref+additive, tune=ac.tuneLdg?ac.tuneLdg.factor*(1+ac.tuneLdg.altK*paFt/1000):1, M2FT=1/FT;
-    // distance from 50 ft at threshold speed vthKt to a stop; decel = autobrake target (m/s²) or null = max braking
-    const dist=(vthKt,decel,rev,mu)=>{
-      const gs=Math.max(tas((vthKt-LDG.tdBleedKt)*KT)-hwF,1);
-      const air=50*FT/Math.tan(LDG.glideDeg*Math.PI/180)+LDG.floatS*gs, trans=LDG.transS*gs;
+    // distance from 50 ft at threshold speed vthKt to a stop; decel = autobrake target (m/s²) or null = max braking;
+    // cert = certified air distance (dispatch), else the longer operational one
+    const dist=(vthKt,decel,rev,mu,cert)=>{
+      const gs=Math.max(tas(vthKt*LDG.tdFactor*KT)-hwF,1);
+      const air=cert?50*FT/Math.tan(LDG.glideDeg*Math.PI/180):LDG.opAirS*gs, trans=LDG.transS*gs;
       const cap=G*(mu+LDG.rev[rev]+slope/100), a=decel==null?cap:Math.min(decel,cap);
-      return {air, total:a>0?(air+trans+gs*gs/(2*a))*tune:Infinity};
+      return {air, total:a>0?air+trans+gs*gs/(2*a):Infinity};
     };
     const mu=wet?LDG.muBrake.wet:LDG.muBrake.dry, rev=LDG.rev[input.reverse]!=null?input.reverse:"idle";
     const byAutobrake=ac.autobrake.map(b=>{ const d=dist(vapp,b.decel,rev,mu), actualFt=d.total*M2FT, arrivalFt=actualFt*LDG.arrivalFactor;
       return {name:b.name, decel:b.decel, actualFt, arrivalFt, fits:arrivalFt<=ldaFt}; });
-    const dispatchFt=dist(vref,null,"none",LDG.muBrake.dry).total*M2FT/LDG.dispatchDiv*(wet?LDG.dispatchWet:1);
+    const dispatchFt=dist(vref,null,"none",LDG.muBrake.dry,true).total*tune*M2FT/LDG.dispatchDiv*(wet?LDG.dispatchWet:1);
     const sug=byAutobrake.find(b=>b.fits)||null;
     const selected=input.autobrake&&input.autobrake!=="suggested"&&byAutobrake.find(b=>b.name===input.autobrake)||sug||byAutobrake[byAutobrake.length-1];
     const dispatchOK=dispatchFt<=ldaFt, status=!selected.fits?"nofit":!dispatchOK?"tight":"ok";
@@ -220,8 +222,18 @@ var TOPerf=(()=>{
     if(ac.vrefSrc==="est") notes.push("Approach speed estimated — speeds less certain");
     if(mass>ac.mlw) notes.push("Landing weight above MLW");
     return {flap:flap.name, vref, vapp, additive, byAutobrake, suggested:sug?sug.name:null, selected, dispatchFt, dispatchOK, ldaFt,
-      airFt:dist(vapp,null,rev,mu).air*tune*M2FT, status, notes, paFt, tuned:!!ac.tuneLdg};
+      airFt:dist(vapp,null,rev,mu).air*M2FT, status, notes, paFt, tuned:!!ac.tuneLdg};
   }
 
-  return {acFromModel, fieldLength, compute, computeLanding, tuningReport, isaAt, LEVEL, C, LDG};
+  // Dispatch landing distance vs manufacturer landing-field-length charts (ISA + isaDev, calm, level, default flap).
+  // point: {massKg, paFt, isaDev, wet, lengthFt}; the model includes ac.tuneLdg when set.
+  function landingTuningReport(ac,points){
+    return points.map(pt=>{
+      const r=computeLanding(ac,{lwKg:pt.massKg, elevFt:pt.paFt, qnh:1013.25, oat:isaAt(pt.paFt)+(pt.isaDev||0), windKt:0, gustKt:0,
+        slopePct:0, ldaFt:30000, wet:!!pt.wet, reverse:"none", flap:"default", autobrake:"suggested"});
+      return {point:pt, modelFt:r.dispatchFt, chartFt:pt.lengthFt, errPct:(r.dispatchFt/pt.lengthFt-1)*100};
+    });
+  }
+
+  return {acFromModel, fieldLength, compute, computeLanding, tuningReport, landingTuningReport, isaAt, LEVEL, C, LDG};
 })();

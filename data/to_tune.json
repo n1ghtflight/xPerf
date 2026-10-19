@@ -4,7 +4,8 @@
   "conditions": "full thrust, dry, zero wind and slope, air conditioning off, optimum flaps (Boeing states these; the Airbus AC charts don't, assumed the same)",
   "points": "massKg, pressure altitude ft, ISA deviation °C → takeoff runway length ft from the chart",
   "factor": "required field length × factor × (1 + altK × pressure altitude / 1000 ft); fitted by tools/fit_to_tune.mjs",
-  "untuned": "every other type uses factor 1"
+  "untuned": "every other type uses factor 1",
+  "landing": "per type: dispatch landing distance (actual with max manual braking, no reverse ÷ 0.6, wet × 1.15) tuned to the manufacturer's landing-field-length chart: factor × (1 + altK × pressure altitude / 1000 ft). Airbus chart assumed dry, CONF FULL; Boeing flaps 30, dry and wet curves"
  },
  "types": {
   "a20n": {
@@ -132,7 +133,102 @@
      "page": "3-3-2 p5",
      "chart": "3-3-2 Take-Off Weight Limitation – ISA+15 Conditions, PW Engines (FIGURE-3-3-2-991-012-A01)"
     }
-   ]
+   ],
+   "landing": {
+    "factor": 0.9725,
+    "altK": 0,
+    "residualMaxPct": 4.5,
+    "points": [
+     {
+      "massKg": 62000,
+      "paFt": 0,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 4405,
+      "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+      "rev": "Jul 01/26",
+      "page": "3-4-1 p5",
+      "chart": "3-4-1 Landing Field Length – ISA Conditions, PW Engines (FIGURE-3-4-1-991-012-A01)"
+     },
+     {
+      "massKg": 66000,
+      "paFt": 0,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 4651,
+      "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+      "rev": "Jul 01/26",
+      "page": "3-4-1 p5",
+      "chart": "3-4-1 Landing Field Length – ISA Conditions, PW Engines (FIGURE-3-4-1-991-012-A01)"
+     },
+     {
+      "massKg": 58000,
+      "paFt": 4000,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 4518,
+      "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+      "rev": "Jul 01/26",
+      "page": "3-4-1 p5",
+      "chart": "3-4-1 Landing Field Length – ISA Conditions, PW Engines (FIGURE-3-4-1-991-012-A01)"
+     },
+     {
+      "massKg": 62000,
+      "paFt": 4000,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 4790,
+      "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+      "rev": "Jul 01/26",
+      "page": "3-4-1 p5",
+      "chart": "3-4-1 Landing Field Length – ISA Conditions, PW Engines (FIGURE-3-4-1-991-012-A01)"
+     },
+     {
+      "massKg": 66000,
+      "paFt": 4000,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 5125,
+      "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+      "rev": "Jul 01/26",
+      "page": "3-4-1 p5",
+      "chart": "3-4-1 Landing Field Length – ISA Conditions, PW Engines (FIGURE-3-4-1-991-012-A01)"
+     },
+     {
+      "massKg": 58000,
+      "paFt": 8000,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 4935,
+      "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+      "rev": "Jul 01/26",
+      "page": "3-4-1 p5",
+      "chart": "3-4-1 Landing Field Length – ISA Conditions, PW Engines (FIGURE-3-4-1-991-012-A01)"
+     },
+     {
+      "massKg": 62000,
+      "paFt": 8000,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 5268,
+      "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+      "rev": "Jul 01/26",
+      "page": "3-4-1 p5",
+      "chart": "3-4-1 Landing Field Length – ISA Conditions, PW Engines (FIGURE-3-4-1-991-012-A01)"
+     },
+     {
+      "massKg": 66000,
+      "paFt": 8000,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 5717,
+      "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+      "rev": "Jul 01/26",
+      "page": "3-4-1 p5",
+      "chart": "3-4-1 Landing Field Length – ISA Conditions, PW Engines (FIGURE-3-4-1-991-012-A01)"
+     }
+    ]
+   }
   },
   "b738": {
    "factor": 1.0493,
@@ -269,7 +365,157 @@
      "page": "PDF p97",
      "chart": "3.3.30 FAA/EASA Takeoff Runway Length Requirements – Standard Day + 15 °C, Dry Runway, 737-800 (26,000 lb SLST)"
     }
-   ]
+   ],
+   "landing": {
+    "factor": 1.0387,
+    "altK": 0,
+    "residualMaxPct": 4.5,
+    "points": [
+     {
+      "massKg": 54431,
+      "paFt": 0,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 4783,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 61235,
+      "paFt": 0,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 5364,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 65771,
+      "paFt": 0,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 5755,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 54431,
+      "paFt": 2000,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 5003,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 65771,
+      "paFt": 2000,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 6023,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 54431,
+      "paFt": 4000,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 5243,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 61235,
+      "paFt": 4000,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 5915,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 65771,
+      "paFt": 4000,
+      "isaDev": 0,
+      "wet": false,
+      "lengthFt": 6331,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 54431,
+      "paFt": 0,
+      "isaDev": 0,
+      "wet": true,
+      "lengthFt": 5509,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 61235,
+      "paFt": 0,
+      "isaDev": 0,
+      "wet": true,
+      "lengthFt": 6186,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 65771,
+      "paFt": 0,
+      "isaDev": 0,
+      "wet": true,
+      "lengthFt": 6637,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 61235,
+      "paFt": 6000,
+      "isaDev": 0,
+      "wet": true,
+      "lengthFt": 7121,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     },
+     {
+      "massKg": 65771,
+      "paFt": 6000,
+      "isaDev": 0,
+      "wet": true,
+      "lengthFt": 7645,
+      "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+      "rev": "Rev C, Oct 2025",
+      "page": "3-51 (PDF p111)",
+      "chart": "3.4.3 FAA/EASA Landing Runway Length Requirements – Flaps 30, 737-800 (standard day, zero wind, zero gradient, auto spoilers, anti-skid)"
+     }
+    ]
+   }
   }
  }
 }
