@@ -154,5 +154,16 @@ var TOPerf=(()=>{
       notes, paFt, tuned:!!ac.tune};
   }
 
-  return {acFromModel, fieldLength, compute, isaAt, LEVEL, C};
+  // Model vs manufacturer chart points (full thrust, dry, calm, level, packs off, best flap — the charts' conditions).
+  // point: {massKg, paFt, isaDev, lengthFt}; the model includes ac.tune when set.
+  function tuningReport(ac,points){
+    return points.map(pt=>{
+      const r=compute(ac,{towKg:pt.massKg, elevFt:pt.paFt, qnh:1013.25, oat:isaAt(pt.paFt)+pt.isaDev, windKt:0, slopePct:0,
+        lengthFt:30000, intersectionFt:0, lineup:"none", wet:false, packs:false, antiIce:"off", thrust:"full", flap:"optimum"});
+      const modelFt=r.selected.requiredFt;
+      return {point:pt, modelFt, chartFt:pt.lengthFt, errPct:(modelFt/pt.lengthFt-1)*100};
+    });
+  }
+
+  return {acFromModel, fieldLength, compute, tuningReport, isaAt, LEVEL, C};
 })();

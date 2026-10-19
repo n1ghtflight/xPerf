@@ -1,1 +1,275 @@
-{"_schema":{},"types":{}}
+{
+ "_schema": {
+  "about": "Takeoff field-length tuning to manufacturer airport-planning charts (toperf.js). Charts read off digitally from the vector curves (Airbus) or by pixel scan (Boeing) on 2026-10-18; only the numbers below are kept.",
+  "conditions": "full thrust, dry, zero wind and slope, air conditioning off, optimum flaps (Boeing states these; the Airbus AC charts don't, assumed the same)",
+  "points": "massKg, pressure altitude ft, ISA deviation °C → takeoff runway length ft from the chart",
+  "factor": "required field length × factor × (1 + altK × pressure altitude / 1000 ft); fitted by tools/fit_to_tune.mjs",
+  "untuned": "every other type uses factor 1"
+ },
+ "types": {
+  "a20n": {
+   "factor": 0.916,
+   "altK": 0,
+   "residualMaxPct": 3.3,
+   "points": [
+    {
+     "massKg": 78500,
+     "paFt": 0,
+     "isaDev": 0,
+     "lengthFt": 5869,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-1 p5",
+     "chart": "3-3-1 Take-Off Weight Limitation – ISA Conditions, PW Engines (FIGURE-3-3-1-991-013-A01)"
+    },
+    {
+     "massKg": 74000,
+     "paFt": 0,
+     "isaDev": 0,
+     "lengthFt": 5193,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-1 p5",
+     "chart": "3-3-1 Take-Off Weight Limitation – ISA Conditions, PW Engines (FIGURE-3-3-1-991-013-A01)"
+    },
+    {
+     "massKg": 70000,
+     "paFt": 0,
+     "isaDev": 0,
+     "lengthFt": 4627,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-1 p5",
+     "chart": "3-3-1 Take-Off Weight Limitation – ISA Conditions, PW Engines (FIGURE-3-3-1-991-013-A01)"
+    },
+    {
+     "massKg": 78500,
+     "paFt": 4000,
+     "isaDev": 0,
+     "lengthFt": 7004,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-1 p5",
+     "chart": "3-3-1 Take-Off Weight Limitation – ISA Conditions, PW Engines (FIGURE-3-3-1-991-013-A01)"
+    },
+    {
+     "massKg": 74000,
+     "paFt": 4000,
+     "isaDev": 0,
+     "lengthFt": 6190,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-1 p5",
+     "chart": "3-3-1 Take-Off Weight Limitation – ISA Conditions, PW Engines (FIGURE-3-3-1-991-013-A01)"
+    },
+    {
+     "massKg": 70000,
+     "paFt": 4000,
+     "isaDev": 0,
+     "lengthFt": 5494,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-1 p5",
+     "chart": "3-3-1 Take-Off Weight Limitation – ISA Conditions, PW Engines (FIGURE-3-3-1-991-013-A01)"
+    },
+    {
+     "massKg": 74000,
+     "paFt": 8000,
+     "isaDev": 0,
+     "lengthFt": 7733,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-1 p5",
+     "chart": "3-3-1 Take-Off Weight Limitation – ISA Conditions, PW Engines (FIGURE-3-3-1-991-013-A01)"
+    },
+    {
+     "massKg": 70000,
+     "paFt": 8000,
+     "isaDev": 0,
+     "lengthFt": 6809,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-1 p5",
+     "chart": "3-3-1 Take-Off Weight Limitation – ISA Conditions, PW Engines (FIGURE-3-3-1-991-013-A01)"
+    },
+    {
+     "massKg": 78500,
+     "paFt": 0,
+     "isaDev": 15,
+     "lengthFt": 6138,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-2 p5",
+     "chart": "3-3-2 Take-Off Weight Limitation – ISA+15 Conditions, PW Engines (FIGURE-3-3-2-991-012-A01)"
+    },
+    {
+     "massKg": 70000,
+     "paFt": 0,
+     "isaDev": 15,
+     "lengthFt": 4867,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-2 p5",
+     "chart": "3-3-2 Take-Off Weight Limitation – ISA+15 Conditions, PW Engines (FIGURE-3-3-2-991-012-A01)"
+    },
+    {
+     "massKg": 74000,
+     "paFt": 4000,
+     "isaDev": 15,
+     "lengthFt": 6450,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-2 p5",
+     "chart": "3-3-2 Take-Off Weight Limitation – ISA+15 Conditions, PW Engines (FIGURE-3-3-2-991-012-A01)"
+    },
+    {
+     "massKg": 70000,
+     "paFt": 8000,
+     "isaDev": 15,
+     "lengthFt": 7119,
+     "doc": "Airbus A320 Aircraft Characteristics – Airport and Maintenance Planning (AC), Rev 46",
+     "rev": "Jul 01/26",
+     "page": "3-3-2 p5",
+     "chart": "3-3-2 Take-Off Weight Limitation – ISA+15 Conditions, PW Engines (FIGURE-3-3-2-991-012-A01)"
+    }
+   ]
+  },
+  "b738": {
+   "factor": 1.0404,
+   "altK": 0.01274,
+   "residualMaxPct": 3,
+   "points": [
+    {
+     "massKg": 65771,
+     "paFt": 0,
+     "isaDev": 0,
+     "lengthFt": 5226,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "3-32 (PDF p96)",
+     "chart": "3.3.29 FAA/EASA Takeoff Runway Length Requirements – Standard Day, Dry Runway, 737-800 (CFM56-7B24/-7B26/-7B27 at 26,000 lb SLST)"
+    },
+    {
+     "massKg": 70307,
+     "paFt": 0,
+     "isaDev": 0,
+     "lengthFt": 5876,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p96",
+     "chart": "3.3.29 FAA/EASA Takeoff Runway Length Requirements – Standard Day, Dry Runway, 737-800 (CFM56-7B24/-7B26/-7B27 at 26,000 lb SLST)"
+    },
+    {
+     "massKg": 73981,
+     "paFt": 0,
+     "isaDev": 0,
+     "lengthFt": 6441,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p96",
+     "chart": "3.3.29 FAA/EASA Takeoff Runway Length Requirements – Standard Day, Dry Runway, 737-800 (CFM56-7B24/-7B26/-7B27 at 26,000 lb SLST)"
+    },
+    {
+     "massKg": 77111,
+     "paFt": 0,
+     "isaDev": 0,
+     "lengthFt": 7200,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p96",
+     "chart": "3.3.29 FAA/EASA Takeoff Runway Length Requirements – Standard Day, Dry Runway, 737-800 (CFM56-7B24/-7B26/-7B27 at 26,000 lb SLST)"
+    },
+    {
+     "massKg": 70307,
+     "paFt": 2000,
+     "isaDev": 0,
+     "lengthFt": 6491,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p96",
+     "chart": "3.3.29 FAA/EASA Takeoff Runway Length Requirements – Standard Day, Dry Runway, 737-800 (CFM56-7B24/-7B26/-7B27 at 26,000 lb SLST)"
+    },
+    {
+     "massKg": 77111,
+     "paFt": 2000,
+     "isaDev": 0,
+     "lengthFt": 8245,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p96",
+     "chart": "3.3.29 FAA/EASA Takeoff Runway Length Requirements – Standard Day, Dry Runway, 737-800 (CFM56-7B24/-7B26/-7B27 at 26,000 lb SLST)"
+    },
+    {
+     "massKg": 65771,
+     "paFt": 4000,
+     "isaDev": 0,
+     "lengthFt": 6424,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p96",
+     "chart": "3.3.29 FAA/EASA Takeoff Runway Length Requirements – Standard Day, Dry Runway, 737-800 (CFM56-7B24/-7B26/-7B27 at 26,000 lb SLST)"
+    },
+    {
+     "massKg": 73981,
+     "paFt": 4000,
+     "isaDev": 0,
+     "lengthFt": 8599,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p96",
+     "chart": "3.3.29 FAA/EASA Takeoff Runway Length Requirements – Standard Day, Dry Runway, 737-800 (CFM56-7B24/-7B26/-7B27 at 26,000 lb SLST)"
+    },
+    {
+     "massKg": 65771,
+     "paFt": 0,
+     "isaDev": 15,
+     "lengthFt": 5471,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p97",
+     "chart": "3.3.30 FAA/EASA Takeoff Runway Length Requirements – Standard Day + 15 °C, Dry Runway, 737-800 (26,000 lb SLST)"
+    },
+    {
+     "massKg": 73981,
+     "paFt": 0,
+     "isaDev": 15,
+     "lengthFt": 6761,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p97",
+     "chart": "3.3.30 FAA/EASA Takeoff Runway Length Requirements – Standard Day + 15 °C, Dry Runway, 737-800 (26,000 lb SLST)"
+    },
+    {
+     "massKg": 77111,
+     "paFt": 0,
+     "isaDev": 15,
+     "lengthFt": 7714,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p97",
+     "chart": "3.3.30 FAA/EASA Takeoff Runway Length Requirements – Standard Day + 15 °C, Dry Runway, 737-800 (26,000 lb SLST)"
+    },
+    {
+     "massKg": 65771,
+     "paFt": 4000,
+     "isaDev": 15,
+     "lengthFt": 6744,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p97",
+     "chart": "3.3.30 FAA/EASA Takeoff Runway Length Requirements – Standard Day + 15 °C, Dry Runway, 737-800 (26,000 lb SLST)"
+    },
+    {
+     "massKg": 73981,
+     "paFt": 4000,
+     "isaDev": 15,
+     "lengthFt": 9013,
+     "doc": "Boeing D6-58325-7 Next-Generation 737 Airplane Characteristics for Airport Planning",
+     "rev": "Rev C, Oct 2025",
+     "page": "PDF p97",
+     "chart": "3.3.30 FAA/EASA Takeoff Runway Length Requirements – Standard Day + 15 °C, Dry Runway, 737-800 (26,000 lb SLST)"
+    }
+   ]
+  }
+ }
+}

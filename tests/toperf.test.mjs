@@ -157,3 +157,21 @@ test("fast enough", () => {
   for (let i = 0; i < 20; i++) TOPerf().compute(ac, { ...inp0, towKg: 300000, lengthFt: 13000 });
   assert.ok(performance.now() - t0 < 2000, `${Math.round(performance.now() - t0)} ms`);
 });
+
+/* ---------------------------------------------------------------- tuning to airport-planning charts */
+const TUNE = JSON.parse(read("data/to_tune.json")).types;
+
+test("tuned types match the charts within 5 %", () => {
+  assert.ok(Object.keys(TUNE).length >= 1, "no tuned types");
+  for (const [c, t] of Object.entries(TUNE)) {
+    assert.ok(t.points.length >= 3, `${c}: ${t.points.length} points`);
+    const ac = TOPerf().acFromModel(FIX[c], REF[c], t);
+    for (const r of TOPerf().tuningReport(ac, t.points))
+      assert.ok(Math.abs(r.errPct) <= 5, `${c} ${JSON.stringify(r.point)}: model ${Math.round(r.modelFt)} ft vs chart ${r.chartFt} ft (${r.errPct.toFixed(1)} %)`);
+  }
+});
+
+test("untuned types have no factor", () => {
+  const c = AC_CODES.find(x => !TUNE[x]);
+  assert.equal(TOPerf().acFromModel(FIX[c], REF[c], TUNE[c] || null).tune, null);
+});
