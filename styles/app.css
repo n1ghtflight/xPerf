@@ -200,7 +200,7 @@ svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-widt
 .titlebar .chip{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 6px;margin:0;font-size:var(--fs-mini);font-weight:var(--w-medium);color:var(--text-2)}
 button.icon-btn{display:inline-grid;place-items:center;width:var(--h-control);height:var(--h-control);margin:0;padding:0;border:0;border-radius:var(--r-sm);
   background:transparent;color:var(--text-3);cursor:pointer;transition:background var(--dur) var(--ease),color var(--dur) var(--ease)}
-button.icon-btn:hover{background:var(--hover);color:var(--text)}
+button.icon-btn:hover{background-image:linear-gradient(var(--hover),var(--hover));color:var(--text)}
 
 .sidebar{grid-row:2/3;display:flex;flex-direction:column;gap:2px;min-width:0;overflow:auto;padding:0 12px 12px}
 .sb-head{display:flex;align-items:center;height:40px;margin-bottom:6px;padding:0 6px}
@@ -295,7 +295,7 @@ button.icon-btn.swap{margin-bottom:22px;border:var(--hairline) solid var(--line)
 .sbrow input{flex:1 1 auto;min-width:0;height:var(--h-control,28px);padding:0 10px;font-size:var(--fs-small)}
 .sbrow button.sm,.sbrow .filebtn{flex:none;margin:0;height:var(--h-control,28px);padding:0 10px;display:inline-flex;align-items:center;
   background:var(--field);color:var(--text);border:var(--hairline) solid var(--line);border-radius:var(--r);font-size:var(--fs-small);font-weight:var(--w-medium);cursor:pointer}
-.sbrow button.sm:hover,.sbrow .filebtn:hover{background:var(--hover)}
+.sbrow button.sm:hover,.sbrow .filebtn:hover{background-image:linear-gradient(var(--hover),var(--hover))}
 .routeimport[hidden]{display:none}
 
 .chipbar{position:sticky;top:0;z-index:600;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 18px;
@@ -305,11 +305,12 @@ button.pchip{display:inline-flex;align-items:center;gap:4px;height:var(--h-contr
   border:var(--hairline) solid var(--line);border-radius:var(--r-sm);background:var(--field);color:var(--text-2);
   font-size:var(--fs-small);font-weight:var(--w-regular);cursor:pointer;white-space:nowrap}
 button.pchip b{color:var(--text);font-weight:var(--w-semibold)}
-button.pchip:hover{background:var(--hover);color:var(--text)}
-button.pchip[aria-expanded="true"]{background:var(--selected);color:var(--text)}
+/* controls with their own fill: the wash is layered over it (background-image), not swapped for it */
+button.pchip:hover{background-image:linear-gradient(var(--hover),var(--hover));color:var(--text)}
+button.pchip[aria-expanded="true"]{background-image:linear-gradient(var(--selected),var(--selected));color:var(--text)}
 button.pchip .caret{width:12px;height:12px;color:var(--text-3)}
 button.pchip.ghost{background:transparent;border-color:transparent;color:var(--text-3)}
-button.pchip.ghost:hover{color:var(--text);background:var(--hover)}
+button.pchip.ghost:hover{color:var(--text);background-image:linear-gradient(var(--hover),var(--hover))}
 .errslot{padding:0 18px}
 .errslot #err:not(:empty){margin-top:12px;padding:10px 12px;border-radius:var(--r);background:var(--bad-soft);
   border:var(--hairline) solid color-mix(in oklch,var(--bad) 35%,transparent);color:var(--text);font-size:var(--fs-small)}
