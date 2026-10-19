@@ -77,10 +77,11 @@ test("every type computes at MTOW", () => {
   }
 });
 
-test("certified climb: one-engine-out minimum met at MTOW, sea level, ISA, lowest flap", () => {
+test("certified climb: one-engine-out minimum met with margin at MTOW, sea level, ISA, lowest flap, packs on", () => {
+  // certified types are field-limited, not climb-limited, at sea level ISA: keep at least 0.3 points above the minimum
   for (const c of AC_CODES) {
-    const ac = acOf(c), r = fl(ac, { massKg: ac.mtow }, ac.flaps[0].level, 15), min = [0, 0, 0.024, 0.027, 0.030][ac.nEng];
-    assert.ok(r.grad2 >= min, `${c}: ${(r.grad2 * 100).toFixed(1)} % < ${min * 100} %`);
+    const ac = acOf(c), r = fl(ac, { massKg: ac.mtow, bleed: 0.985 }, ac.flaps[0].level, 15), min = [0, 0, 0.024, 0.027, 0.030][ac.nEng] + 0.003;
+    assert.ok(r.grad2 >= min, `${c}: ${(r.grad2 * 100).toFixed(1)} % < ${(min * 100).toFixed(1)} %`);
   }
 });
 
@@ -211,4 +212,39 @@ test("overrides win and are marked", () => {
 test("GA aircraft gets the pointer", () => {
   assert.ok(ctx.takeoffResult, "takeoffResult not defined");
   assert.equal(ctx.takeoffResult({ m: { kind: "apm" } }).ga, true);
+});
+
+/* ---------------------------------------------------------------- review fixes */
+test("no NaN when one engine out cannot accelerate or climb", () => {
+  for (const c of AC_CODES) {
+    const ac = acOf(c);
+    for (const towKg of [ac.mtow, 1.3 * ac.mtow, 3 * ac.mtow]) for (const [elevFt, oat] of [[0, 15], [9000, 30], [13300, 15]]) for (const slopePct of [0, 1]) {
+      const r = TOPerf().compute(ac, { ...inp0, towKg, elevFt, oat, slopePct, lengthFt: 12000 });
+      for (const f of r.byFlap) for (const [k, v] of Object.entries(f)) if (typeof v === "number")
+        assert.ok(!Number.isNaN(v), `${c} ${towKg} kg ${elevFt} ft ${oat} °C ${slopePct} %: ${f.flap}.${k} is NaN`);
+      assert.ok(!Number.isNaN(r.shortfallFt), `${c}: shortfall NaN`);
+      for (const f of r.byFlap) if (!Number.isFinite(f.requiredFt)) assert.equal(f.fits, false);
+      if (!Number.isFinite(r.selected.requiredFt)) assert.equal(r.status, "nofit");
+    }
+  }
+});
+
+test("compute survives nonsense numbers", () => {
+  for (const bad of [{ towKg: 0 }, { towKg: -5 }, { qnh: 0 }, { oat: -300 }])
+    for (const f of run(bad).byFlap) assert.ok(Object.values(f).every(v => typeof v !== "number" || !Number.isNaN(v)), JSON.stringify(bad));
+});
+
+test("out-of-range typed values are ignored", () => {
+  const { input, src } = toInputs(planX(metar), end28R(), { towKg: 0, qnh: 0, oat: -300, slopePct: 50, elevFt: 99999, lengthFt: -10 }, OPTS);
+  assert.equal(input.towKg, 70000); assert.equal(input.qnh, 1016); assert.equal(input.oat, 18);
+  assert.ok(Math.abs(input.slopePct) < 1); assert.equal(input.elevFt, 13); assert.equal(input.lengthFt, 11870);
+  for (const k of ["towKg", "qnh", "oat", "slopePct", "elevFt", "lengthFt"]) assert.notEqual(src[k], "edited", k);
+});
+
+test("runway-specific overrides stay with their runway", () => {
+  const ov = { oat: 25, byRwy: { "28R": { lengthFt: 9000, intersectionFt: 1000, lineup: "90" } } };
+  const on28 = toInputs(planX(metar), end28R(), ov, OPTS).input;
+  assert.equal(on28.lengthFt, 9000); assert.equal(on28.intersectionFt, 1000); assert.equal(on28.lineup, "90"); assert.equal(on28.oat, 25);
+  const e10 = { ...end28R(), e: { id: "10L", elev: 10, hdgT: 104 } }, on10 = toInputs(planX(metar), e10, ov, OPTS).input;
+  assert.equal(on10.lengthFt, 11870); assert.equal(on10.intersectionFt, 0); assert.equal(on10.lineup, "none"); assert.equal(on10.oat, 25);
 });

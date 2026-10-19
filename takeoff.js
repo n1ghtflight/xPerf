@@ -17,9 +17,16 @@ function toOpts(){ let o={}; try{ o=JSON.parse(localStorage.getItem(TO_OPTS_KEY)
   return {...TO_OPT_DEFAULTS,...o}; }
 function setToOpt(k,v){ const o=toOpts(); o[k]=v; try{ localStorage.setItem(TO_OPTS_KEY,JSON.stringify(o)); }catch(_){} }
 
+// typed values outside these ranges are ignored (the plan value stays); keys set per runway live in overrides.byRwy[id]
+const TO_RANGES={towKg:[1,2e6],lengthFt:[1,25000],elevFt:[-1500,15000],slopePct:[-5,5],oat:[-60,60],qnh:[850,1100],windKt:[-60,60],intersectionFt:[0,25000]};
+const TO_RWY_KEYS=new Set(["lengthFt","elevFt","slopePct","windKt","intersectionFt","lineup"]);
+const toValid=(k,v)=>{ const r=TO_RANGES[k]; return !r||(typeof v==="number"&&v>=r[0]&&v<=r[1]); };
+
 // Plan → model input. end = a runway end from airportBrief() ({r,e,o}); overrides = values typed in the view.
 function toInputs(X,end,overrides,opts){
-  const B=X.briefs.dep, met=B.met||null, ov=overrides||{}, src={};
+  const B=X.briefs.dep, met=B.met||null, src={}, o0=overrides||{};
+  const ov={...o0,...(o0.byRwy?.[end.e.id]||{})}; delete ov.byRwy;
+  for(const k of Object.keys(ov)) if(!toValid(k,ov[k])) delete ov[k];
   const elev=end.e.elev??B.a.alt??0, stamp=met?.raw?.match(/\b\d{2}(\d{4})Z\b/)?.[1];
   const metSrc=met?`METAR ${stamp?stamp+"Z":""}`.trim():"assumed — no METAR";
   const hw=met&&!met.vrb&&met.wdir!=null&&met.wspd?met.wspd*Math.cos((met.wdir-(end.e.hdgT??0))*Math.PI/180):0;
@@ -48,9 +55,10 @@ function takeoffResult(X){
 
 /* ---------------------------------------------------------------- rendering */
 const toFt=(ft,cls="")=>`<span class="num ${cls}">${fmtK(ft)} ft</span> <span class="note num">· ${fmtK(ft*0.3048)} m</span>`;
-const toKt=v=>Math.round(v);
+const toKt=v=>Math.round(v), toFtTxt=v=>Number.isFinite(v)?fmtK(v):"—";   // Infinity = cannot accelerate / climb on one engine
 function toTempTxt(T,sel){ return sel.assumedT!=null?`${T.ac.label} ${sel.assumedT}°`:T.ac.family==="airbus"?"TOGA":"Full thrust"; }
 function toStatusHtml(T){ const r=T.result, s=r.selected;
+  if(r.status==="nofit"&&!Number.isFinite(s.requiredFt)) return `<span class="bad">Does not fit — on one engine the aircraft cannot accelerate or climb at this weight</span>`;
   if(r.status==="nofit") return s.requiredFt>s.availableFt?`<span class="bad">Does not fit — short by ${fmtK(r.shortfallFt)} ft</span>`
     :`<span class="bad">Does not fit — one-engine-out climb ${(s.grad2*100).toFixed(1)} % below ${(s.grad2Min*100).toFixed(1)} %</span>`;
   if(r.status==="toga") return `<span class="warn">${T.input.thrust==="full"?"Full thrust selected":"No reduced thrust possible"} — ${T.ac.family==="airbus"?"TOGA":"full rated thrust"}</span>`;
@@ -58,9 +66,10 @@ function toStatusHtml(T){ const r=T.result, s=r.selected;
 
 function toRunwayBar(T){
   const s=T.result.selected, len=T.input.lengthFt, used=Math.max(0,len-s.availableFt);
-  const span=Math.max(len,used+s.goFt,used+s.stopFt,used+s.requiredFt)*1.03, X=ft=>(ft/span*1000).toFixed(1);
+  const fin=[len,used+s.goFt,used+s.stopFt,used+s.requiredFt].filter(Number.isFinite);
+  const span=Math.max(...fin)*1.03, X=ft=>(Math.min(ft,span)/span*1000).toFixed(1);   // an infinite distance runs off the end
   const end=used+s.requiredFt, over=s.requiredFt>s.availableFt;
-  return `<svg class="to-rwy" viewBox="0 0 1000 78" preserveAspectRatio="none" role="img" aria-label="Runway ${T.end.e.id}: ${fmtK(s.requiredFt)} ft required of ${fmtK(s.availableFt)} ft available">
+  return `<svg class="to-rwy" viewBox="0 0 1000 78" preserveAspectRatio="none" role="img" aria-label="Runway ${svgEsc(T.end.e.id)}: ${toFtTxt(s.requiredFt)} ft required of ${fmtK(s.availableFt)} ft available">
     <defs><pattern id="toHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="6" fill="var(--line-strong)"/></pattern></defs>
     <rect x="0" y="24" width="${X(len)}" height="18" rx="3" fill="var(--active)"/>
     ${used?`<rect x="0" y="24" width="${X(used)}" height="18" fill="url(#toHatch)"/>`:""}
@@ -69,7 +78,7 @@ function toRunwayBar(T){
     <line x1="${X(used+s.v1Ft)}" x2="${X(used+s.v1Ft)}" y1="20" y2="46" stroke="var(--text-2)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
     <line x1="${X(end)}" x2="${X(end)}" y1="14" y2="66" stroke="${over?"var(--bad)":"var(--text)"}" stroke-width="2" vector-effect="non-scaling-stroke"/>
   </svg>
-  <div class="to-rwy-labels num"><span style="left:${X(used+s.v1Ft)/10}%">V1</span><span style="left:${Math.min(X(end)/10,88)}%">${fmtK(s.requiredFt)} ft required</span></div>`;
+  <div class="to-rwy-labels num"><span style="left:${X(used+s.v1Ft)/10}%">V1</span><span style="left:${Math.min(X(end)/10,88)}%">${toFtTxt(s.requiredFt)} ft required</span></div>`;
 }
 
 function takeoffView(X){
@@ -104,7 +113,7 @@ function takeoffView(X){
       ${seg("antiIce","Anti-ice",[["off","Off"],["eng","Engine"],["wing","Engine + wing"]],T.opts.antiIce)}
       ${seg("wet","Runway",[["false","Dry"],["true","Wet"]],String(!!wetCur))}
       <div class="to-two">
-        <label class="to-field"><span class="k">Intersection — runway behind you</span><span class="to-inrow"><input class="num" data-to="intersectionFt" inputmode="decimal" value="${ov.intersectionFt||0}" aria-label="Runway behind you at the intersection"><span class="u">ft</span></span></label>
+        <label class="to-field"><span class="k">Intersection — runway behind you</span><span class="to-inrow"><input class="num" data-to="intersectionFt" inputmode="decimal" value="${input.intersectionFt||0}" aria-label="Runway behind you at the intersection"><span class="u">ft</span></span></label>
         <label class="to-field"><span class="k">Line-up</span><select data-to="lineup" aria-label="Line-up allowance">${[["none","None"],["90","90° turn"],["180","180° turn"]].map(([v,t])=>`<option value="${v}" ${input.lineup===v?"selected":""}>${t}</option>`).join("")}</select></label>
       </div>
     </div>`;
@@ -121,17 +130,17 @@ function takeoffView(X){
     </div>
     <div class="to-box"><h3>Runway ${svgEsc(end.e.id)} <span class="note">${toFt(s.availableFt)} available</span></h3>
       ${toRunwayBar(T)}
-      <div class="to-legend"><span><i style="background:var(--accent)"></i>Accelerate-go, one engine out, to ${input.wet?"15":"35"} ft · ${fmtK(s.goFt)} ft</span>
-        <span><i style="background:var(--text-3)"></i>Accelerate-stop · ${fmtK(s.stopFt)} ft</span>
+      <div class="to-legend"><span><i style="background:var(--accent)"></i>Accelerate-go, one engine out, to ${input.wet?"15":"35"} ft · ${toFtTxt(s.goFt)} ft</span>
+        <span><i style="background:var(--text-3)"></i>Accelerate-stop · ${toFtTxt(s.stopFt)} ft</span>
         ${s.availableFt<input.lengthFt?`<span><i class="hatch"></i>Behind you · ${fmtK(input.lengthFt-s.availableFt)} ft</span>`:""}
-        <span>Margin <b class="num ${s.availableFt-s.requiredFt<0?"bad":""}">${fmtK(s.availableFt-s.requiredFt)} ft</b></span></div>
+        <span>Margin <b class="num ${s.availableFt-s.requiredFt<0?"bad":""}">${toFtTxt(s.availableFt-s.requiredFt)} ft</b></span></div>
     </div>
     <div class="to-box"><h3>Limits checked</h3><div class="to-limits">
       ${s.limits.map(l=>`<span class="${l.ok?"good":"bad"}">●</span><span>${{field:"Field length (balanced V1)",grad2:"One-engine-out climb, 2nd segment",thrust:"Thrust reduction at most 25 %"}[l.id]}</span><span class="note num">${l.text}</span>`).join("")}
       <span class="warn">●</span><span>Obstacles, VMCG / VMBE / tyre speed</span><span class="note">not modelled</span></div></div>
     <div class="to-box"><h3>Every flap setting</h3><div class="tblwrap"><table><tr><th>Flaps</th><th>${svgEsc(ac.label)}</th><th>V1</th><th>VR</th><th>V2</th><th>Required ft</th><th>2nd seg</th></tr>
       ${r.byFlap.map(f=>`<tr class="${f===s?"pick":""}"><td>${svgEsc(f.flap)}${f.flap===r.optimum?" ★":""}</td><td>${f.assumedT!=null?f.assumedT+" °C":f.status==="nofit"?"—":"TOGA"}</td>
-        <td>${toKt(f.v1)}</td><td>${toKt(f.vr)}</td><td>${toKt(f.v2)}</td><td class="${f.requiredFt>f.availableFt?"bad":""}">${fmtK(f.requiredFt)}</td><td>${(f.grad2*100).toFixed(1)} %</td></tr>`).join("")}</table></div></div>
+        <td>${toKt(f.v1)}</td><td>${toKt(f.vr)}</td><td>${toKt(f.v2)}</td><td class="${f.requiredFt>f.availableFt?"bad":""}">${toFtTxt(f.requiredFt)}</td><td>${(f.grad2*100).toFixed(1)} %</td></tr>`).join("")}</table></div></div>
     <div class="callout warn"><svg class="i"><use href="#i-alert"/></svg><div><b>Estimated with a generic jet model from OpenAP data${r.tuned?", field length tuned to the manufacturer's airport-planning charts":""}.</b>
       Speeds typically within ±5–8 kt and distances ±10–15 %${r.tuned?" (±5 % against the charts)":""}; not the manufacturer's takeoff tables. Trim is not computed. If your aircraft's EFB calculates takeoff data, use that.
       The runway check in Airports &amp; weather uses a simpler method, so its distances differ.</div></div>`;
@@ -158,7 +167,10 @@ function takeoffSetupRow(X){
 function refreshTakeoff(X){
   X.takeoff=takeoffResult(X);
   if(typeof document==="undefined") return;
+  // re-rendering replaces the controls: put focus back on the same control (typing Tab moves on as expected)
+  const a=document.activeElement, key=a?.dataset?.to?`[data-to="${a.dataset.to}"]`:a?.dataset?.toOpt?`[data-to-opt="${a.dataset.toOpt}"][data-v="${a.dataset.v}"]`:null;
   const panel=document.querySelector('.tabpanel[data-tab="takeoff"]'); if(panel) panel.innerHTML=takeoffView(X);
+  if(key&&panel) panel.querySelector(key)?.focus({preventScroll:true});
   const tile=document.querySelector('[data-tile="takeoff"]'); if(tile) tile.outerHTML=takeoffTile(X)||"<span data-tile=\"takeoff\" hidden></span>";
   const row=document.querySelector("[data-to-setup]"); if(row) row.outerHTML=takeoffSetupRow(X)||"<span data-to-setup hidden></span>";
 }
@@ -167,16 +179,17 @@ if(typeof document!=="undefined"){
   document.addEventListener("click",e=>{
     const b=e.target.closest?.("[data-to-opt]"), r=e.target.closest?.("[data-to-reset]"); if(!X()||!(b||r)) return;
     e.preventDefault();
-    if(r){ delete X().toState.overrides[r.dataset.toReset]; }
+    if(r){ const k=r.dataset.toReset, ov=X().toState.overrides; delete ov[k]; if(ov.byRwy) for(const id in ov.byRwy) delete ov.byRwy[id][k]; }
     else if(b.dataset.toOpt==="wet") X().toState.overrides.wet=b.dataset.v==="true";
     else setToOpt(b.dataset.toOpt, b.dataset.toOpt==="packs"?b.dataset.v==="true":b.dataset.v);
     refreshTakeoff(X());
   });
   document.addEventListener("change",e=>{
     const t=e.target; if(!t?.dataset?.to||!X()) return;
-    const ov=X().toState.overrides, k=t.dataset.to;
+    const all=X().toState.overrides, k=t.dataset.to, id=X().takeoff?.end?.e?.id;
+    const ov=TO_RWY_KEYS.has(k)&&id?((all.byRwy||(all.byRwy={}))[id]||(all.byRwy[id]={})):all;
     if(k==="lineup") ov.lineup=t.value;
-    else { const v=parseFloat(String(t.value).replace(",",".")); if(t.value.trim()===""||!Number.isFinite(v)) delete ov[k]; else ov[k]=v; }
+    else { const v=parseFloat(String(t.value).replace(",",".")); if(t.value.trim()===""||!toValid(k,v)) delete ov[k]; else ov[k]=v; }
     refreshTakeoff(X());
   });
 }

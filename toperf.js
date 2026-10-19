@@ -30,9 +30,10 @@ var TOPerf=(()=>{
     flatRateIsa:15,      // engines flat-rated to ISA+15 at the field
     lapsePerC:0.008,     // full thrust falls ~0.8 %/°C above the flat-rating temperature
     gearCd0:0.017,       // landing-gear drag when OpenAP has none
-    kTO:0.85,            // induced drag with takeoff flaps/slats: higher span efficiency than OpenAP's clean polar (as in
-                         // OpenAP's non-clean drag model); with it every type meets its certified one-engine-out gradient
-                         // at MTOW, sea level, ISA (tests/toperf.test.mjs)
+    kTO:0.78,            // induced drag with takeoff flaps/slats, relative to OpenAP's clean polar: flaps raise span efficiency
+                         // (as in OpenAP's non-clean drag model). Calibrated so every type keeps ≥ 0.3 points above its
+                         // certified one-engine-out gradient at MTOW, sea level, ISA, packs on (tests/toperf.test.mjs) —
+                         // certified airliners are field-limited there, not climb-limited
     steps:200};          // integration steps per ground-run segment
 
   const isaAt=paFt=>15-1.98*paFt/1000;
@@ -81,13 +82,17 @@ var TOPerf=(()=>{
       for(let i=0;i<C.steps;i++){ const v=v0+(i+0.5)*dv, A=acc(v,n); d[i+1]=A>0&&d[i]<Infinity?d[i]+(v-hw)*dv/A:Infinity; }
       return d; };
     const tabAEO=table(ac.nEng), tabOEI=table(ac.nEng-1);
+    // Infinity in a table = cannot accelerate past that speed; never let Infinity−Infinity or Infinity×0 make NaN
     const at_=(tab,v)=>{ const x=Math.min(Math.max((v-v0)/dv,0),C.steps), i=Math.min(Math.floor(x),C.steps-1);
+      if(!Number.isFinite(tab[i])||(x>i&&!Number.isFinite(tab[i+1]))) return Infinity;
       return tab[i]+(tab[i+1]-tab[i])*(x-i); };
-    const roll=(va,vb,n)=>{ const tab=n===ac.nEng?tabAEO:tabOEI; return vb<=va?0:at_(tab,vb)-at_(tab,va); };
+    const roll=(va,vb,n)=>{ if(vb<=va) return 0; const tab=n===ac.nEng?tabAEO:tabOEI, b=at_(tab,vb);
+      return Number.isFinite(b)?b-at_(tab,va):Infinity; };
     // climb gradient at V2, gear up, takeoff flaps
     const grad=n=>{ const v=tas(v2), q=0.5*at.rho*v*v, cl=W/(q*S);
       return (T(v,n)-q*S*(ac.cd0+L.dcd0+ac.k*C.kTO*cl*cl))/W; };
-    const air=(n,screenFt)=>C.rotateS*(tas(vlof)-hw)+screenFt*FT/Math.max(grad(n),0.005);
+    // no climb gradient → the screen height is never reached
+    const air=(n,screenFt)=>{ const g=grad(n); return g>0?C.rotateS*(tas(vlof)-hw)+screenFt*FT/g:Infinity; };
     const n=ac.nEng, airOEI=air(n-1,wet?C.screenFt.wetOEI:C.screenFt.dry);
     const brake=G*((wet?C.muBrake.wet+C.revCreditWet:C.muBrake.dry)+env.slopePct/100);
     const go=v1=>roll(v0,tas(v1),n)+roll(tas(v1),tas(vlof),n-1)+airOEI;
@@ -110,8 +115,10 @@ var TOPerf=(()=>{
   //         wet, packs, antiIce "off"|"eng"|"wing", thrust "reduced"|"full", flap "optimum"|name}
   function compute(ac,input){
     const num=(v,d=0)=>Number.isFinite(+v)&&v!==""&&v!=null?+v:d;
-    const paFt=num(input.elevFt)+(1013.25-num(input.qnh,1013.25))*27, oat=num(input.oat,isaAt(paFt)), wind=num(input.windKt);
-    const env={massKg:num(input.towKg), paFt, oat, hwKt:wind>=0?0.5*wind:1.5*wind, slopePct:num(input.slopePct), wet:!!input.wet,
+    // out-of-range numbers fall back to standard values (the view also refuses them), so nothing turns NaN
+    const rng=(v,lo,hi,d)=>{ const x=num(v,d); return x>=lo&&x<=hi?x:d; };
+    const paFt=rng(input.elevFt,-1500,15000,0)+(1013.25-rng(input.qnh,850,1100,1013.25))*27, oat=rng(input.oat,-60,60,isaAt(paFt)), wind=rng(input.windKt,-60,60,0);
+    const env={massKg:Math.min(rng(input.towKg,0.2*ac.mtow,Infinity,ac.mtow),2*ac.mtow), paFt, oat, hwKt:wind>=0?0.5*wind:1.5*wind, slopePct:rng(input.slopePct,-5,5,0), wet:!!input.wet,
       bleed:(input.packs===false?1:BLEED.packs)*(BLEED.antiIce[input.antiIce]||1)};
     const lineupFt=({"90":ac.length,"180":ac.span}[input.lineup]||0)*M2FT;
     const availableFt=Math.max(0,num(input.lengthFt)-Math.max(0,num(input.intersectionFt))-lineupFt);
@@ -135,7 +142,7 @@ var TOPerf=(()=>{
         requiredFt:e.req, availableFt, goFt:r.goM*tune*M2FT, stopFt:r.stopM*tune*M2FT, v1Ft:r.v1DistM*tune*M2FT,
         grad2:r.grad2, grad2Min:gMin, fits:e.fieldOK&&e.climbOK,
         status:assumedT!=null?"reduced":e.fieldOK&&e.climbOK?"toga":"nofit",
-        limits:[{id:"field", ok:e.fieldOK, text:`${Math.round(e.req)} of ${Math.round(availableFt)} ft`},
+        limits:[{id:"field", ok:e.fieldOK, text:Number.isFinite(e.req)?`${Math.round(e.req)} of ${Math.round(availableFt)} ft`:"cannot accelerate / climb on one engine"},
                 {id:"grad2", ok:e.climbOK, text:`${(r.grad2*100).toFixed(1)} % (min ${(gMin*100).toFixed(1)} %)`},
                 {id:"thrust", ok:e.thrustOK, text:`−${Math.round((assumedT==null?0:e.red)*100)} % (max 25 %)`}]};
     });

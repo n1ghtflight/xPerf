@@ -8,9 +8,9 @@
  },
  "types": {
   "a20n": {
-   "factor": 0.916,
+   "factor": 0.9287,
    "altK": 0,
-   "residualMaxPct": 3.3,
+   "residualMaxPct": 1.6,
    "points": [
     {
      "massKg": 78500,
@@ -135,9 +135,9 @@
    ]
   },
   "b738": {
-   "factor": 1.0404,
-   "altK": 0.01274,
-   "residualMaxPct": 3,
+   "factor": 1.0493,
+   "altK": 0.01305,
+   "residualMaxPct": 3.2,
    "points": [
     {
      "massKg": 65771,
