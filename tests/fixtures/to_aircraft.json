@@ -1,0 +1,1075 @@
+{
+ "a19n": {
+  "code": "a19n",
+  "nEng": 2,
+  "eng": {
+   "name": "PW1124G1-JM",
+   "max_thrust": 107820,
+   "bpr": 12.72
+  },
+  "ac": {
+   "mtow": 75500,
+   "mlw": 62500,
+   "wing": {
+    "area": 124,
+    "span": 35.8
+   },
+   "fuselage": {
+    "length": 33.84
+   },
+   "drag": {
+    "cd0": 0.017,
+    "k": 0.038,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.017,
+   "k": 0.038
+  }
+ },
+ "a20n": {
+  "code": "a20n",
+  "nEng": 2,
+  "eng": {
+   "name": "PW1127G-JM",
+   "max_thrust": 120430,
+   "bpr": 12.28
+  },
+  "ac": {
+   "mtow": 79000,
+   "mlw": 66000,
+   "wing": {
+    "area": 124,
+    "span": 35.8
+   },
+   "fuselage": {
+    "length": 37.57
+   },
+   "drag": {
+    "cd0": 0.017,
+    "k": 0.038,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.017,
+   "k": 0.038
+  }
+ },
+ "a21n": {
+  "code": "a21n",
+  "nEng": 2,
+  "eng": {
+   "name": "PW1133G-JM",
+   "max_thrust": 147280,
+   "bpr": 11.58
+  },
+  "ac": {
+   "mtow": 97000,
+   "mlw": 77800,
+   "wing": {
+    "area": 128,
+    "span": 35.8
+   },
+   "fuselage": {
+    "length": 44.51
+   },
+   "drag": {
+    "cd0": 0.017,
+    "k": 0.038,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.017,
+   "k": 0.038
+  }
+ },
+ "a318": {
+  "code": "a318",
+  "nEng": 2,
+  "eng": {
+   "name": "CFM56-5B9/2P",
+   "max_thrust": 102200,
+   "bpr": 5.9
+  },
+  "ac": {
+   "mtow": 68000,
+   "mlw": 57500,
+   "wing": {
+    "area": 122.4,
+    "span": 34.1
+   },
+   "fuselage": {
+    "length": 31.44
+   },
+   "drag": {
+    "cd0": 0.02,
+    "k": 0.039,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.02,
+   "k": 0.039
+  }
+ },
+ "a319": {
+  "code": "a319",
+  "nEng": 2,
+  "eng": {
+   "name": "V2524-A5",
+   "max_thrust": 108900,
+   "bpr": 4.8
+  },
+  "ac": {
+   "mtow": 75500,
+   "mlw": 62500,
+   "wing": {
+    "area": 124,
+    "span": 35.8
+   },
+   "fuselage": {
+    "length": 33.84
+   },
+   "drag": {
+    "cd0": 0.02,
+    "k": 0.039,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.02,
+   "k": 0.039
+  }
+ },
+ "a320": {
+  "code": "a320",
+  "nEng": 2,
+  "eng": {
+   "name": "CFM56-5B4",
+   "max_thrust": 117900,
+   "bpr": 5.9
+  },
+  "ac": {
+   "mtow": 78000,
+   "mlw": 66000,
+   "wing": {
+    "area": 124,
+    "span": 35.8
+   },
+   "fuselage": {
+    "length": 37.57
+   },
+   "drag": {
+    "cd0": 0.018,
+    "k": 0.039,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.018,
+   "k": 0.039
+  }
+ },
+ "a321": {
+  "code": "a321",
+  "nEng": 2,
+  "eng": {
+   "name": "CFM56-5B1",
+   "max_thrust": 133450,
+   "bpr": 5.7
+  },
+  "ac": {
+   "mtow": 93500,
+   "mlw": 77800,
+   "wing": {
+    "area": 128,
+    "span": 35.8
+   },
+   "fuselage": {
+    "length": 44.51
+   },
+   "drag": {
+    "cd0": 0.02,
+    "k": 0.041,
+    "gears": 0.019
+   }
+  },
+  "polar": {
+   "cd0": 0.02,
+   "k": 0.041
+  }
+ },
+ "a332": {
+  "code": "a332",
+  "nEng": 2,
+  "eng": {
+   "name": "Trent 772",
+   "max_thrust": 320300,
+   "bpr": 5.03
+  },
+  "ac": {
+   "mtow": 230000,
+   "mlw": 182000,
+   "wing": {
+    "area": 361.6,
+    "span": 60.3
+   },
+   "fuselage": {
+    "length": 58.82
+   },
+   "drag": {
+    "cd0": 0.022,
+    "k": 0.041,
+    "gears": 0.014
+   }
+  },
+  "polar": {
+   "cd0": 0.022,
+   "k": 0.041
+  }
+ },
+ "a333": {
+  "code": "a333",
+  "nEng": 2,
+  "eng": {
+   "name": "Trent 772",
+   "max_thrust": 320300,
+   "bpr": 5.03
+  },
+  "ac": {
+   "mtow": 242000,
+   "mlw": 188000,
+   "wing": {
+    "area": 361.6,
+    "span": 60.3
+   },
+   "fuselage": {
+    "length": 63.67
+   },
+   "drag": {
+    "cd0": 0.022,
+    "k": 0.041,
+    "gears": 0.014
+   }
+  },
+  "polar": {
+   "cd0": 0.022,
+   "k": 0.041
+  }
+ },
+ "a343": {
+  "code": "a343",
+  "nEng": 4,
+  "eng": {
+   "name": "CFM56-5C3",
+   "max_thrust": 144570,
+   "bpr": 6.7
+  },
+  "ac": {
+   "mtow": 276000,
+   "mlw": 190000,
+   "wing": {
+    "area": 363.1,
+    "span": 60.3
+   },
+   "fuselage": {
+    "length": 63.69
+   },
+   "drag": {
+    "cd0": 0.019,
+    "k": 0.04,
+    "gears": 0.016
+   }
+  },
+  "polar": {
+   "cd0": 0.019,
+   "k": 0.04
+  }
+ },
+ "a359": {
+  "code": "a359",
+  "nEng": 2,
+  "eng": {
+   "name": "Trent XWB-84",
+   "max_thrust": 379000,
+   "bpr": 9.01
+  },
+  "ac": {
+   "mtow": 280000,
+   "mlw": 205000,
+   "wing": {
+    "area": 442,
+    "span": 64.75
+   },
+   "fuselage": {
+    "length": 66.8
+   },
+   "drag": {
+    "cd0": 0.022,
+    "k": 0.043,
+    "gears": 0.013
+   }
+  },
+  "polar": {
+   "cd0": 0.022,
+   "k": 0.043
+  }
+ },
+ "a388": {
+  "code": "a388",
+  "nEng": 4,
+  "eng": {
+   "name": "GP7270",
+   "max_thrust": 332390,
+   "bpr": 8.71
+  },
+  "ac": {
+   "mtow": 560000,
+   "mlw": 386000,
+   "wing": {
+    "area": 845,
+    "span": 79.75
+   },
+   "fuselage": {
+    "length": 72.72
+   },
+   "drag": {
+    "cd0": 0.016,
+    "k": 0.05,
+    "gears": 0.012
+   }
+  },
+  "polar": {
+   "cd0": 0.016,
+   "k": 0.05
+  }
+ },
+ "b37m": {
+  "code": "b37m",
+  "nEng": 2,
+  "eng": {
+   "name": "LEAP-1B21",
+   "max_thrust": 111300,
+   "bpr": 8.5
+  },
+  "ac": {
+   "mtow": 80000,
+   "mlw": 60000,
+   "wing": {
+    "area": 124.6,
+    "span": 34.32
+   },
+   "fuselage": {
+    "length": 33.6
+   },
+   "drag": {
+    "cd0": 0.02,
+    "k": 0.042,
+    "gears": 0.018
+   }
+  },
+  "polar": {
+   "cd0": 0.02,
+   "k": 0.042
+  }
+ },
+ "b38m": {
+  "code": "b38m",
+  "nEng": 2,
+  "eng": {
+   "name": "LEAP-1B21",
+   "max_thrust": 111300,
+   "bpr": 8.5
+  },
+  "ac": {
+   "mtow": 82000,
+   "mlw": 66300,
+   "wing": {
+    "area": 124.6,
+    "span": 34.32
+   },
+   "fuselage": {
+    "length": 39.47
+   },
+   "drag": {
+    "cd0": 0.02,
+    "k": 0.042,
+    "gears": 0.018
+   }
+  },
+  "polar": {
+   "cd0": 0.02,
+   "k": 0.042
+  }
+ },
+ "b39m": {
+  "code": "b39m",
+  "nEng": 2,
+  "eng": {
+   "name": "LEAP-1B21",
+   "max_thrust": 111300,
+   "bpr": 8.5
+  },
+  "ac": {
+   "mtow": 88000,
+   "mlw": 71000,
+   "wing": {
+    "area": 124.6,
+    "span": 34.32
+   },
+   "fuselage": {
+    "length": 42.11
+   },
+   "drag": {
+    "cd0": 0.02,
+    "k": 0.042,
+    "gears": 0.018
+   }
+  },
+  "polar": {
+   "cd0": 0.02,
+   "k": 0.042
+  }
+ },
+ "b3xm": {
+  "code": "b3xm",
+  "nEng": 2,
+  "eng": {
+   "name": "LEAP-1B21",
+   "max_thrust": 111300,
+   "bpr": 8.5
+  },
+  "ac": {
+   "mtow": 90000,
+   "mlw": 70000,
+   "wing": {
+    "area": 124.6,
+    "span": 34.32
+   },
+   "fuselage": {
+    "length": 43.8
+   },
+   "drag": {
+    "cd0": 0.02,
+    "k": 0.042,
+    "gears": 0.018
+   }
+  },
+  "polar": {
+   "cd0": 0.02,
+   "k": 0.042
+  }
+ },
+ "b734": {
+  "code": "b734",
+  "nEng": 2,
+  "eng": {
+   "name": "CFM56-3B-2",
+   "max_thrust": 98300,
+   "bpr": 5.1
+  },
+  "ac": {
+   "mtow": 68000,
+   "mlw": 56200,
+   "wing": {
+    "area": 91.04,
+    "span": 28.88
+   },
+   "fuselage": {
+    "length": 33.4
+   },
+   "drag": {
+    "cd0": 0.02,
+    "k": 0.044,
+    "gears": 0.021
+   }
+  },
+  "polar": {
+   "cd0": 0.02,
+   "k": 0.044
+  }
+ },
+ "b737": {
+  "code": "b737",
+  "nEng": 2,
+  "eng": {
+   "name": "CFM56-7B26",
+   "max_thrust": 116990,
+   "bpr": 5.1
+  },
+  "ac": {
+   "mtow": 70000,
+   "mlw": 58600,
+   "wing": {
+    "area": 124.6,
+    "span": 34.32
+   },
+   "fuselage": {
+    "length": 33.6
+   },
+   "drag": {
+    "cd0": 0.022,
+    "k": 0.043,
+    "gears": 0.016
+   }
+  },
+  "polar": {
+   "cd0": 0.022,
+   "k": 0.043
+  }
+ },
+ "b738": {
+  "code": "b738",
+  "nEng": 2,
+  "eng": {
+   "name": "CFM56-7B26",
+   "max_thrust": 116990,
+   "bpr": 5.1
+  },
+  "ac": {
+   "mtow": 79000,
+   "mlw": 66300,
+   "wing": {
+    "area": 124.6,
+    "span": 34.32
+   },
+   "fuselage": {
+    "length": 39.47
+   },
+   "drag": {
+    "cd0": 0.019,
+    "k": 0.042,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.019,
+   "k": 0.042
+  }
+ },
+ "b739": {
+  "code": "b739",
+  "nEng": 2,
+  "eng": {
+   "name": "CFM56-7B27E",
+   "max_thrust": 121400,
+   "bpr": 5.1
+  },
+  "ac": {
+   "mtow": 85100,
+   "mlw": 71300,
+   "wing": {
+    "area": 124.6,
+    "span": 34.32
+   },
+   "fuselage": {
+    "length": 42.11
+   },
+   "drag": {
+    "cd0": null,
+    "k": null,
+    "gears": null
+   }
+  },
+  "polar": {
+   "cd0": 0.02,
+   "k": 0.045
+  }
+ },
+ "b744": {
+  "code": "b744",
+  "nEng": 4,
+  "eng": {
+   "name": "CF6-80C2B1F",
+   "max_thrust": 254260,
+   "bpr": 5.1
+  },
+  "ac": {
+   "mtow": 396800,
+   "mlw": 260300,
+   "wing": {
+    "area": 525.6,
+    "span": 64.4
+   },
+   "fuselage": {
+    "length": 70.66
+   },
+   "drag": {
+    "cd0": 0.021,
+    "k": 0.049,
+    "gears": 0.015
+   }
+  },
+  "polar": {
+   "cd0": 0.021,
+   "k": 0.049
+  }
+ },
+ "b748": {
+  "code": "b748",
+  "nEng": 4,
+  "eng": {
+   "name": "GEnx-2B67",
+   "max_thrust": 299800,
+   "bpr": 8
+  },
+  "ac": {
+   "mtow": 447700,
+   "mlw": 312100,
+   "wing": {
+    "area": 554,
+    "span": 68.4
+   },
+   "fuselage": {
+    "length": 76.3
+   },
+   "drag": {
+    "cd0": 0.021,
+    "k": 0.047,
+    "gears": 0.015
+   }
+  },
+  "polar": {
+   "cd0": 0.021,
+   "k": 0.047
+  }
+ },
+ "b752": {
+  "code": "b752",
+  "nEng": 2,
+  "eng": {
+   "name": "RB211-535E4",
+   "max_thrust": 178400,
+   "bpr": 4.1
+  },
+  "ac": {
+   "mtow": 115600,
+   "mlw": 92200,
+   "wing": {
+    "area": 182.3,
+    "span": 38
+   },
+   "fuselage": {
+    "length": 47.3
+   },
+   "drag": {
+    "cd0": 0.021,
+    "k": 0.049,
+    "gears": 0.016
+   }
+  },
+  "polar": {
+   "cd0": 0.021,
+   "k": 0.049
+  }
+ },
+ "b763": {
+  "code": "b763",
+  "nEng": 2,
+  "eng": {
+   "name": "CF6-80C2B2",
+   "max_thrust": 231080,
+   "bpr": 5.1
+  },
+  "ac": {
+   "mtow": 158700,
+   "mlw": 136000,
+   "wing": {
+    "area": 283.3,
+    "span": 47.57
+   },
+   "fuselage": {
+    "length": 54.94
+   },
+   "drag": {
+    "cd0": 0.021,
+    "k": 0.049,
+    "gears": 0.016
+   }
+  },
+  "polar": {
+   "cd0": 0.021,
+   "k": 0.049
+  }
+ },
+ "b772": {
+  "code": "b772",
+  "nEng": 2,
+  "eng": {
+   "name": "PW4090",
+   "max_thrust": 408300,
+   "bpr": 6
+  },
+  "ac": {
+   "mtow": 297000,
+   "mlw": 213000,
+   "wing": {
+    "area": 427.8,
+    "span": 60.93
+   },
+   "fuselage": {
+    "length": 63.73
+   },
+   "drag": {
+    "cd0": 0.024,
+    "k": 0.047,
+    "gears": 0.014
+   }
+  },
+  "polar": {
+   "cd0": 0.024,
+   "k": 0.047
+  }
+ },
+ "b773": {
+  "code": "b773",
+  "nEng": 2,
+  "eng": {
+   "name": "Trent 892",
+   "max_thrust": 411480,
+   "bpr": 5.7
+  },
+  "ac": {
+   "mtow": 299300,
+   "mlw": 237600,
+   "wing": {
+    "area": 427.8,
+    "span": 60.93
+   },
+   "fuselage": {
+    "length": 73.86
+   },
+   "drag": {
+    "cd0": 0.024,
+    "k": 0.047,
+    "gears": 0.014
+   }
+  },
+  "polar": {
+   "cd0": 0.024,
+   "k": 0.047
+  }
+ },
+ "b77w": {
+  "code": "b77w",
+  "nEng": 2,
+  "eng": {
+   "name": "GE90-115B",
+   "max_thrust": 513900,
+   "bpr": 7.1
+  },
+  "ac": {
+   "mtow": 351500,
+   "mlw": 251300,
+   "wing": {
+    "area": 436.8,
+    "span": 64.8
+   },
+   "fuselage": {
+    "length": 73.86
+   },
+   "drag": {
+    "cd0": 0.024,
+    "k": 0.043,
+    "gears": 0.016
+   }
+  },
+  "polar": {
+   "cd0": 0.024,
+   "k": 0.043
+  }
+ },
+ "b788": {
+  "code": "b788",
+  "nEng": 2,
+  "eng": {
+   "name": "Trent 1000-E2",
+   "max_thrust": 268000,
+   "bpr": 9.62
+  },
+  "ac": {
+   "mtow": 228000,
+   "mlw": 172000,
+   "wing": {
+    "area": 377,
+    "span": 60.12
+   },
+   "fuselage": {
+    "length": 56.72
+   },
+   "drag": {
+    "cd0": 0.017,
+    "k": 0.041,
+    "gears": 0.013
+   }
+  },
+  "polar": {
+   "cd0": 0.017,
+   "k": 0.041
+  }
+ },
+ "b789": {
+  "code": "b789",
+  "nEng": 2,
+  "eng": {
+   "name": "Trent 1000-K2",
+   "max_thrust": 350900,
+   "bpr": 9.04
+  },
+  "ac": {
+   "mtow": 254000,
+   "mlw": 193000,
+   "wing": {
+    "area": 377,
+    "span": 60.12
+   },
+   "fuselage": {
+    "length": 62.81
+   },
+   "drag": {
+    "cd0": 0.022,
+    "k": 0.042,
+    "gears": 0.014
+   }
+  },
+  "polar": {
+   "cd0": 0.022,
+   "k": 0.042
+  }
+ },
+ "c550": {
+  "code": "c550",
+  "nEng": 2,
+  "eng": {
+   "name": "JT15D-4",
+   "max_thrust": 11120,
+   "bpr": 2.68
+  },
+  "ac": {
+   "mtow": 6849,
+   "mlw": 6804,
+   "wing": {
+    "area": 31.83,
+    "span": 15.9
+   },
+   "fuselage": {
+    "length": 14.39
+   },
+   "drag": {
+    "cd0": 0.028,
+    "k": 0.049,
+    "gears": 0.02
+   }
+  },
+  "polar": {
+   "cd0": 0.028,
+   "k": 0.049
+  }
+ },
+ "crj9": {
+  "code": "crj9",
+  "nEng": 2,
+  "eng": {
+   "name": "CF34-8C5",
+   "max_thrust": 59420,
+   "bpr": 5.13
+  },
+  "ac": {
+   "mtow": 37421,
+   "mlw": 33340,
+   "wing": {
+    "area": 71.07,
+    "span": 23.24
+   },
+   "fuselage": {
+    "length": 33.5
+   },
+   "drag": {
+    "cd0": 0.018,
+    "k": 0.042,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.018,
+   "k": 0.042
+  }
+ },
+ "e145": {
+  "code": "e145",
+  "nEng": 2,
+  "eng": {
+   "name": "AE3007A1",
+   "max_thrust": 34910,
+   "bpr": 4.77
+  },
+  "ac": {
+   "mtow": 22000,
+   "mlw": 19300,
+   "wing": {
+    "area": 51.2,
+    "span": 20.04
+   },
+   "fuselage": {
+    "length": 29.87
+   },
+   "drag": {
+    "cd0": 0.018,
+    "k": 0.042,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.018,
+   "k": 0.042
+  }
+ },
+ "e170": {
+  "code": "e170",
+  "nEng": 2,
+  "eng": {
+   "name": "CF34-8E5",
+   "max_thrust": 59680,
+   "bpr": 5.13
+  },
+  "ac": {
+   "mtow": 34200,
+   "mlw": 32800,
+   "wing": {
+    "area": 72.72,
+    "span": 26
+   },
+   "fuselage": {
+    "length": 29.9
+   },
+   "drag": {
+    "cd0": 0.018,
+    "k": 0.042,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.018,
+   "k": 0.042
+  }
+ },
+ "e190": {
+  "code": "e190",
+  "nEng": 2,
+  "eng": {
+   "name": "CF34-10E5",
+   "max_thrust": 77400,
+   "bpr": 5.09
+  },
+  "ac": {
+   "mtow": 50300,
+   "mlw": 43000,
+   "wing": {
+    "area": 92.5,
+    "span": 28.72
+   },
+   "fuselage": {
+    "length": 36.24
+   },
+   "drag": {
+    "cd0": 0.018,
+    "k": 0.044,
+    "gears": 0.016
+   }
+  },
+  "polar": {
+   "cd0": 0.018,
+   "k": 0.044
+  }
+ },
+ "e195": {
+  "code": "e195",
+  "nEng": 2,
+  "eng": {
+   "name": "CF34-10E5",
+   "max_thrust": 77400,
+   "bpr": 5.09
+  },
+  "ac": {
+   "mtow": 50790,
+   "mlw": 45000,
+   "wing": {
+    "area": 92.5,
+    "span": 28.72
+   },
+   "fuselage": {
+    "length": 38.65
+   },
+   "drag": {
+    "cd0": 0.021,
+    "k": 0.045,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.021,
+   "k": 0.045
+  }
+ },
+ "e75l": {
+  "code": "e75l",
+  "nEng": 2,
+  "eng": {
+   "name": "CF34-8E6",
+   "max_thrust": 59680,
+   "bpr": 5.13
+  },
+  "ac": {
+   "mtow": 38790,
+   "mlw": 34000,
+   "wing": {
+    "area": 72.72,
+    "span": 26
+   },
+   "fuselage": {
+    "length": 29.9
+   },
+   "drag": {
+    "cd0": 0.018,
+    "k": 0.042,
+    "gears": 0.017
+   }
+  },
+  "polar": {
+   "cd0": 0.018,
+   "k": 0.042
+  }
+ },
+ "glf6": {
+  "code": "glf6",
+  "nEng": 2,
+  "eng": {
+   "name": "BR700-725A1-12",
+   "max_thrust": 75700,
+   "bpr": 4.35
+  },
+  "ac": {
+   "mtow": 45200,
+   "mlw": 37900,
+   "wing": {
+    "area": 119.2,
+    "span": 30.36
+   },
+   "fuselage": {
+    "length": 30.41
+   },
+   "drag": {
+    "cd0": 0.012,
+    "k": 0.047,
+    "gears": 0.012
+   }
+  },
+  "polar": {
+   "cd0": 0.012,
+   "k": 0.047
+  }
+ }
+}

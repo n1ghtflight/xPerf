@@ -4,6 +4,7 @@
   "vrefMLW": "approach speed (VREF) at the max landing weight malwKg (kt); s = pub (published) | est (estimated, see src/ref)",
   "malwKg": "the landing weight the approach speed applies to (FAA MALW); null = use OpenAP mlw",
   "flaps": "the type's most-used takeoff flap settings, one per model level (low/mid/high); from common public operator usage (recalled, not from a manual) — verify",
+  "engine": "optional takeoff engine {name, thrustN per engine, bpr, src} replacing OpenAP's default for this model only",
   "family": "naming family",
   "label": "what the reduced-thrust temperature is called on this type"
  },
@@ -381,7 +382,13 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B39M · Boeing 737 MAX 9 · Approach_Speed_knot · MALW 163900 lb"
    },
-   "malwKg": 74344
+   "malwKg": 74344,
+   "engine": {
+    "name": "LEAP-1B28",
+    "thrustN": 130400,
+    "bpr": 8.3,
+    "src": "OpenAP engines.csv; 737-9/-10 at MTOW use the LEAP-1B28 rating (OpenAP's default 'LEAP-1B' resolves to the 21K LEAP-1B21)"
+   }
   },
   "b3xm": {
    "family": "boeing",
@@ -406,7 +413,13 @@
     "src": "B39M FAA approach speed scaled to B3XM landing weight",
     "ref": "150 kt × √(70,000 / 74,344 kg); same wing as the 737 MAX 9"
    },
-   "malwKg": null
+   "malwKg": null,
+   "engine": {
+    "name": "LEAP-1B28",
+    "thrustN": 130400,
+    "bpr": 8.3,
+    "src": "OpenAP engines.csv; 737-9/-10 at MTOW use the LEAP-1B28 rating (OpenAP's default 'LEAP-1B' resolves to the 21K LEAP-1B21)"
+   }
   },
   "b734": {
    "family": "boeing",
@@ -698,7 +711,13 @@
     "src": "FAA Aircraft Characteristics Database (Oct 2024)",
     "ref": "B788 · Boeing 787-8 BBJ/Dreamliner · Approach_Speed_knot · MALW 380000 lb"
    },
-   "malwKg": 172365
+   "malwKg": 172365,
+   "engine": {
+    "name": "GEnx-1B70",
+    "thrustN": 321600,
+    "bpr": 8.8,
+    "src": "OpenAP engines.csv; one of the 787-8 options in OpenAP's b788.yml — the default Trent 1000-E2 is a low-rated short-haul variant"
+   }
   },
   "b789": {
    "family": "boeing",
