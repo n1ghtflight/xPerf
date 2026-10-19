@@ -180,3 +180,95 @@ each; numerical method; how overrides are held in view state; exact file split; 
     "required" figures don't look like a bug.
 11. If a manufacturer chart needed for tuning isn't freely downloadable for the exact variant, that type
     ships untuned (labelled) and the tuning report says why.
+
+---
+
+# Addendum A — Landing (2026-10-19, draft for approval)
+
+The second step the owner asked for: landing figures in the same view, same labelling, same honesty.
+
+## Intent
+
+Before descent the pilot wants VREF and VAPP for the landing flap, an autobrake setting that stops the
+aircraft comfortably on the runway they'll actually land on, and whether that runway is long enough —
+both by the planning ("dispatch") rule and at the time of arrival. XPerf knows the landing weight, the
+arrival airport, the runway of the approach chosen in FS2024 setup and the arrival METAR. **For simulation only.**
+
+## Decided (owner, relayed by the main session)
+
+- VREF/VAPP with a wind additive, an autobrake choice, landing distance with safety factors.
+- Same house style and labels ("XPerf estimate · for simulation only").
+- A20N and B738 tuned where the airport-planning landing charts allow; all other OpenAP types as estimates.
+- The Airports runway check keeps its numbers (and FS2024 setup §5 keeps its existing line).
+
+## Goals
+
+1. The **Takeoff view becomes "Takeoff & landing"** (same place in the sidebar, same `G T`), with a
+   Departure / Arrival switch in its header (remembered). The landing side shows, for the arrival runway:
+   VREF, VAPP (with the additive spelled out), landing flaps, suggested autobrake, actual landing distance
+   with that autobrake, landing distance available, and two checks: **dispatch** (required = actual with
+   max manual braking, no reverse, × 1.67, wet × 1.15 more) and **at arrival** (actual with the chosen
+   autobrake and reversers × 1.15).
+2. Inputs from the plan, each with its source and editable: landing weight (plan), runway + LDA
+   (approach chosen in FS2024 setup; runway length minus displaced threshold), elevation and slope (runway
+   ends), OAT / QNH / wind incl. gust (arrival METAR, labelled "now — check ATIS before landing").
+3. Options: landing flaps (the type's two landing settings), autobrake (the family's settings, plus
+   "Suggested"), reversers (max / idle / none), runway Dry / Wet.
+4. Summaries: the Overview takeoff tile becomes a two-half tile (takeoff | landing); FS2024 setup §5
+   arrival briefing gets one box (VREF / VAPP · flaps · autobrake).
+5. Tuning report for A20N (Airbus AC 3-4-1 landing field length, ISA, PW) and B738 (Boeing D6-58325-7
+   3.4.3, flaps 30, dry and wet).
+
+## Non-goals (landing)
+
+Contaminated runways / RWYCC below 5; autoland and overweight-landing procedures (a warning above MLW
+only); go-around / approach-climb gradient; brake energy and cooling; steep approaches; GA-table aircraft
+(they keep the Airports check); trim. TAF-at-ETA weather (the METAR is shown with its time; typing the
+expected values is the way to plan ahead).
+
+## Model (toperf.js, new pure functions next to the takeoff ones)
+
+1. **VSR(landing flap)** from the same CLmax_landing as takeoff (FAA approach speed at MALW = VREF for
+   the type's maximum landing flap). The other landing flap uses a generic CLmax fraction (≈ 0.92;
+   e.g. Airbus CONF 3 vs FULL, 737 flaps 30 vs 40). **VREF = 1.23 VSR** at the landing weight (EAS).
+2. **VAPP** by family: Airbus VLS + max(5, min(15, headwind/3)) kt; Boeing and others
+   VREF + max(5, min(20, ½ steady headwind + full gust increment)) kt. Tailwind adds nothing.
+3. **Actual landing distance** = air distance from 50 ft at VAPP (generic 3° path + flare float) +
+   2 s transition at touchdown speed + braking to stop: deceleration = min(autobrake target,
+   braking capability). Capability = μ·g (dry / wet, anti-skid) + reverse credit (max / idle / none)
+   + slope term; ground speed = airspeed − headwind (50 % head / 150 % tail factoring as for takeoff).
+   Autobrake targets per family are generic published-order values (e.g. Airbus LO ≈ 1.7 m/s²,
+   MED ≈ 3.0 m/s²; Boeing 1 … MAX ≈ 1.2 … 4.3 m/s²), each named in the code with its reason.
+4. **Dispatch landing distance required** = actual(max manual braking, no reverse, VREF-based) / 0.6,
+   wet × 1.15 (CS/FAR 121.195-style), compared with LDA.
+5. **At-arrival check** = actual(chosen autobrake, reversers, runway state) × 1.15 ≤ LDA.
+6. **Suggested autobrake** = the lowest setting whose at-arrival check passes; none → "Does not fit".
+7. Tuning: one factor per tuned type on the distance (fitted to chart points, as for takeoff); the
+   same robustness rules (no NaN, out-of-range inputs ignored, infinite → "—").
+
+## UI
+
+Same two-column layout and components as the takeoff side. Results: big numbers VREF · VAPP (accent)
+· flaps · autobrake; a runway bar from the threshold: LDA, air distance, actual stop point, ×1.15 marker,
+dispatch-required marker; limits list (dispatch, at arrival, above MLW warning, "not modelled" line);
+a table of every autobrake setting (actual and ×1.15, fits?). The arrival runway is shown with its
+approach name and "change the approach in FS2024 setup" (no second approach picker — one choice
+across the app, as for the departure runway).
+
+## Testing / acceptance
+
+Monotonic tests (heavier / higher / hotter / downhill / tailwind / wet / lower autobrake → longer;
+headwind → VAPP additive and shorter), VAPP additive caps, suggested autobrake = lowest that fits,
+no NaN across all types and extreme inputs, every type computes at MLW. Tuning: A20N and B738 dispatch
+distance within ±5 % of every digitised chart point. Existing checks unchanged: regress 6/6 identical,
+ui_check both modes (view label and lists updated), screenshots both themes and phone.
+
+## Calls made in this addendum (owner to check)
+
+1. One view, renamed "Takeoff & landing", with a Departure / Arrival switch (as in the first mockup).
+2. Arrival runway follows the approach chosen in FS2024 setup; no second picker in this view.
+3. Arrival weather = current METAR, labelled as "now"; no TAF interpolation.
+4. Default reversers **idle** (common airline practice); default autobrake **Suggested**.
+5. Dry / Wet only, as for takeoff.
+6. 737 lands with flaps 30 by default (40 offered); Airbus FULL by default (3 offered).
+7. VREF/VAPP rounded to whole knots; distances ft first, m second.
