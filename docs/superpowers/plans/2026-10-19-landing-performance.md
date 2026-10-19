@@ -22,11 +22,11 @@
 
 ## Review Focus
 
-1. **No METAR at the arrival field:** ISA, calm and Dry, marked "assumed — no METAR". Pinned in L4 (`toLandingInputs` test).
-2. **Gusts and tailwind:** the gust increment is included in VAPP (Boeing style) and capped; a tailwind adds nothing to VAPP but lengthens the distance (×150 %). Pinned in L2.
-3. **Displaced threshold larger than the runway, or a typed LDA ≤ 0:** LDA clamps to ≥ 0 and the result is "Does not fit", no NaN. Pinned in L2.
-4. **Above MLW:** results render, with the note "Landing weight above MLW". Pinned in L2.
-5. **Arrival runway from an approach whose runway isn't in the runway list:** falls back to the best runway. Pinned in L4 (`landingResult` uses `B.best`).
+1. **No METAR at the arrival field:** ISA, calm and Dry, marked "assumed — no METAR". Pinned in Task 4 (`toLandingInputs` test).
+2. **Gusts and tailwind:** the gust increment is included in VAPP (Boeing style) and capped; a tailwind adds nothing to VAPP but lengthens the distance (×150 %). Pinned in Task 2.
+3. **Displaced threshold larger than the runway, or a typed LDA ≤ 0:** LDA clamps to ≥ 0 and the result is "Does not fit", no NaN. Pinned in Task 2.
+4. **Above MLW:** results render, with the note "Landing weight above MLW". Pinned in Task 2.
+5. **Arrival runway from an approach whose runway isn't in the runway list:** falls back to the best runway. Pinned in Task 4 (`landingResult` uses `B.best`).
 
 ---
 
@@ -43,7 +43,7 @@
 
 ---
 
-### Task L1: Landing reference data
+### Task 1: Landing reference data
 
 **Files:** `tools/build_to_ref.py`, `data/to_ref.json`, `tests/toperf.test.mjs`
 
@@ -72,7 +72,7 @@ Every list ends with "Max manual" (`decel:null`).
 - [ ] **Step 3: Add the table to `tools/build_to_ref.py`**, then run `python tools/build_to_ref.py <aircraft_data.xlsx>` (the FAA file is in the scratchpad from the takeoff work). Only the landing fields may change in the existing entries.
 - [ ] **Step 4: Run.** Expected: PASS. Then commit with the message "Landing reference data: flaps, autobrake, VAPP rule per type".
 
-### Task L2: Landing model
+### Task 2: Landing model
 
 **Files:** `toperf.js`, `tests/toperf.test.mjs`
 
@@ -111,7 +111,7 @@ Rules from the spec:
 - [ ] **Step 3: Implement** `computeLanding` and its helpers, reusing `atm`/`isaAt`/range checks from takeoff (factor the shared input sanitising into one helper if it stays readable).
 - [ ] **Step 4: Run.** Expected: PASS. Then commit with the message "Landing model: VREF/VAPP, autobrake, actual and factored landing distance".
 
-### Task L3: Tuning A20N and B738 landing
+### Task 3: Tuning A20N and B738 landing
 
 **Files:** `data/to_tune.json`, `tools/fit_to_tune.mjs`, `toperf.js` (`landingTuningReport`), tests.
 
@@ -125,7 +125,7 @@ Rules from the spec:
   - Use the same scratchpad digitisers as for takeoff. Extend `fit_to_tune.mjs` to fit `landing` the same way: geometric factor, altK only if a residual is above 5 %.
 - [ ] **Step 4: Run** the fit and the tests. Expected: PASS with the residuals printed. Then commit with the message "Tune A20N/B738 landing distance to airport-planning charts".
 
-### Task L4: Landing side of the view
+### Task 4: Landing side of the view
 
 **Files:** `takeoff.js`, `index.html`, `shell.js`, `styles/app.css`, `tools/ui_check.mjs`, tests.
 
@@ -158,14 +158,14 @@ Rules from the spec:
   - Focus restore and "—" for infinite values work as on the takeoff side.
 - [ ] **Step 4: Run tests and syntax checks, then look at it** in both themes and at phone width (A20N KSFO→KLAX, B738, C172), and check the interactions in the pane. Commit with the message "Takeoff & landing view: landing side".
 
-### Task L5: Summaries
+### Task 5: Summaries
 
 **Files:** `takeoff.js`, `overview.js` (only if the tile call changes), `nav.js:694-715` (one box in §5), `index.html`.
 
 - [ ] **Step 1:** The takeoff tile becomes two halves (`tile split` style). Left: takeoff as today. Right: "Landing · <rwy>", "VAPP <n> kt", "<flap> · autobrake <x>", or "Does not fit" in `--bad`. The §5 box shows "Landing data · estimate", "VREF / VAPP", "flaps · autobrake". GA plans show neither.
 - [ ] **Step 2: Verify** that the values match the view and that clicking opens the view on the Arrival side. Screenshot. Commit with the message "Landing summary on Overview and in FS2024 setup".
 
-### Task L6: Whole-app verification
+### Task 6: Whole-app verification
 
 - [ ] Run `node --test` on all test files, naming each file explicitly. Expected: all pass.
 - [ ] `node tools/regress.mjs compare --port <free>` (port-rewritten local fixtures). Expected: 6/6 identical.
