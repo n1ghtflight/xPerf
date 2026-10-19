@@ -262,3 +262,70 @@ test("landing reference data per type", () => {
     assert.ok(["airbus", "boeing"].includes(r.vapp), `${c}: vapp ${r.vapp}`);
   }
 });
+
+const ldg0 = { lwKg: 62000, elevFt: 0, qnh: 1013.25, oat: 15, windKt: 0, gustKt: 0, slopePct: 0, ldaFt: 9000, wet: false,
+  reverse: "idle", flap: "default", autobrake: "suggested" };
+const land = (inp = {}, code = "a20n") => TOPerf().computeLanding(acOf(code), { ...ldg0, ...inp });
+const noNaN = o => JSON.stringify(o, (k, v) => typeof v === "number" && Number.isNaN(v) ? "NaN!" : v).includes("NaN!") === false;
+
+test("landing speeds", () => {
+  const r = land();
+  assert.ok(r.vref > 120 && r.vref < 150, String(r.vref));
+  assert.ok(Math.abs(r.vapp - r.vref - r.additive) < 1e-9 && r.additive >= 5);
+  assert.equal(r.flap, "FULL");
+  assert.ok(land({ flap: "3" }).vref > r.vref, "CONF 3 is faster than FULL");
+});
+
+test("VAPP additive rules", () => {
+  assert.equal(land({ windKt: 30 }).additive, 10); assert.equal(land({ windKt: 60 }).additive, 15);
+  assert.equal(land({ windKt: 10, gustKt: 10 }, "b738").additive, 15);
+  assert.equal(land({ windKt: 10, gustKt: 30 }, "b738").additive, 20);
+  assert.equal(land({ windKt: -10 }, "b738").additive, 5);
+});
+
+test("landing longer when heavier, higher, hotter, downhill, tailwind, wet, gentler autobrake", () => {
+  const base = land({ autobrake: "LO" }).selected.actualFt;
+  for (const inp of [{ lwKg: 66000 }, { elevFt: 5000 }, { oat: 35 }, { windKt: -10 }])
+    assert.ok(land({ ...inp, autobrake: "LO" }).selected.actualFt > base, JSON.stringify(inp));
+  // an autobrake holds its target deceleration: slope and a wet runway matter where braking is the limit
+  const maxm = land({ autobrake: "Max manual" }).selected.actualFt;
+  for (const inp of [{ slopePct: -1 }, { wet: true }])
+    assert.ok(land({ ...inp, autobrake: "Max manual" }).selected.actualFt > maxm, JSON.stringify(inp));
+  assert.ok(land({ autobrake: "LO" }).selected.actualFt > land({ autobrake: "MED" }).selected.actualFt);
+  assert.ok(land({ windKt: 15, autobrake: "LO" }).selected.actualFt < base, "headwind shortens");
+});
+
+test("suggested autobrake is the lowest that fits", () => {
+  for (const ldaFt of [4500, 5500, 7000, 12000]) {
+    const r = land({ ldaFt }), i = r.byAutobrake.findIndex(a => a.name === r.suggested);
+    if (i < 0) { assert.ok(r.byAutobrake.every(a => !a.fits)); continue; }
+    assert.ok(r.byAutobrake[i].arrivalFt <= ldaFt);
+    if (i > 0) assert.ok(r.byAutobrake[i - 1].arrivalFt > ldaFt);
+    assert.equal(r.selected.name, r.suggested);
+  }
+});
+
+test("landing dispatch and status", () => {
+  const r = land(), maxm = r.byAutobrake.find(a => a.name === "Max manual");
+  assert.ok(r.dispatchFt > maxm.actualFt, "dispatch is factored");
+  assert.ok(land({ wet: true }).dispatchFt > r.dispatchFt);
+  const med = r.byAutobrake.find(a => a.name === "MED");
+  if (med.arrivalFt < r.dispatchFt) assert.equal(land({ autobrake: "MED", ldaFt: (med.arrivalFt + r.dispatchFt) / 2 }).status, "tight");
+  assert.equal(land({ ldaFt: 3000 }).status, "nofit");
+  assert.equal(land({ ldaFt: 12000 }).status, "ok");
+});
+
+test("landing robust for every type and extreme inputs", () => {
+  for (const c of AC_CODES) {
+    const ac = acOf(c);
+    for (const lwKg of [ac.mlw, 2 * ac.mlw]) for (const [elevFt, oat] of [[0, 15], [9000, 35]]) for (const ldaFt of [-100, 0, 9000]) {
+      const r = TOPerf().computeLanding(ac, { ...ldg0, lwKg, elevFt, oat, ldaFt });
+      assert.ok(noNaN(r), `${c} ${lwKg} ${elevFt} ${ldaFt}`); assert.ok(r.ldaFt >= 0);
+      if (ldaFt <= 0) assert.equal(r.status, "nofit");
+    }
+  }
+});
+
+test("above MLW note", () => {
+  assert.ok(land({ lwKg: acOf("a20n").mlw + 3000 }).notes.includes("Landing weight above MLW"));
+});

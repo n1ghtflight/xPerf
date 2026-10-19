@@ -60,7 +60,9 @@ var TOPerf=(()=>{
       thrust0:ref.engine?.thrustN??m.eng.max_thrust, bpr:ref.engine?.bpr??(m.eng.bpr||5), engEstimated:!ref.engine&&!!m.eng.estimated,
       engine:ref.engine?.name??m.eng.name,
       vrefMLW:ref.vrefMLW.v, vrefSrc:ref.vrefMLW.s, family:ref.family, label:ref.label, flaps:ref.flaps,
-      tune:tune&&tune.factor?{factor:tune.factor, altK:tune.altK||0}:null};
+      tune:tune&&tune.factor?{factor:tune.factor, altK:tune.altK||0}:null,
+      landingFlaps:ref.landingFlaps||[{name:"FULL",frac:1,default:true}], autobrake:ref.autobrake||[{name:"Max manual",decel:null}],
+      vappRule:ref.vapp||"boeing", tuneLdg:tune?.landing?.factor?{factor:tune.landing.factor, altK:tune.landing.altK||0}:null};
   }
 
   // Balanced field length at one flap level and one (assumed) temperature.
@@ -172,5 +174,54 @@ var TOPerf=(()=>{
     });
   }
 
-  return {acFromModel, fieldLength, compute, tuningReport, isaAt, LEVEL, C};
+  /* ---------------------------------------------------------------- landing */
+  const LDG={
+    vrefFactor:1.23,          // VREF = 1.23 VSR in the landing configuration (CS/FAR 25.125)
+    glideDeg:3,               // standard approach path: 50 ft screen to the touchdown aim point
+    floatS:1.5,               // flare float at touchdown speed
+    tdBleedKt:5,              // speed bled off in the flare: touchdown ≈ threshold speed − 5 kt
+    transS:2,                 // spoilers / brakes coming in after touchdown
+    muBrake:{dry:0.40,wet:0.20},   // max anti-skid braking, wet about half of dry
+    rev:{max:0.06,idle:0.015,none:0},   // reverse-thrust deceleration credit (g); only helps where braking is the limit
+    dispatchDiv:0.6,          // dispatch: actual distance must fit in 60 % of LDA (CS/FAR 121.195(b) style) …
+    dispatchWet:1.15,         // … and 115 % of that on a wet runway (121.195(d))
+    arrivalFactor:1.15};      // time-of-arrival check: actual × 1.15 (FAA TALPA / EASA)
+  const num=(v,d=0)=>Number.isFinite(+v)&&v!==""&&v!=null?+v:d;
+  const rng=(v,lo,hi,d)=>{ const x=num(v,d); return x>=lo&&x<=hi?x:d; };
+
+  // input: {lwKg, elevFt, qnh, oat, windKt (+head, raw), gustKt (gust − steady), slopePct (+uphill), ldaFt, wet,
+  //         reverse "max"|"idle"|"none", flap "default"|name, autobrake "suggested"|name}
+  function computeLanding(ac,input){
+    const paFt=rng(input.elevFt,-1500,15000,0)+(1013.25-rng(input.qnh,850,1100,1013.25))*27, oat=rng(input.oat,-60,60,isaAt(paFt));
+    const hw=rng(input.windKt,-60,60,0), gust=rng(input.gustKt,0,60,0), slope=rng(input.slopePct,-5,5,0), wet=!!input.wet;
+    const mass=Math.min(rng(input.lwKg,0.2*ac.mlw,Infinity,ac.mlw),2*ac.mtow), ldaFt=Math.max(0,num(input.ldaFt));
+    const at=atm(paFt,oat), W=mass*G, tas=eas=>eas/Math.sqrt(at.sigma), hwF=(hw>=0?0.5*hw:1.5*hw)*KT;
+    const flap=input.flap&&input.flap!=="default"&&ac.landingFlaps.find(f=>f.name===input.flap)||ac.landingFlaps.find(f=>f.default)||ac.landingFlaps[0];
+    const clLand=2*(ac.malwKg||ac.mlw)*G/(RHO0*ac.S*(ac.vrefMLW*KT/C.vrefFactor)**2);
+    const vref=LDG.vrefFactor*Math.sqrt(2*W/(RHO0*ac.S*clLand*flap.frac))/KT;
+    const additive=ac.vappRule==="airbus"?Math.max(5,Math.min(15,Math.max(hw,0)/3)):Math.max(5,Math.min(20,0.5*Math.max(hw,0)+gust));
+    const vapp=vref+additive, tune=ac.tuneLdg?ac.tuneLdg.factor*(1+ac.tuneLdg.altK*paFt/1000):1, M2FT=1/FT;
+    // distance from 50 ft at threshold speed vthKt to a stop; decel = autobrake target (m/s²) or null = max braking
+    const dist=(vthKt,decel,rev,mu)=>{
+      const gs=Math.max(tas((vthKt-LDG.tdBleedKt)*KT)-hwF,1);
+      const air=50*FT/Math.tan(LDG.glideDeg*Math.PI/180)+LDG.floatS*gs, trans=LDG.transS*gs;
+      const cap=G*(mu+LDG.rev[rev]+slope/100), a=decel==null?cap:Math.min(decel,cap);
+      return {air, total:a>0?(air+trans+gs*gs/(2*a))*tune:Infinity};
+    };
+    const mu=wet?LDG.muBrake.wet:LDG.muBrake.dry, rev=LDG.rev[input.reverse]!=null?input.reverse:"idle";
+    const byAutobrake=ac.autobrake.map(b=>{ const d=dist(vapp,b.decel,rev,mu), actualFt=d.total*M2FT, arrivalFt=actualFt*LDG.arrivalFactor;
+      return {name:b.name, decel:b.decel, actualFt, arrivalFt, fits:arrivalFt<=ldaFt}; });
+    const dispatchFt=dist(vref,null,"none",LDG.muBrake.dry).total*M2FT/LDG.dispatchDiv*(wet?LDG.dispatchWet:1);
+    const sug=byAutobrake.find(b=>b.fits)||null;
+    const selected=input.autobrake&&input.autobrake!=="suggested"&&byAutobrake.find(b=>b.name===input.autobrake)||sug||byAutobrake[byAutobrake.length-1];
+    const dispatchOK=dispatchFt<=ldaFt, status=!selected.fits?"nofit":!dispatchOK?"tight":"ok";
+    const notes=[];
+    if(ac.engEstimated) notes.push("Engine thrust estimated — results less certain");
+    if(ac.vrefSrc==="est") notes.push("Approach speed estimated — speeds less certain");
+    if(mass>ac.mlw) notes.push("Landing weight above MLW");
+    return {flap:flap.name, vref, vapp, additive, byAutobrake, suggested:sug?sug.name:null, selected, dispatchFt, dispatchOK, ldaFt,
+      airFt:dist(vapp,null,rev,mu).air*tune*M2FT, status, notes, paFt, tuned:!!ac.tuneLdg};
+  }
+
+  return {acFromModel, fieldLength, compute, computeLanding, tuningReport, isaAt, LEVEL, C, LDG};
 })();
