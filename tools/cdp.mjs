@@ -2,8 +2,8 @@
 // launch() → page at about:blank; enable record()/replay() BEFORE page.goto() so every
 // network answer the plan depends on (weather, terrain, airport info, OpenAP, EUROCONTROL) is captured
 // or replayed, which makes runs deterministic even though live data changes hourly.
-import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -31,7 +31,21 @@ function passThrough(url, origin) {
   return !path.startsWith("/api/");
 }
 
+// Profiles left by crashed or killed runs: remove the ones older than an hour (a live run's are newer).
+function sweepProfiles() {
+  for (const d of readdirSync(tmpdir())) {
+    if (!d.startsWith("xperf-cdp-")) continue;
+    const p = join(tmpdir(), d);
+    try { if (Date.now() - statSync(p).mtimeMs > 3600e3) rmSync(p, { recursive: true, force: true }); } catch {}
+  }
+}
+let swept = false;
+// calls still waiting for the browser (for diagnosing a stalled run): id → { method, since, what }
+export const inFlight = new Map();
+let callSeq = 0;
+
 export async function launch({ width = 1440, height = 900, mobile = false, scheme = "dark", port = 8770, query = "" } = {}) {
+  if (!swept) { swept = true; sweepProfiles(); }
   const exe = BROWSERS.find(p => existsSync(p));
   if (!exe) throw new Error("no Chromium browser found; set BROWSER");
   const dbg = 9500 + Math.floor(Math.random() * 400), prof = mkdtempSync(join(tmpdir(), "xperf-cdp-"));
@@ -42,14 +56,25 @@ export async function launch({ width = 1440, height = 900, mobile = false, schem
   for (let i = 0; i < 80 && !list; i++) { try { list = await (await fetch(`http://127.0.0.1:${dbg}/json/list`)).json(); } catch { await sleep(250); } }
   if (!list) throw new Error("browser did not expose CDP");
   const ws = new WebSocket(list.find(t => t.type === "page").webSocketDebuggerUrl);
-  await new Promise(r => ws.addEventListener("open", r));
+  // a stalled browser must fail loudly, naming the call, instead of hanging the run
+  await new Promise((ok, no) => { const t = setTimeout(() => no(new Error("CDP connection did not open in 15 s")), 15000);
+    ws.addEventListener("open", () => { clearTimeout(t); ok(); }); ws.addEventListener("error", () => { clearTimeout(t); no(new Error("CDP connection failed")); }); });
   let id = 0; const pending = new Map(), handlers = new Map();
+  ws.addEventListener("close", () => { for (const p of pending.values()) p.fail(new Error("browser connection lost")); pending.clear(); });
   ws.addEventListener("message", e => {
     const m = JSON.parse(e.data);
-    if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
+    if (m.id && pending.has(m.id)) { pending.get(m.id).done(m); pending.delete(m.id); }
     else if (m.method && handlers.has(m.method)) handlers.get(m.method)(m.params);
   });
-  const send = (method, params = {}) => new Promise(r => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+  // every call gets an answer or a named error: Runtime.evaluate may run as long as its own timeout, others 60 s
+  const send = (method, params = {}) => new Promise((ok, no) => {
+    const i = ++id, ms = method === "Runtime.evaluate" ? (params.timeout || 60000) + 15000 : 60000, key = ++callSeq;
+    inFlight.set(key, { method, since: Date.now(), what: String(params.expression || params.url || "").replace(/\s+/g, " ").slice(0, 90) });
+    const end = () => { clearTimeout(t); inFlight.delete(key); };
+    const t = setTimeout(() => { pending.delete(i); inFlight.delete(key); no(new Error(`CDP ${method} got no answer in ${ms / 1000} s`)); }, ms);
+    pending.set(i, { done: m => { end(); ok(m); }, fail: e => { end(); no(e); } });
+    ws.send(JSON.stringify({ id: i, method, params }));
+  });
   const origin = `http://localhost:${port}`;
 
   const page = {
@@ -91,7 +116,12 @@ export async function launch({ width = 1440, height = 900, mobile = false, schem
       await sleep(50);
     },
     async setViewport(w, h, mob = false) { await send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: mob ? 2 : 1, mobile: mob }); await send("Emulation.setTouchEmulationEnabled", { enabled: mob, maxTouchPoints: mob ? 5 : 0 }); },
-    async close() { try { ws.close(); } catch {} proc.kill(); await sleep(300); try { rmSync(prof, { recursive: true, force: true }); } catch {} },
+    async close() {
+      try { ws.close(); } catch {}
+      // the whole process tree: Edge's renderer / GPU children can outlive the parent on Windows
+      if (process.platform === "win32") spawnSync("taskkill", ["/PID", String(proc.pid), "/T", "/F"], { stdio: "ignore" }); else proc.kill();
+      for (let i = 0; i < 10; i++) { try { rmSync(prof, { recursive: true, force: true }); break; } catch { await sleep(200); } }
+    },
   };
   await send("Page.enable"); await send("Runtime.enable"); await send("Network.enable"); await send("Network.setCacheDisabled", { cacheDisabled: true });
   await page.setViewport(width, height, mobile); await page.setScheme(scheme);

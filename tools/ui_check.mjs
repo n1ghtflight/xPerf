@@ -5,7 +5,7 @@ import { spawnSync, spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
-import { launch, replay, planFlight, FLIGHTS } from "./cdp.mjs";
+import { launch, replay, planFlight, FLIGHTS, inFlight } from "./cdp.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -714,7 +714,8 @@ for (const c of checks) {
   const t = Date.now();
   // a hung headless browser must fail the check, not freeze the whole run
   let timer;
-  const limit = new Promise((_, no) => { timer = setTimeout(() => no(new Error("timed out after 180 s")), 180000); });
+  const limit = new Promise((_, no) => { timer = setTimeout(() => no(new Error("timed out after 180 s; waiting on: " +
+    ([...inFlight.values()].map(c => `${c.method} for ${Math.round((Date.now() - c.since) / 1000)} s ${c.what}`).join(" | ") || "no browser call (test code)"))), 180000); });
   try { await Promise.race([c.fn(), limit]); console.log(`PASS ${c.name} (${((Date.now() - t) / 1000).toFixed(1)}s)`); }
   catch (e) { failed++; console.log(`FAIL ${c.name}: ${e.message}`); }
   finally { clearTimeout(timer); }
