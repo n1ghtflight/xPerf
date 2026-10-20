@@ -133,7 +133,7 @@ function distanceBars(B){
 /* ---------------------------------------------------------------- 4 · fuel remaining along the route */
 function fuelChart(X){
   const {sel,total,route,m}=X, apm=m.kind==="apm", fu=kg=>apm?kg/m.fuelDensity:kg, unit=apm?"gal":"kg";
-  const W=1000,H=230,pl=64,pr=20,pt=24,pb=34, block=fu(sel.block), res=fu(sel.reserve), land=block-fu(sel.trip);
+  const W=1000,H=230,pl=64,pr=20,pt=40,pb=34, block=fu(sel.block), res=fu(sel.reserve), land=block-fu(sel.trip);
   const top=Math.ceil(block*1.08/(apm?5:500))*(apm?5:500);
   const x=d=>pl+d/total*(W-pl-pr), y=v=>H-pb-v/top*(H-pt-pb);
   const N=120, pts=[]; for(let i=0;i<=N;i++){ const d=total*i/N, p=profileAtX(sel,total,d); pts.push([x(d),y(block-fu(p.fuel))]); }
@@ -141,20 +141,25 @@ function fuelChart(X){
   let g="";
   const gstep=[1,2,5,10,20,50,100,200,500,1000,2000,5000,10000].find(s=>top/s<=6)||10000;
   for(let v=0;v<=top;v+=gstep) g+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="${CH.grid}"/><text x="${pl-8}" y="${y(v)+4}" font-size="11" fill="${CH.axis}" text-anchor="end">${fmtK(v)}</text>`;
-  g+=`<rect x="${pl}" y="${y(res)}" width="${W-pl-pr}" height="${y(0)-y(res)}" fill="color-mix(in oklch, var(--bad) 12%, transparent)"/><line x1="${pl}" x2="${W-pr}" y1="${y(res)}" y2="${y(res)}" stroke="${CH.red}" stroke-dasharray="4 4"/>
-    <text x="${pl+6}" y="${y(res)+14}" font-size="11" fill="${CH.red}">reserve ${fmtK(res)} ${unit} (${sel.reserveNote})</text>`;
-  // stations / fixes along the route
-  route.points.slice(1,-1).forEach((P,i)=>{ const d=route.legs[i].s0+route.legs[i].d, xx=x(d);
-    g+=`<line x1="${xx}" x2="${xx}" y1="${pt}" y2="${H-pb}" stroke="var(--line-soft)"/><text x="${xx}" y="${pt-8}" font-size="10" fill="${CH.axis}" text-anchor="middle">${svgEsc(P.label)}</text>`; });
+  g+=`<rect x="${pl}" y="${y(res)}" width="${W-pl-pr}" height="${y(0)-y(res)}" fill="color-mix(in oklch, var(--bad) 12%, transparent)"/><line x1="${pl}" x2="${W-pr}" y1="${y(res)}" y2="${y(res)}" stroke="${CH.red}" stroke-dasharray="4 4"/>`;
+  // stations / fixes along the route: a tick for each; names on two staggered rows, left out where they would still
+  // overlap (SID/STAR clusters) — svg text is mono, so 10 px ≈ 6 px per character
+  const rowEnd=[-Infinity,-Infinity];
+  route.points.slice(1,-1).forEach((P,i)=>{ const d=route.legs[i].s0+route.legs[i].d, xx=x(d), lab=svgEsc(P.label), w=P.label.length*6;
+    g+=`<line x1="${xx}" x2="${xx}" y1="${pt}" y2="${H-pb}" stroke="var(--line-soft)"><title>${lab} · ${fmtK(Math.round(nm(d)))} NM</title></line>`;
+    const cx=Math.max(pl+w/2,Math.min(W-pr-w/2,xx)), row=rowEnd.findIndex(e=>cx-w/2>=e+8);
+    if(row<0) return; rowEnd[row]=cx+w/2;
+    g+=`<text x="${cx}" y="${pt-8-row*13}" font-size="10" fill="${CH.axis}" text-anchor="middle">${lab}</text>`; });
+  g+=`<text x="${pl+6}" y="${y(res)+14}" font-size="11" fill="${CH.red}" stroke="${CH.halo}" stroke-width="3" paint-order="stroke">reserve ${fmtK(res)} ${unit} (${sel.reserveNote})</text>`;
   g+=`<polygon points="${x(0)},${y(0)} ${line} ${x(total)},${y(0)}" fill="color-mix(in srgb, var(--accent) 13%, transparent)"/><polyline points="${line}" fill="none" stroke="${CH.blue}" stroke-width="2.4"/>`;
   for(const [k,d,col] of [["TOC",sel.climb.d,CH.green],["TOD",total-sel.descent.d,CH.magenta]]){ const p=profileAtX(sel,total,d), v=block-fu(p.fuel);
     g+=`<circle cx="${x(d)}" cy="${y(v)}" r="4.5" fill="${col}"><title>${k}: ${fmtK(v)} ${unit} left</title></circle>`; }
-  g+=`<text x="${x(0)+6}" y="${y(block)-6}" font-size="11.5" fill="${CH.text}">block ${fmtK(block)} ${unit}</text>
+  g+=`<text x="${x(0)+6}" y="${y(block)-6}" font-size="11.5" fill="${CH.text}" stroke="${CH.halo}" stroke-width="3" paint-order="stroke">block ${fmtK(block)} ${unit}</text>
     <circle cx="${x(total)}" cy="${y(land)}" r="5" fill="${land>=res*0.999?CH.green:CH.red}"/>
     <text x="${x(total)-8}" y="${y(land)-10}" font-size="11.5" font-weight="700" fill="${land>=res*0.999?CH.green:CH.red}" text-anchor="end" stroke="${CH.halo}" stroke-width="3" paint-order="stroke">land with ${fmtK(land)} ${unit}</text>
     <text x="${pl}" y="${H-6}" font-size="11" fill="${CH.text}">${X.dep.icao}</text><text x="${W-pr}" y="${H-6}" font-size="11" fill="${CH.text}" text-anchor="end">${X.arr.icao}</text>
     <text x="${(W+pl)/2}" y="${H-6}" font-size="11" fill="${CH.axis}" text-anchor="middle">distance (NM) · ${fmtK(nm(total))} NM</text>
-    <text x="12" y="${pt+4}" font-size="11" fill="${CH.axis}">${unit}</text>`;
+    <text x="${pl-8}" y="${pt-12}" font-size="11" fill="${CH.axis}" text-anchor="end">${unit}</text>`;
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Fuel remaining along the route">${g}</svg>`;
 }
 
