@@ -57,3 +57,37 @@ test("a station with no report (upstream 204, empty) passes through as 204", asy
     assert.equal(await res.text(), "");
   } finally { globalThis.fetch = real; }
 });
+
+// the two worldwide cache files are gzip bytes (upstream says application/octet-stream), relayed untouched
+const withGzip = async fn => {
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url, init) => { calls.push({ url: String(url), init });
+    return new Response(new Uint8Array([0x1f, 0x8b, 1, 2, 3]), { status: 200, headers: { "Content-Type": "application/octet-stream" } }); };
+  try { await fn(); } finally { globalThis.fetch = real; }
+};
+
+test("relays the worldwide METAR file byte for byte", () => withGzip(async () => {
+  calls.length = 0;
+  const res = await ask("/data/cache/metars.cache.csv.gz?x=1");
+  assert.equal(res.status, 200);
+  assert.equal(calls[0].url, "https://aviationweather.gov/data/cache/metars.cache.csv.gz");
+  assert.deepEqual([...new Uint8Array(await res.arrayBuffer())], [0x1f, 0x8b, 1, 2, 3]);
+  assert.equal(res.headers.get("Content-Type"), "application/gzip");
+  assert.equal(res.headers.get("Access-Control-Allow-Origin"), "*");
+}));
+
+test("relays the worldwide TAF file", () => withGzip(async () => {
+  calls.length = 0;
+  const res = await ask("/data/cache/tafs.cache.xml.gz");
+  assert.equal(res.status, 200);
+  assert.equal(calls[0].url, "https://aviationweather.gov/data/cache/tafs.cache.xml.gz");
+  assert.deepEqual([...new Uint8Array(await res.arrayBuffer())], [0x1f, 0x8b, 1, 2, 3]);
+  assert.equal(res.headers.get("Content-Type"), "application/gzip");
+  assert.equal(res.headers.get("Access-Control-Allow-Origin"), "*");
+}));
+
+test("still refuses other cache files", async () => {
+  calls.length = 0;
+  assert.equal((await ask("/data/cache/pireps.cache.csv.gz")).status, 404);
+  assert.equal(calls.length, 0);
+});
