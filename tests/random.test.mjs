@@ -5,9 +5,10 @@ import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import vm from "node:vm";
 
-const ctx = vm.createContext({});
+// browser globals random.js expects: FT (feet -> metres, index.html) and basePerf (nav.js); tests swap basePerf
+const ctx = vm.createContext({ FT: 0.3048, basePerf: () => ({}) });
 vm.runInContext(readFileSync(new URL("../random.js", import.meta.url), "utf8"), ctx);
-const { parseMetarCsv, parseTafXml, wxClass, tafAt, sunElevation, dayNight } = ctx;
+const { parseMetarCsv, parseTafXml, wxClass, tafAt, sunElevation, dayNight, aircraftLimits, estMinutes, generate } = ctx;
 const gz = n => gunzipSync(readFileSync(new URL("./fixtures/" + n, import.meta.url))).toString("utf8");
 const metarText = gz("awc-metars.csv.gz"), tafText = gz("awc-tafs.xml.gz");
 const T = s => Date.parse(s);
@@ -208,4 +209,252 @@ test("sun elevation", () => {
   assert.equal(dayNight(0), "twilight");
   assert.equal(dayNight(0.1), "day");
   assert.equal(dayNight(45), "day");
+});
+
+/* ---------------------------------------------------------------- screening and generation */
+const NOW = T("2026-10-24T22:18:00.000Z");   // fixture clock T0; ETD = 22:20Z
+const ETD = T("2026-10-24T22:20:00.000Z");
+function seeded(a) { return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const gcNm = (a, b) => {
+  const r = Math.PI / 180, dla = (b.lat - a.lat) * r, dlo = (b.lon - a.lon) * r;
+  const h = Math.sin(dla / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dlo / 2) ** 2;
+  return 2 * 3440.065 * Math.asin(Math.sqrt(h));
+};
+const apt = (icao, lat, lon, alt = 0) => ({ icao, name: icao + " Field", lat, lon, alt });
+const ob = (a, wx, o = {}) => ({ id: a.icao, lat: a.lat, lon: a.lon, t: NOW - 20 * 60000, raw: `METAR ${a.icao} ${wx || "CAVOK"}`, wx,
+  vis: 10, ceil: null, cat: "VFR", ...o });
+const SNOW = { vis: 2, ceil: 800, cat: "IFR" };
+// 5 sites 3 deg of longitude apart at 45N (~127 NM), each with a twin field 0.4 deg east (~17 NM)
+function baseWorld() {
+  const airports = [];
+  for (let s = 0; s < 5; s++) airports.push(apt("ST" + s + "A", 45, 3 * s), apt("ST" + s + "B", 45, 3 * s + 0.4));
+  const rwy = Object.fromEntries(airports.map(a => [a.icao, [8000, 8000, 1]]));
+  return { airports, rwy };
+}
+const GA = { kt: 120, rangeNM: 400, minRwyFt: 2000, paved: false };
+const run = (w, prompts, seed, extra = {}) =>
+  plain(generate({ obs: [], tafs: {}, lim: GA, now: NOW, rand: seeded(seed), ...w, prompts, ...extra }));
+const P = (time, dep, arr, dist) => ({ time, dep, arr, dist });
+const SEEDS = Array.from({ length: 30 }, (_, i) => i + 1);
+
+test("estMinutes adds 15 minutes to the cruise time", () => {
+  assert.equal(estMinutes(120, 120), 75);
+  assert.equal(estMinutes(0, 300), 15);
+  assert.equal(typeof vm.runInContext("RandomFlight.now()", ctx), "number");
+  assert.ok(Math.abs(vm.runInContext("RandomFlight.now()", ctx) - Date.now()) < 1000);
+});
+
+test("aircraftLimits from model data", () => {
+  ctx.basePerf = () => ({ to: 2000, ldg: 1500, sfTo: 1.15, sfLdg: 1.67 });
+  const a = plain(aircraftLimits({ kind: "openap", cruiseMach: 0.78, ac: { cruise: { range: 5000 } } }));
+  assert.ok(Math.abs(a.kt - 0.78 * 573) < 1e-9);
+  assert.ok(Math.abs(a.rangeNM - 5000 / 1.852 * 0.9) < 1e-9);
+  assert.ok(Math.abs(a.minRwyFt - 1500 * 1.67 / 0.3048) < 1e-9);
+  assert.equal(a.paved, true);
+  ctx.basePerf = () => ({ to: 500, ldg: 400, sfTo: 1.33, sfLdg: 1.43 });
+  const g = plain(aircraftLimits({ kind: "apm", P: { cruiseTAS: 120, cruiseRange: 600 } }));
+  assert.equal(g.kt, 120);
+  assert.equal(g.rangeNM, 600 - 120 * 0.75); // 45-min reserve
+  assert.ok(Math.abs(g.minRwyFt - 500 * 1.33 / 0.3048) < 1e-9);
+  assert.equal(g.paved, false);
+  ctx.basePerf = () => ({});
+});
+
+test("falls back when the aircraft lacks data", () => {
+  ctx.basePerf = () => ({});
+  assert.deepEqual(plain(aircraftLimits({ kind: "apm", P: {} })), { kt: 110, rangeNM: 300, minRwyFt: 2500, paved: false });
+  assert.deepEqual(plain(aircraftLimits({ kind: "openap", ac: {} })), { kt: 110, rangeNM: 300, minRwyFt: 6000, paved: true });
+  // only one of the two distances known: never below the conservative default
+  ctx.basePerf = () => ({ to: 300, sfTo: 1.33 });
+  assert.equal(aircraftLimits({ kind: "apm", P: { cruiseTAS: 100 } }).minRwyFt, 2500);
+  ctx.basePerf = () => ({});
+});
+
+test("returns 5 full matches when the world has them", () => {
+  const w = baseWorld();
+  w.obs = w.airports.map(a => ob(a, "-SN", SNOW));
+  for (const seed of SEEDS) {
+    const o = run(w, P("night", "snow", "snow", "short"), seed);
+    assert.equal(o.length, 5, "seed " + seed);
+    for (const x of o) {
+      assert.deepEqual(x.misses, [], "seed " + seed);
+      assert.equal(x.light, "night");
+      assert.equal(x.depWx.id, x.dep.icao);
+      assert.equal(x.arrWx.src, "metar");
+      assert.ok(w.airports.some(a => a.icao === x.arr.icao && a.name === x.arr.name));
+    }
+    // variety: distinct departures, all at least 100 NM apart (one per site is possible here)
+    assert.equal(new Set(o.map(x => x.dep.icao)).size, 5);
+    for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) assert.ok(gcNm(o[i].dep, o[j].dep) >= 100, "seed " + seed);
+  }
+});
+
+test("never pairs an airport with itself or a field within 5 NM", () => {
+  const w = baseWorld();
+  // the same field under a second ident, 3 NM away (a 30-kt aircraft would make it a 21-minute "flight")
+  w.airports.push(apt("XS0A", 45, 0.07)); w.rwy.XS0A = [8000, 8000, 1];
+  const slow = { kt: 30, rangeNM: 200, minRwyFt: 2000, paved: false };
+  for (const seed of SEEDS) for (const o of run(w, P("any", "any", "any", "any"), seed, { lim: slow })) {
+    assert.notEqual(o.dep.icao, o.arr.icao);
+    assert.ok(gcNm(o.dep, o.arr) > 5, o.dep.icao + "-" + o.arr.icao);
+    assert.ok(o.nm > 5);
+  }
+  const pair = { airports: [apt("AAAA", 45, 0), apt("BBBB", 45, 0.07)], rwy: { AAAA: [8000, 8000, 1], BBBB: [8000, 8000, 1] } };
+  assert.deepEqual(run(pair, P("any", "any", "any", "any"), 1, { lim: slow }), []);
+});
+
+test("respects the runway rule", () => {
+  const w = baseWorld();
+  const add = (a, r) => { w.airports.push(a); w.rwy[a.icao] = r; };
+  add(apt("PAV5", 45, 1.5), [5000, 5000, 1]);        // paved, too short
+  add(apt("GRV9", 45, 4.5), [9000, 0, 0]);           // long, but gravel
+  add(apt("HIG7", 45, 7.5, 5500), [7000, 7000, 1]);  // long enough at sea level, not at 5,500 ft
+  add(apt("HIGX", 45, 10.5, 5500), [10100, 10100, 1]); // 6500 x 1.55 = 10,075 ft: just enough
+  w.airports.push(apt("NORW", 45, 6)); // not in the runway index
+  const a320 = { kt: 450, rangeNM: 3000, minRwyFt: 6500, paved: true };
+  const seen = new Set();
+  for (const seed of SEEDS) for (const o of run(w, P("any", "any", "any", "any"), seed, { lim: a320 })) {
+    for (const id of [o.dep.icao, o.arr.icao]) { assert.ok(!["PAV5", "GRV9", "HIG7", "NORW"].includes(id), id); seen.add(id); }
+  }
+  assert.ok(seen.has("HIGX"));
+  // a GA aircraft may use the gravel strip (longest runway of any surface)
+  const ga = new Set();
+  for (const seed of SEEDS) for (const o of run(w, P("any", "any", "any", "any"), seed, { lim: { ...GA, kt: 300, rangeNM: 1000 } })) ga.add(o.dep.icao).add(o.arr.icao);
+  assert.ok(ga.has("GRV9") && ga.has("PAV5") && !ga.has("NORW"));
+});
+
+test("distance bands", () => {
+  const w = baseWorld();
+  for (const seed of SEEDS) {
+    const s = run(w, P("any", "any", "any", "short"), seed);
+    assert.equal(s.length, 5);
+    for (const o of s) {
+      assert.deepEqual(o.misses, []);
+      assert.ok(o.min >= 20 && o.min <= 120, "short " + o.min);
+      assert.ok(Math.abs(o.min - estMinutes(o.nm, 120)) <= 1);
+    }
+    const l = run(w, P("any", "any", "any", "long"), seed);
+    assert.equal(l.length, 5);
+    for (const o of l) { assert.deepEqual(o.misses, []); assert.ok(o.min > 120, "long " + o.min); assert.ok(o.nm <= 400, "range " + o.nm); }
+    for (const o of run(w, P("any", "any", "any", "any"), seed)) { assert.ok(o.min >= 20); assert.ok(o.nm <= 400); }
+  }
+  // near misses on distance, labelled with the estimated time
+  const two = (lonB) => ({ airports: [apt("AAAA", 45, 0), apt("BBBB", 45, lonB)], rwy: { AAAA: [8000, 8000, 1], BBBB: [8000, 8000, 1] } });
+  const hm = m => Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0");
+  const over = run(two(6), P("any", "any", "any", "short"), 1); // ~254 NM: 2 h 22
+  assert.equal(over.length, 2);
+  for (const o of over) { assert.ok(o.min > 120); assert.deepEqual(o.misses, [hm(o.min) + " — just over short"]); }
+  const under = run(two(4.5), P("any", "any", "any", "long"), 1); // ~191 NM: 1 h 50
+  assert.equal(under.length, 2);
+  for (const o of under) { assert.ok(o.min <= 120); assert.deepEqual(o.misses, [hm(o.min) + " — under long"]); }
+  // beyond the range there is nothing, not even a near miss
+  assert.deepEqual(run(two(10), P("any", "any", "any", "long"), 1), []); // ~424 NM > 400
+});
+
+// longitude on the equator where the sun stands at `elev` degrees at ETD (sun sinking eastward of ~-60 deg here)
+function lonAtElev(elev) {
+  let a = -90, b = -30;
+  for (let i = 0; i < 60; i++) { const m = (a + b) / 2; if (sunElevation(0, m, ETD) > elev) a = m; else b = m; }
+  return (a + b) / 2;
+}
+
+test("night needs real darkness", () => {
+  const tw = apt("TWIL", 0, lonAtElev(-3)), dk = apt("DARK", 0, lonAtElev(-15));
+  const airports = [tw, dk, apt("TWN1", 1, tw.lon), apt("TWS1", -1, tw.lon), apt("DKN1", 1, dk.lon), apt("DKS1", -1, dk.lon)];
+  const w = { airports, rwy: Object.fromEntries(airports.map(a => [a.icao, [8000, 8000, 1]])), obs: [ob(tw, ""), ob(dk, "")] };
+  assert.ok(Math.abs(sunElevation(tw.lat, tw.lon, ETD) + 3) < 0.01);
+  for (const seed of SEEDS) {
+    const o = run(w, P("night", "any", "any", "short"), seed);
+    assert.equal(o.length, 2); // departures need a report when a time is asked for
+    assert.equal(o[0].dep.icao, "DARK"); assert.deepEqual(o[0].misses, []); assert.equal(o[0].light, "night");
+    assert.equal(o[1].dep.icao, "TWIL"); assert.deepEqual(o[1].misses, ["twilight, not dark yet"]); assert.equal(o[1].light, "twilight");
+  }
+  const d = run(w, P("day", "any", "any", "short"), 1);
+  assert.deepEqual(d.find(x => x.dep.icao === "TWIL").misses, ["twilight, not full daylight"]);
+});
+
+test("uses the TAF beyond 90 minutes", () => {
+  const dep = apt("DEPT", 45, 0), near = apt("NEAR", 45, 3), far = apt("FARR", 45, 6); // ~127 NM (79 min), ~254 NM (142 min)
+  const airports = [dep, near, far];
+  const rwy = Object.fromEntries(airports.map(a => [a.icao, [8000, 8000, 1]]));
+  const obs = [ob(dep, "-SN", SNOW), ob(near, "-RA"), ob(far, "")]; // the METAR at FARR shows no rain
+  const taf = { id: "FARR", raw: "TAF FARR 242200Z 2422/2522 5SM -RA OVC020", from: NOW - 3600000, to: NOW + 86400000,
+    fc: [{ from: NOW - 3600000, to: NOW + 86400000, kind: "", wx: "-RA", vis: 5, ceil: 2000, sky: true, becoming: null }] };
+  const w = { airports, rwy, obs, tafs: { FARR: taf } };
+  for (const seed of SEEDS) {
+    const all = run(w, P("any", "snow", "rain", "long"), seed), o = all[0];
+    assert.equal(o.dep.icao, "DEPT"); assert.equal(o.arr.icao, "FARR"); assert.ok(o.min > 90);
+    assert.deepEqual(o.misses, []);
+    assert.equal(o.arrWx.src, "taf"); assert.equal(o.arrWx.raw, taf.raw); assert.equal(o.arrWx.wx, "-RA"); assert.equal(o.arrWx.cat, "MVFR");
+    assert.ok(all.slice(1).every(x => x.misses.length > 0)); // the other reporting fields are near misses (no snow)
+    for (const x of run(w, P("any", "any", "any", "any"), seed)) {
+      if (x.arrWx) assert.equal(x.arrWx.src, x.min > 90 ? "taf" : "metar");
+      else assert.ok(x.min > 90 && x.arr.icao !== "FARR"); // only a far field without a TAF has no arrival weather
+    }
+  }
+  // without a TAF, a far arrival has no report even though it has a METAR
+  const n = run({ ...w, tafs: {} }, P("any", "snow", "rain", "long"), 1);
+  assert.equal(n[0].dep.icao, "DEPT"); assert.equal(n[0].arr.icao, "FARR");
+  assert.deepEqual(n[0].misses, ["no report at arrival"]); assert.equal(n[0].arrWx, null);
+});
+
+test("stale reports are ignored", () => {
+  const w = baseWorld();
+  const stale = w.airports[4]; // ST2A
+  w.obs = w.airports.map(a => ob(a, "-SN", a === stale ? { ...SNOW, t: NOW - 2 * 3600000, raw: "METAR STALE" } : SNOW));
+  let n = 0;
+  for (const seed of SEEDS) for (const o of run(w, P("any", "snow", "any", "short"), seed)) {
+    assert.notEqual(o.dep.icao, stale.icao);
+    assert.notEqual(o.arrWx && o.arrWx.raw, "METAR STALE");
+    n++;
+  }
+  assert.ok(n >= 5 * SEEDS.length);
+});
+
+test("fills with near misses, labelled", () => {
+  const w = baseWorld();
+  w.obs = w.airports.map(a => ob(a, "RA"));
+  for (const seed of SEEDS) {
+    const o = run(w, P("any", "snow", "any", "short"), seed);
+    assert.equal(o.length, 5);
+    for (const x of o) assert.ok(x.misses.includes("rain instead of snow"), JSON.stringify(x.misses));
+    assert.equal(new Set(o.map(x => x.dep.icao)).size, 5);
+  }
+  // full matches first, then near misses by fewest misses
+  w.obs = w.airports.map((a, i) => ob(a, i === 0 || i === 6 ? "-SN" : i % 2 ? "" : "RA", i === 0 || i === 6 ? SNOW : {}));
+  for (const seed of SEEDS) {
+    const o = run(w, P("any", "snow", "snow", "short"), seed);
+    assert.equal(o.length, 5);
+    for (let i = 1; i < o.length; i++) assert.ok(o[i - 1].misses.length <= o[i].misses.length);
+    assert.ok(o[0].misses.length <= 1);
+    for (const x of o) for (const m of x.misses)
+      assert.ok(/^(rain|low visibility|no precipitation) instead of snow$/.test(m), m);
+  }
+});
+
+test("generate stays well under a second on a worldwide data set", () => {
+  // synthetic world the size of the real one: 49k airports, ~5k reports, 1k TAFs
+  const rnd = seeded(42), airports = [], rwy = {}, obs = [], tafs = {};
+  const WX = ["-SN", "SN", "RA", "-RA", "-SHRA", "BR", "FG", "", "", "", "", "", "", "", "", "", "", "", "", ""];
+  for (let i = 0; i < 49000; i++) {
+    const a = apt("W" + i, -60 + rnd() * 130, -180 + rnd() * 360, Math.round(rnd() * 3000));
+    airports.push(a); rwy[a.icao] = [Math.round(1500 + rnd() * 11000), rnd() < 0.5 ? Math.round(2000 + rnd() * 10000) : 0, 1];
+    if (i < 5100) {
+      const wx = WX[Math.floor(rnd() * WX.length)], low = wx === "FG" || rnd() < 0.1;
+      obs.push(ob(a, wx, { t: NOW - rnd() * 150 * 60000, ...(low ? SNOW : {}) }));
+    }
+    if (i < 1000) tafs[a.icao] = { id: a.icao, raw: "TAF " + a.icao, from: NOW - 3600000, to: NOW + 86400000,
+      fc: [{ from: NOW - 3600000, to: NOW + 86400000, kind: "", wx: WX[i % WX.length], vis: 6, ceil: null, sky: true, becoming: null },
+        { from: NOW + 3600000, to: NOW + 7200000, kind: "TEMPO", wx: "-SN", vis: 2, ceil: 700, sky: true, becoming: null }] };
+  }
+  const liner = { kt: 470, rangeNM: 6000, minRwyFt: 7000, paved: true };
+  const cases = [[GA, P("any", "any", "any", "any")], [GA, P("night", "snow", "snow", "long")], [GA, P("day", "rain", "lowvis", "short")],
+    [liner, P("any", "snow", "snow", "any")], [liner, P("night", "lowvis", "snow", "long")], [liner, P("any", "any", "any", "short")]];
+  for (const [lim, prompts] of cases) {
+    const t0 = performance.now();
+    const o = generate({ airports, rwy, obs, tafs, lim, prompts, now: NOW, rand: seeded(7) });
+    const ms = performance.now() - t0;
+    assert.equal(o.length, 5, JSON.stringify(prompts));
+    assert.ok(ms < 1000, `${JSON.stringify(prompts)}: ${ms.toFixed(0)} ms`);
+  }
 });

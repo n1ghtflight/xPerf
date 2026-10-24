@@ -185,3 +185,183 @@ function sunElevation(lat, lon, t) {
 }
 
 function dayNight(elev) { return elev > 0 ? "day" : elev < -6 ? "night" : "twilight"; }
+
+/* =====================================================================
+   Screening and generation (pure: the clock comes in as input.now, randomness as input.rand)
+     aircraftLimits – cruise speed, range and runway need of a model (browser glue: basePerf, FT)
+     estMinutes     – screening flight time
+     generate       – up to 5 options: full matches first, then near misses labelled with what differs
+   ===================================================================== */
+
+const RandomFlight = { now: () => Date.now() }; // the UI reads the clock here, so tests can pin it
+
+function aircraftLimits(m) {
+  const oap = m.kind === "openap", P = m.P || {};
+  const kt = (oap ? m.cruiseMach * 573 : P.cruiseTAS) || 110;
+  const km = oap && m.ac && m.ac.cruise ? m.ac.cruise.range : null;
+  // airliners: 90 % of the OpenAP cruise range; GA: published range less a 45-minute reserve
+  const rangeNM = oap ? (km ? km / 1.852 * 0.9 : 300) : P.cruiseRange ? P.cruiseRange - kt * 0.75 : 300;
+  const b = basePerf(m) || {};
+  const need = [b.to * (b.sfTo || 1), b.ldg * (b.sfLdg || 1)].filter(x => x > 0).map(x => x / FT);
+  const dflt = oap ? 6000 : 2500; // a distance missing from the model: never screen below this
+  return { kt, rangeNM, minRwyFt: need.length === 2 ? Math.max(...need) : Math.max(dflt, ...need), paved: oap };
+}
+
+function estMinutes(nm, kt) { return nm / kt * 60 + 15; } // + climb, descent and taxi
+
+const RAND_NM = 3440.065, RAND_FRESH = 90 * 60000, RAND_COUNT = 5, RAND_SPACING = 100, RAND_WORK = 2e6;
+const RAND_WORD = { snow: "snow", rain: "rain", lowvis: "low visibility" };
+
+function randHm(min) { return Math.floor(min / 60) + ":" + String(min % 60).padStart(2, "0"); }
+
+// null when weather w has the wanted condition, else "<got> instead of <wanted>"
+function randWxMiss(want, w) {
+  if (want === "any") return null;
+  const k = wxClass(w);
+  if (k[want]) return null;
+  const got = ["snow", "rain", "lowvis"].find(c => c !== want && k[c]);
+  return (got ? RAND_WORD[got] : "no precipitation") + " instead of " + RAND_WORD[want];
+}
+
+function randLightMiss(want, light) {
+  if (want === "any" || want === light) return null;
+  if (light === "twilight") return want === "night" ? "twilight, not dark yet" : "twilight, not full daylight";
+  return light + " instead of " + want;
+}
+
+function randPt(a) { const la = a.lat * Math.PI / 180; return { a, la, lo: a.lon * Math.PI / 180, cl: Math.cos(la), ob: null }; }
+function randDist(p, q) {
+  const s1 = Math.sin((q.la - p.la) / 2), s2 = Math.sin((q.lo - p.lo) / 2);
+  return 2 * RAND_NM * Math.asin(Math.sqrt(Math.min(1, s1 * s1 + p.cl * q.cl * s2 * s2)));
+}
+
+// 1-degree lat/lon buckets, so a search near a point skips the rest of the world
+const randKey = (r, c) => (r + 90) * 360 + (((c + 180) % 360) + 360) % 360;
+function randGrid(pts) {
+  const g = new Map();
+  for (const p of pts) {
+    const k = randKey(Math.min(89, Math.floor(p.a.lat)), Math.floor(p.a.lon)), c = g.get(k);
+    if (c) c.push(p); else g.set(k, [p]);
+  }
+  return g;
+}
+// calls fn for every point that may lie within nm of p (a superset), returns the work done; with `all` (the
+// grid's points) given, a search wider than the list walks the list instead of the cells
+function randNear(g, all, p, nm, fn) {
+  const lat = p.a.lat, lon = p.a.lon, dLat = nm / 60;
+  const r0 = Math.max(-90, Math.floor(lat - dLat)), r1 = Math.min(89, Math.floor(lat + dLat));
+  const edge = Math.max(Math.abs(lat - dLat), Math.abs(lat + dLat));
+  const dLon = edge >= 89 ? 180 : nm / (60 * Math.cos(edge * Math.PI / 180));
+  const c0 = dLon >= 180 ? -180 : Math.floor(lon - dLon), c1 = dLon >= 180 ? 179 : Math.floor(lon + dLon);
+  if (all && (dLon >= 180 || (r1 - r0 + 1) * (c1 - c0 + 1) >= all.length)) { for (const q of all) fn(q); return all.length; }
+  let n = 0;
+  for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+    const cell = g.get(randKey(r, c)); n++;
+    if (cell) { n += cell.length; for (const q of cell) fn(q); }
+  }
+  return n;
+}
+
+function randShuffle(a, rand) {
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+
+function generate(input) {
+  const { airports, rwy, obs, tafs, lim, prompts: p, now, rand } = input;
+  const etd = Math.ceil(now / 600000) * 600000, kt = lim.kt;
+
+  // airports the aircraft can use: longest (paved, for airliners) runway >= the need, +10 % per 1,000 ft elevation
+  const pts = [], byId = new Map();
+  for (const a of airports) {
+    const r = rwy[a.icao];
+    if (!r || (lim.paved ? r[1] : r[0]) < lim.minRwyFt * (1 + 0.10 * Math.max(a.alt || 0, 0) / 1000)) continue;
+    const q = randPt(a); pts.push(q); byId.set(a.icao, q);
+  }
+  for (const o of obs) { // the newest current observation of each usable airport
+    const q = byId.get(o.id);
+    if (q && now - o.t <= RAND_FRESH && (!q.ob || o.t > q.ob.t)) q.ob = o;
+  }
+
+  // departures: a current report is required unless both departure weather and time are "any"
+  const free = p.dep === "any" && p.time === "any", deps = [];
+  for (const q of pts) {
+    if (!free && !q.ob) continue;
+    const light = dayNight(sunElevation(q.a.lat, q.a.lon, etd));
+    deps.push({ q, light, m: [randLightMiss(p.time, light), q.ob && randWxMiss(p.dep, q.ob)].filter(Boolean) });
+  }
+  randShuffle(deps, rand).sort((a, b) => a.m.length - b.m.length); // fewest misses first, random within
+
+  // distance band on the estimated minutes; undefined = out of the band even as a near miss
+  const distMiss = min => min < 20 ? undefined
+    : p.dist === "short" ? (min <= 120 ? null : min <= 150 ? randHm(min) + " — just over short" : undefined)
+    : p.dist === "long" ? (min > 120 ? null : min >= 90 ? randHm(min) + " — under long" : undefined)
+    : null;
+  const maxNm = Math.min(lim.rangeNM, p.dist === "short" ? (151 - 15) / 60 * kt : Infinity);
+
+  // arrival weather: the current METAR up to 90 minutes out, beyond that the TAF at the estimated arrival time
+  const arrPts = p.arr === "any" ? pts : pts.filter(q => q.ob || tafs[q.a.icao]);
+  const grid = randGrid(arrPts);
+  const arrWx = (q, min) => {
+    if (min <= 90) { const o = q.ob; return o ? { src: "metar", raw: o.raw, cat: o.cat, wx: o.wx, vis: o.vis, ceil: o.ceil } : null; }
+    const taf = tafs[q.a.icao], w = taf ? tafAt(taf, etd + min * 60000) : null;
+    return w ? { src: "taf", raw: taf.raw, cat: w.cat, wx: w.wx, vis: w.vis, ceil: w.ceil } : null;
+  };
+
+  let work = 0;
+  // the best arrival for one departure: fewest arrival-side misses, random among equals
+  const option = d => {
+    const cand = [];
+    work += randNear(grid, arrPts, d.q, maxNm, q => {
+      if (q === d.q || q.a.icao === d.q.a.icao) return;
+      const nm = randDist(d.q, q);
+      if (nm <= 5 || nm > maxNm) return; // never the same field under another ident
+      const min = Math.round(estMinutes(nm, kt)), dm = distMiss(min);
+      if (dm !== undefined) cand.push({ q, nm, min, dm });
+    });
+    let best = null, bestN = 3;
+    for (let n = cand.length; n > 0 && bestN > 0; n--) { // lazy shuffle: stop at the first arrival with no miss
+      const j = Math.floor(rand() * n), c = cand[j]; cand[j] = cand[n - 1];
+      const dn = c.dm ? 1 : 0;
+      if (dn >= bestN) continue;
+      const w = arrWx(c.q, c.min), am = p.arr === "any" ? null : w ? randWxMiss(p.arr, w) : "no report at arrival";
+      work += 20;
+      if (dn + (am ? 1 : 0) < bestN) { bestN = dn + (am ? 1 : 0); best = { c, w, am }; }
+    }
+    if (!best) return null;
+    const { c, w, am } = best;
+    return { dep: d.q.a, arr: c.q.a, nm: Math.round(c.nm), min: c.min, light: d.light, depWx: d.q.ob, arrWx: w,
+      misses: [...d.m, c.dm, am].filter(Boolean), _q: d.q };
+  };
+
+  // one option per departure; departures 100 NM apart first, the rest only if those run out. A departure's own
+  // misses bound its option from below, so the search stops once 5 options can no longer be beaten.
+  const pool = [], perLevel = [0, 0, 0, 0, 0], spaced = new Map(), deferred = [];
+  const settled = bound => { let n = 0; for (let k = 0; k <= bound; k++) n += perLevel[k]; return n >= RAND_COUNT; };
+  const nearSpaced = q => { let hit = false; randNear(spaced, null, q, RAND_SPACING, s => { if (!hit && randDist(q, s) < RAND_SPACING) hit = true; }); return hit; };
+  const scan = (list, spacing) => {
+    for (const d of list) {
+      if (settled(d.m.length) || (pool.length >= RAND_COUNT && work > RAND_WORK)) return;
+      if (spacing && nearSpaced(d.q)) { deferred.push(d); continue; }
+      const o = option(d);
+      if (!o) continue;
+      pool.push(o); perLevel[o.misses.length]++;
+      if (spacing) { const k = randKey(Math.min(89, Math.floor(d.q.a.lat)), Math.floor(d.q.a.lon)), c = spaced.get(k); if (c) c.push(d.q); else spaced.set(k, [d.q]); }
+    }
+  };
+  scan(deps, true);
+  scan(deferred, false);
+
+  // pick fewest misses first; within each level prefer departures 100 NM from those already picked
+  pool.sort((a, b) => a.misses.length - b.misses.length);
+  const out = [], used = new Set();
+  for (let lv = 0; lv < perLevel.length && out.length < RAND_COUNT; lv++) {
+    const level = pool.filter(o => o.misses.length === lv);
+    for (const strict of [true, false]) for (const o of level) {
+      if (out.length >= RAND_COUNT || used.has(o)) continue;
+      if (strict && out.some(x => randDist(x._q, o._q) < RAND_SPACING)) continue;
+      out.push(o); used.add(o);
+    }
+  }
+  return out.map(({ _q, ...o }) => o);
+}
