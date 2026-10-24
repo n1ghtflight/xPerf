@@ -83,6 +83,11 @@ test("classifies weather groups", () => {
   assert.equal(w("+SHRA BR").rain, true);
   assert.equal(w("SG").snow, true);
   assert.equal(w("PL").snow, true);
+  // mixed rain and snow anywhere in the report: snow, never rain
+  for (const m of ["-RA -SN", "RA SN", "FZRA PL", "-RASN", "+RASN BR", "-SNRA", "-SN BR -RA"]) {
+    assert.deepEqual(plain(w(m)).snow, true, m); assert.equal(w(m).rain, false, m);
+  }
+  assert.equal(w("-RA BLSN").rain, true); // blowing snow is not snow
   assert.equal(w("").rain, false);
   assert.equal(w(null).snow, false);
   assert.equal(wxClass({ wx: "", vis: 0.25, ceil: 200, cat: "LIFR" }).lowvis, true);
@@ -135,6 +140,19 @@ test("TAF periods: FM replaces, BECMG overrides given elements, TEMPO/PROB only 
   const c = at("2026-01-01T09:00Z"); assert.equal(c.vis, 4); assert.equal(c.ceil, 5000); assert.equal(c.cat, "MVFR");
   const d = at("2026-01-01T13:00Z"); assert.equal(d.vis, 6); assert.equal(d.ceil, 800); assert.equal(d.cat, "IFR"); assert.equal(d.wx, "-RA");
   const e = at("2026-01-01T19:00Z"); assert.equal(e.vis, 1); assert.equal(e.ceil, 800); assert.equal(wxClass(e).snow, true); assert.equal(e.cat, "IFR");
+});
+
+test("merged TAF weather agrees with METAR rule: rain excludes snow", () => {
+  const taf = { id: "T", raw: "", from: T("2026-01-01T00:00Z"), to: T("2026-01-02T00:00Z"), fc: [
+    { from: T("2026-01-01T00:00Z"), to: T("2026-01-02T00:00Z"), kind: "", wx: "-SN", vis: 5, ceil: null, sky: true, becoming: null },
+    { from: T("2026-01-01T02:00Z"), to: T("2026-01-01T04:00Z"), kind: "TEMPO", wx: "-RA", vis: null, ceil: null, sky: false, becoming: null }] };
+  const a = tafAt(taf, T("2026-01-01T03:00Z"));
+  assert.equal(wxClass(a).snow, true); assert.equal(wxClass(a).rain, false);
+  // across the whole fixture no observation or forecast period reports both
+  for (const o of parseMetarCsv(metarText)) { const k = wxClass(o); assert.ok(!(k.snow && k.rain), o.id); }
+  for (const t of Object.values(parseTafXml(tafText))) for (const f of t.fc) {
+    const k = wxClass(tafAt(t, Math.min(Math.max(f.from, t.from), t.to - 1))); assert.ok(!(k.snow && k.rain), t.id);
+  }
 });
 
 test("parses the TAF fixture", () => {

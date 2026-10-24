@@ -77,13 +77,15 @@ function parseMetarCsv(text) {
 }
 
 function wxClass(o) {
-  let snow = false, rain = false;
+  // report-level: any snow token makes the whole report snow, and rain is only reported when there is no snow
+  let snow = false, wet = false;
   for (const tok of String((o && o.wx) || "").split(/\s+/)) {
     if (!tok || tok.startsWith("VC") || tok.startsWith("RE")) continue;
     const w = tok.replace(/^[-+]/, "");
     if ((w.includes("SN") || w.includes("SG") || w.includes("PL")) && w !== "BLSN" && w !== "DRSN") snow = true;
-    else if (w.includes("RA") || w.includes("DZ")) rain = true;
+    else if (w.includes("RA") || w.includes("DZ")) wet = true;
   }
+  const rain = wet && !snow;
   const cat = (o && o.cat) || "";
   const lowvis = cat === "IFR" || cat === "LIFR" || (o.vis != null && o.vis < 3) || (o.ceil != null && o.ceil < 1000);
   return { snow, rain, lowvis };
