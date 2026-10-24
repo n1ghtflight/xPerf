@@ -118,6 +118,19 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.send_json(200, navdata.airport_info(ident, cands, q.get("country", "").upper(), lat, lon))
             except Exception as e:
                 return self.send_json(502, {"error": f"airport data unavailable: {e}"})
+        if url.path == "/api/rwyindex":
+            try:
+                return self.send_json(200, navdata.runway_index())
+            except Exception as e:
+                return self.send_json(502, {"error": f"runway data unavailable: {e}"})
+        if url.path == "/api/wxbulk":
+            kind = urllib.parse.parse_qs(url.query).get("kind", [""])[0]
+            if kind not in ("metars", "tafs"):
+                return self.send_json(400, {"error": "kind must be metars or tafs"})
+            try:
+                return self.send_bytes(navdata.wx_bulk(kind), "application/gzip")
+            except Exception as e:
+                return self.send_json(502, {"error": f"weather data unavailable: {e}"})
         if url.path == "/api/terrain":
             q = urllib.parse.parse_qs(url.query).get("locs", [""])[0]
             try:

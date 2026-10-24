@@ -143,6 +143,39 @@ def runways(cands):
     return []
 
 
+_PAVED = re.compile(r"ASP|CON|PEM|BIT|TAR|PAV|ASF|CONC|BRI|MAC", re.I)    # same pattern as SURF_PAVED in nav.js
+
+
+def runway_index():
+    """ident -> [longestFt, longestPavedFt, lit] over open runways (lit = 1 if any runway is lighted)."""
+    def build():
+        idx = memo("runways", lambda: _index_csv("runways.csv", "airport_ident"))
+        out = {}
+        for ident, rows in idx.items():
+            longest = paved = lit = 0
+            seen = False
+            for r in rows:
+                if r["closed"] == "1":
+                    continue
+                seen = True
+                n = int(num(r["length_ft"]) or 0)
+                longest = max(longest, n)
+                if _PAVED.search(r["surface"] or ""):
+                    paved = max(paved, n)
+                if r["lighted"] == "1":
+                    lit = 1
+            if seen:
+                out[ident] = [longest, paved, lit]
+        return out
+    return memo("rwyindex", build)
+
+
+def wx_bulk(kind):
+    """Raw .gz bytes of aviationweather.gov's worldwide METAR (csv) or TAF (xml) cache file, cached 300 s."""
+    name = {"metars": "metars.cache.csv.gz", "tafs": "tafs.cache.xml.gz"}[kind]
+    return cached_file(name, f"{AWC}/data/cache/{name}", 300)
+
+
 def frequencies(cands):
     idx = memo("freqs", lambda: _index_csv("airport-frequencies.csv", "airport_ident"))
     for c in cands:

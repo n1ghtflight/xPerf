@@ -155,6 +155,8 @@ def main():
     step(f"ICAO regions: {nfix} fixes")
     w.put("stations.json", [[s["icaoId"], round(s["lat"], 4), round(s["lon"], 4)] for s in navdata._stations()])
     step("METAR stations")
+    w.put("rwyidx.json", navdata.runway_index())
+    step("runway index")
 
     nasr = navdata.memo("nasr_ils", navdata._nasr_ils)
     dtpp = navdata.memo("dtpp", navdata._dtpp)
