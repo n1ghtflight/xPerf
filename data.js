@@ -48,6 +48,15 @@ const XD=(()=>{
       :new TextDecoder().decode(buf);
     return JSON.parse(txt);
   }
+  // raw (possibly gzip) bytes of a URL → text; inflates only when the 1f 8b magic is still there (a host may already have decoded it)
+  async function gunzipText(url,ms=90000){
+    const c=new AbortController(), t=setTimeout(()=>c.abort(),ms);
+    try{ const res=await fetch(url,{signal:c.signal}); if(!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+      const buf=new Uint8Array(await res.arrayBuffer());
+      return buf[0]===0x1f&&buf[1]===0x8b?await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).text()
+        :new TextDecoder().decode(buf); }
+    finally{ clearTimeout(t); }
+  }
   const manifest=()=>once("manifest",async()=>{
     const cur=await fetchT(root+"current.json","json",15000);
     const m=await fetchT(root+cur.path+"manifest.json","json",15000);
@@ -131,6 +140,18 @@ const XD=(()=>{
   }
   const serverTerrain=pts=>get("/api/terrain?locs="+pts.map(p=>`${p.lat.toFixed(4)},${p.lon.toFixed(4)}`).join("|"),"json",60000);
 
+  // worldwide METAR / TAF files (random flight generator), kept in memory for 5 minutes per kind
+  const bulkCache={};
+  async function wxBulkFetch(kind){
+    if(kind!=="metars"&&kind!=="tafs") throw new Error(`unknown weather file: ${kind}`);
+    if(S) return gunzipText("/api/wxbulk?kind="+kind);
+    if(WX) return gunzipText(WX+"/data/cache/"+(kind==="metars"?"metars.cache.csv.gz":"tafs.cache.xml.gz"));
+    if(await proxy()) return gunzipText("/api/wxbulk?kind="+kind);
+    throw new Error("live weather search needs the site's weather relay or the local server");
+  }
+  const wxBulk=kind=>{ const hit=bulkCache[kind]; if(hit&&Date.now()-hit.t<300000) return hit.p;
+    const p=wxBulkFetch(kind); bulkCache[kind]={t:Date.now(),p}; p.catch(()=>{ if(bulkCache[kind]?.p===p) delete bulkCache[kind]; }); return p; };
+
   const ids=a=>[a.icao,a.iata,...(a.aliases||[])].filter(Boolean).join(",");
   const S=mode==="server";
   return {
@@ -146,6 +167,8 @@ const XD=(()=>{
     toTune:   ()=>once("totune",()=>get("data/to_tune.json","json",60000)),   // takeoff tuning to airport-planning charts
     airportInfo: a=>S?fetchT("/api/airportinfo?"+new URLSearchParams({ident:a.icao,aliases:[a.iata,...(a.aliases||[])].filter(Boolean).join(","),country:a.country||"",lat:a.lat,lon:a.lon}),"json",120000)
                      :packAirportInfo(a),
+    runwayIndex: ()=>once("rwyidx",()=>S?get("/api/rwyindex","json",90000):pack("rwyidx.json")),   // ident → [longestFt, longestPavedFt, lit]
+    wxBulk,                           // "metars" | "tafs" → worldwide file text (CSV / XML), cached 5 min
     routes: async(dep,arr)=>{
       if(S) return (await fetchT("/api/routes?"+new URLSearchParams({orig:ids(dep),dest:ids(arr),olat:dep.lat,olon:dep.lon,dlat:arr.lat,dlon:arr.lon}),"json",180000)).routes||[];
       const m=await manifest(); if(!m.originSet.has(dep.icao)) return [];
