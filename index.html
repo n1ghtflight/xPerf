@@ -15,7 +15,7 @@
 <meta name="theme-color" content="#efeff0" media="(prefers-color-scheme: light)">
 <title>Flight Performance Calculator</title>
 <link rel="stylesheet" href="styles/tokens.css?v=2026.10.19n">
-<link rel="stylesheet" href="styles/app.css?v=2026.10.19r">
+<link rel="stylesheet" href="styles/app.css?v=2026.10.24a">
 <link rel="stylesheet" href="vendor/leaflet-1.9.4/leaflet.min.css">
 <script src="vendor/leaflet-1.9.4/leaflet.min.js"></script>
 </head>
@@ -83,6 +83,7 @@
       <button type="button" class="heroex" data-example="sr22"><b>EGTF → LFPN</b><span>Cirrus SR22 · SR22</span></button>
       <button type="button" class="heroex" data-example="a320"><b>EGLL → LFPG</b><span>Airbus A320 · A320</span></button>
       <button type="button" class="heroex" data-example="b789"><b>KJFK → EGLL</b><span>Boeing 787-9 · B789</span></button>
+      <button type="button" class="heroex herorandom" data-random><b>Random flight · live weather</b><span>Snow, rain, low visibility or night — somewhere in the world right now</span></button>
     </div>
   </section>
   <section class="formcol">
@@ -136,6 +137,26 @@
       <p class="note simonly">For flight simulation only — not for real-world navigation. Something wrong? <a href="https://github.com/n1ghtflight/xPerf/issues" target="_blank" rel="noopener">Report it on GitHub</a>.</p>
     </div>
     <div class="card" style="margin-top:18px" id="acCard"><h2>Aircraft data</h2><div class="note">Select an aircraft.</div></div>
+  </section>
+  <section class="rfcol" id="rfPanel" hidden aria-labelledby="rfTitle">
+    <div class="card rfcard">
+      <div class="rfhead"><h2 class="viewtitle" id="rfTitle">Random flight</h2><button type="button" class="rfback" id="rfBack">Back to the form</button></div>
+      <p class="note rfintro">Flights your aircraft can do right now, chosen from live weather reports worldwide.</p>
+      <label id="rfgroupLbl">Aircraft</label>
+      <div class="seg" data-rf="group" role="group" aria-labelledby="rfgroupLbl"><button type="button" data-rv="ga" aria-pressed="false">GA</button><button type="button" data-rv="airliner" aria-pressed="false">Airliner</button></div>
+      <select id="rfAc" class="rfac" aria-label="Aircraft type"></select>
+      <label id="rftimeLbl">Time at departure</label>
+      <div class="seg" data-rf="time" role="group" aria-labelledby="rftimeLbl"><button type="button" data-rv="day" aria-pressed="false">Day</button><button type="button" data-rv="night" aria-pressed="false">Night</button><button type="button" data-rv="any" aria-pressed="false">Any</button></div>
+      <label id="rfdepLbl">Departure weather</label>
+      <div class="seg" data-rf="dep" role="group" aria-labelledby="rfdepLbl"><button type="button" data-rv="snow" aria-pressed="false">Snow</button><button type="button" data-rv="rain" aria-pressed="false">Rain</button><button type="button" data-rv="lowvis" aria-pressed="false">Low vis</button><button type="button" data-rv="any" aria-pressed="false">Any</button></div>
+      <label id="rfarrLbl">Arrival weather</label>
+      <div class="seg" data-rf="arr" role="group" aria-labelledby="rfarrLbl"><button type="button" data-rv="snow" aria-pressed="false">Snow</button><button type="button" data-rv="rain" aria-pressed="false">Rain</button><button type="button" data-rv="lowvis" aria-pressed="false">Low vis</button><button type="button" data-rv="any" aria-pressed="false">Any</button></div>
+      <label id="rfdistLbl">Distance</label>
+      <div class="seg" data-rf="dist" role="group" aria-labelledby="rfdistLbl"><button type="button" data-rv="short" aria-pressed="false">Short · up to 2 h</button><button type="button" data-rv="long" aria-pressed="false">Long</button><button type="button" data-rv="any" aria-pressed="false">Any</button></div>
+      <div class="rfbtns"><button type="button" id="rfGo">Generate flights</button><button type="button" class="ghost" id="rfAny" data-tip="Keeps the aircraft; every other prompt is Any">Fully random</button></div>
+      <div class="rfstate" id="rfState" aria-live="polite"></div>
+      <div class="rfres" id="rfRes"></div>
+    </div>
   </section>
 
   <section id="results"></section>
@@ -196,14 +217,15 @@
 </div>
 </div>
 
-<script src="shell.js?v=2026.10.19n"></script>
+<script src="shell.js?v=2026.10.24a"></script>
 <script src="data.js?v=2026.10.24a"></script>
 <script src="routeimport.js?v=2026.10.19c"></script>
 <script src="nav.js?v=2026.10.19s"></script>
 <script src="acpicker.js?v=2026.10.19q"></script>
 <script src="charts.js?v=2026.10.19a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
-<script src="chips.js?v=2026.10.19r"></script>
+<script src="chips.js?v=2026.10.24a"></script>
+<script src="random.js?v=2026.10.24a"></script>
 <script src="toperf.js?v=2026.10.19b"></script>
 <script src="takeoff.js?v=2026.10.19s"></script>
 <script src="blueprint.js?v=2026.10.17c"></script>

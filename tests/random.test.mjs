@@ -432,6 +432,16 @@ test("fills with near misses, labelled", () => {
   }
 });
 
+test("low visibility wanted at a clear field: the note says good visibility", () => {
+  const w = baseWorld();
+  w.obs = w.airports.map(a => ob(a, ""));
+  for (const seed of SEEDS) {
+    const o = run(w, P("any", "lowvis", "any", "short"), seed);
+    assert.equal(o.length, 5);
+    for (const x of o) assert.deepEqual(x.misses, ["good visibility instead of low visibility"]);
+  }
+});
+
 test("generate stays well under a second on a worldwide data set", () => {
   // synthetic world the size of the real one: 49k airports, ~5k reports, 1k TAFs
   const rnd = seeded(42), airports = [], rwy = {}, obs = [], tafs = {};

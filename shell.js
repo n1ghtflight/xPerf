@@ -141,6 +141,7 @@ const Palette=(()=>{
         {group:g,label:"Change aircraft…",keys:[],run:()=>document.querySelector('[data-chip="ac"]')?.click()},
         {group:g,label:"All settings",keys:[],run:()=>Chips.openDrawer()});
     }
+    cmds.push({group:"Flight",label:"Random flight",keys:[],run:()=>RandomFlight.open()});
     for(const [id,k] of [["overview","O"],["route","R"],["airports","A"],["takeoff","T"],["profile","P"],["fuel","F"],["setup","S"]])
       cmds.push({group:"Navigate",label:"Go to "+Shell.VIEWS.find(v=>v[0]===id)[1],keys:["G",k],run:()=>Shell.showView(id)});
     cmds.push({group:"Navigate",label:"Open Settings",keys:[","],run:()=>Shell.showView("settings")},

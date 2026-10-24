@@ -220,7 +220,7 @@ function randWxMiss(want, w) {
   const k = wxClass(w);
   if (k[want]) return null;
   const got = ["snow", "rain", "lowvis"].find(c => c !== want && k[c]);
-  return (got ? RAND_WORD[got] : "no precipitation") + " instead of " + RAND_WORD[want];
+  return (got ? RAND_WORD[got] : want === "lowvis" ? "good visibility" : "no precipitation") + " instead of " + RAND_WORD[want];
 }
 
 function randLightMiss(want, light) {
@@ -365,3 +365,158 @@ function generate(input) {
   }
   return out.map(({ _q, ...o }) => o);
 }
+
+/* =====================================================================
+   The panel (browser only): on the start screen in place of the setup form. Opening it loads the worldwide
+   weather files and the runway index (never at app start); Generate screens them for the chosen aircraft and
+   prompts; picking an option plans it like an example flight (Chips.planFlight).
+   ===================================================================== */
+Object.assign(RandomFlight, (() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const CHOICES = { group: ["ga", "airliner"], time: ["day", "night", "any"], dep: ["snow", "rain", "lowvis", "any"],
+    arr: ["snow", "rain", "lowvis", "any"], dist: ["short", "long", "any"] };
+  const DEF_AC = { ga: "apm:C172", airliner: "oap:a320" };
+  const ANY = { time: "any", dep: "any", arr: "any", dist: "any" };
+  const LOADING = "Loading live weather from aviationweather.gov…";
+  let ans = null, data = null, seq = 0, busy = false, shown = [];
+
+  const lsGet = k => { try { return localStorage.getItem(k); } catch (_) { return null; } };
+  function answers() {
+    let s = null; try { s = JSON.parse(lsGet("xperf.random") || "null"); } catch (_) {}
+    const a = { group: String(lsGet("xperf.ac") || "").startsWith("oap:") ? "airliner" : "ga", ...ANY };
+    for (const k in CHOICES) if (s && CHOICES[k].includes(s[k])) a[k] = s[k];
+    return a;
+  }
+  function save() { try { localStorage.setItem("xperf.random", JSON.stringify(ans)); } catch (_) {} }
+
+  // the aircraft of the chosen group, copied from the form's list; default: the remembered aircraft, else C172 / A320
+  function fillAircraft() {
+    const sel = $("rfAc"), pre = ans.group === "airliner" ? "oap:" : "apm:";
+    sel.innerHTML = "";
+    for (const g of $("ac").querySelectorAll("optgroup")) {
+      const opts = [...g.children].filter(o => o.value.startsWith(pre));
+      if (!opts.length) continue;
+      const c = document.createElement("optgroup"); c.label = g.label;
+      for (const o of opts) c.appendChild(o.cloneNode(true));
+      sel.appendChild(c);
+    }
+    const last = lsGet("xperf.ac");
+    sel.value = last && last.startsWith(pre) && [...sel.options].some(o => o.value === last) ? last : DEF_AC[ans.group];
+  }
+  function syncSegs() {
+    document.querySelectorAll("#rfPanel [data-rf]").forEach(seg => seg.querySelectorAll("[data-rv]").forEach(b =>
+      b.setAttribute("aria-pressed", String(ans[seg.dataset.rf] === b.dataset.rv))));
+  }
+  function setBusy(on) { busy = on; $("rfGo").disabled = on; $("rfAny").disabled = on; }
+  function state(kind, text) {
+    const el = $("rfState");
+    el.className = "rfstate" + (kind ? " " + kind : "");
+    el.innerHTML = kind === "loading" ? `<span class="rfspin" aria-hidden="true"></span>${esc(text)}`
+      : kind === "error" ? `<span class="err">${esc(text)}</span><button type="button" class="sm rfretry" id="rfRetry">Retry</button>`
+      : esc(text || "");
+  }
+
+  // the two worldwide files (XD keeps them 5 minutes) and the runway index; parsed again only when the text changed
+  function load() {
+    const my = ++seq;
+    $("rfRes").innerHTML = ""; shown = [];
+    state("loading", LOADING);
+    return Promise.all([XD.wxBulk("metars"), XD.wxBulk("tafs"), XD.runwayIndex()]).then(([mt, tt, rwy]) => {
+      const obs = data && data.mt === mt ? data.obs : parseMetarCsv(mt);
+      const tafs = data && data.tt === tt ? data.tafs : parseTafXml(tt);
+      data = { mt, tt, rwy, obs, tafs };
+      if (my === seq) state("", `Live weather: ${obs.length.toLocaleString()} reports and ${Object.keys(tafs).length.toLocaleString()} forecasts worldwide.`);
+      return data;
+    }, e => { if (my === seq) state("error", e.message); throw e; });
+  }
+
+  async function run(full) {
+    if (busy) return;
+    const acId = $("rfAc").value, prompts = full ? ANY : { time: ans.time, dep: ans.dep, arr: ans.arr, dist: ans.dist };
+    setBusy(true);
+    try {
+      let d;
+      try { d = await load(); } catch (_) { return; }        // load() shows the reason and Retry
+      if ($("ac").value !== acId) AcPicker.set(acId);
+      await MODEL_P;
+      if (!MODEL || MODEL.id !== acId) { state("error", "Could not load the aircraft's performance data."); return; }
+      const opts = generate({ airports: DB.airports, rwy: d.rwy, obs: d.obs, tafs: d.tafs, lim: aircraftLimits(MODEL), prompts,
+        now: RandomFlight.now(), rand: Math.random });
+      shown = opts.map(o => ({ ...o, acId }));
+      $("rfRes").innerHTML = shown.map(card).join("");
+      state("", !opts.length ? "Nothing close enough right now — try Any for one of the prompts."
+        : opts.some(o => o.misses.length) ? "Not everything matches right now — the closest flights say what differs." : "");
+    } finally { setBusy(false); }
+  }
+
+  /* ---------- option cards */
+  const FR = ["", "⅛", "¼", "⅜", "½", "⅝", "¾", "⅞"];
+  function visTxt(v) {                  // eighths below 1 SM, quarters to 3 SM (metric reports convert to odd decimals)
+    if (v >= 3) return String(Math.round(v));
+    const e = v < 1 ? Math.max(1, Math.round(v * 8)) : Math.round(v * 4) * 2;
+    return (Math.floor(e / 8) || "") + FR[e % 8];
+  }
+  // "FG ¼ SM OVC002": present weather, visibility below 6 SM, the ceiling layer as the METAR prints it
+  function shortWx(w) {
+    const out = [];
+    if (w.wx) out.push(w.wx);
+    if (w.vis != null && w.vis < 6) out.push(visTxt(w.vis) + " SM");
+    if (w.ceil != null) {
+      const h = String(Math.round(w.ceil / 100)).padStart(3, "0");
+      const m = w.src !== "taf" && new RegExp("\\b(BKN|OVC|VV)" + h + "\\b").exec(w.raw || "");
+      out.push(m ? m[0] : "CIG " + h);
+    }
+    return out.join(" ");
+  }
+  function tag(side, w) {
+    if (!w) return `<span class="rftag none">${side} · no report</span>`;
+    const cat = ["VFR", "MVFR", "IFR", "LIFR"].includes(w.cat) ? w.cat : "", s = shortWx(w);
+    return `<span class="rftag ${cat ? cat.toLowerCase() : "none"}" title="${esc(w.raw)}">${side} ${cat || "—"}${s ? " · " + esc(s) : ""}</span>`;
+  }
+  function card(o, i) {
+    const raw = `${o.dep.icao}: ${o.depWx ? o.depWx.raw : "no report"}\n${o.arr.icao}: ${o.arrWx ? o.arrWx.raw : "no report"}`;
+    return `<button type="button" class="rfopt" data-i="${i}" data-dep="${esc(o.dep.icao)}" data-arr="${esc(o.arr.icao)}" title="${esc(raw)}">` +
+      `<span class="rfrt"><b>${esc(o.dep.icao)} → ${esc(o.arr.icao)}</b><span class="rfmeta">${o.nm} NM · ${randHm(o.min)} · ${o.light}</span></span>` +
+      `<span class="rfnames">${esc(o.dep.name)} → ${esc(o.arr.name)}</span>` +
+      `<span class="rfwx">${tag("DEP", o.depWx)}${tag("ARR", o.arrWx)}${o.arrWx && o.arrWx.src === "taf" ? `<span class="rffc">forecast</span>` : ""}</span>` +
+      (o.misses.length ? `<span class="rfmiss">${esc(o.misses.join(" · "))}</span>` : "") + `</button>`;
+  }
+  function pick(o) {
+    close();
+    const nav = $("nav").value, etd = new Date(Math.ceil(RandomFlight.now() / 600000) * 600000).toISOString().slice(0, 16);
+    // a pasted route belongs to another airport pair: fly the new one direct
+    Chips.planFlight(o.acId, o.dep.icao, o.arr.icao, nav && nav !== "import" ? nav : "direct", etd);
+  }
+
+  /* ---------- open / close */
+  function open() {
+    if (document.body.classList.contains("planned")) Chips.newFlight();
+    else if (Shell.current() === "settings") Shell.showView("overview");   // the start screen is hidden there
+    if (!ans) ans = answers();
+    fillAircraft(); syncSegs();
+    $("rfPanel").hidden = false; document.body.classList.add("random-open");
+    Shell.setCrumb("Random flight");
+    load().catch(() => {});
+    const first = $("rfPanel").querySelector('[aria-pressed="true"]');
+    if (first) first.focus({ preventScroll: true });
+  }
+  function close() {
+    $("rfPanel").hidden = true; document.body.classList.remove("random-open");
+    Shell.setCrumb("New flight");
+  }
+
+  if (typeof document !== "undefined") document.addEventListener("click", e => {
+    const t = e.target; if (!t || !t.closest) return;
+    if (t.closest("[data-random]")) { open(); return; }
+    if (!t.closest("#rfPanel")) return;
+    const b = t.closest("[data-rf] [data-rv]");
+    if (b) { const k = b.closest("[data-rf]").dataset.rf; ans[k] = b.dataset.rv; if (k === "group") fillAircraft(); syncSegs(); save(); return; }
+    if (t.closest("#rfGo")) { run(false); return; }
+    if (t.closest("#rfAny")) { run(true); return; }
+    if (t.closest("#rfRetry")) { load().catch(() => {}); return; }
+    if (t.closest("#rfBack")) { close(); $("dep").focus(); return; }
+    const c = t.closest(".rfopt"); if (c && shown[+c.dataset.i]) pick(shown[+c.dataset.i]);
+  });
+  return { open, close };
+})());

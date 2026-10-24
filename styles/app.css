@@ -286,6 +286,42 @@ body.planned .hero,.surface[data-view="settings"] .hero{display:none}
 .heroex:hover{background-image:linear-gradient(var(--hover),var(--hover));border-color:var(--line-strong)}
 body:not(.planned) .setupform .viewtitle{display:none}
 @media (max-width:560px){ .hero{grid-template-columns:minmax(0,1fr);padding:18px 16px 16px} .heroart{display:none} }
+/* random flight (random.js): a panel in place of the setup form on the start screen, option cards below the prompts */
+.heroex.herorandom{grid-column:1/-1;border-color:color-mix(in oklch,var(--accent) 45%,var(--line))}
+.heroex.herorandom b{color:var(--accent)}
+body.random-open .work>.formcol,body.planned .rfcol{display:none}
+.rfhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rfhead .viewtitle{margin:0}
+button.rfback{flex:none;margin:0;width:auto;height:var(--h-control);padding:0 10px;border:var(--hairline) solid var(--line);border-radius:var(--r-sm);
+  background:var(--field);color:var(--text-2);font-size:var(--fs-small);font-weight:var(--w-medium)}
+button.rfback:hover{background-image:linear-gradient(var(--hover),var(--hover));color:var(--text)}
+.rfintro{margin:6px 0 0}
+select.rfac{margin-top:6px}
+.rfbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.rfbtns button{flex:1 1 auto;margin:0;width:auto;height:var(--h-control-lg);padding:0 14px}
+.rfbtns button.ghost{flex:0 1 auto}
+.rfstate{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-height:18px;margin-top:12px;color:var(--text-3);font-size:var(--fs-small)}
+.rfstate:empty{display:none}
+.rfstate .err{color:var(--bad)}
+button.rfretry{height:var(--h-control);padding:0 10px}
+.rfspin{flex:none;width:12px;height:12px;border-radius:50%;border:1.5px solid var(--line-strong);border-top-color:var(--accent);animation:rfspin .8s linear infinite}
+@keyframes rfspin{to{transform:rotate(360deg)}}
+.rfres{display:grid;gap:8px;margin-top:10px}
+.rfres:empty{display:none}
+button.rfopt{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0;margin:0;width:100%;height:auto;padding:10px 12px;text-align:left;
+  background:var(--field);border:var(--hairline) solid var(--line);border-radius:var(--r);color:var(--text);font-size:var(--fs-small);font-weight:var(--w-regular);
+  cursor:pointer;transition:background-color var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+button.rfopt:hover{background-image:linear-gradient(var(--hover),var(--hover));border-color:var(--accent)}
+.rfrt{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:2px 12px}
+.rfrt b{font-family:var(--mono);font-size:var(--fs-regular);font-weight:var(--w-semibold)}
+.rfmeta{color:var(--text-3);font-size:var(--fs-mini);font-feature-settings:var(--num-features)}
+.rfnames{color:var(--text-2);font-size:var(--fs-mini);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rfwx{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.rftag{--c:var(--text-3);max-width:100%;padding:1px 7px;border-radius:var(--r-xs);background:color-mix(in oklch,var(--c) 14%,transparent);color:var(--c);
+  font-size:var(--fs-micro);font-weight:var(--w-semibold);font-feature-settings:var(--num-features);overflow-wrap:anywhere}
+.rftag.vfr{--c:var(--vfr)}.rftag.mvfr{--c:var(--mvfr)}.rftag.ifr{--c:var(--ifr)}.rftag.lifr{--c:var(--lifr)}
+.rffc{padding:1px 7px;border:var(--hairline) solid var(--line-strong);border-radius:var(--r-xs);color:var(--text-3);font-size:var(--fs-micro)}
+.rfmiss{color:var(--warn);font-size:var(--fs-mini)}
 body.planned .work{grid-template-columns:minmax(0,1fr)}
 body.planned .work>.formcol{display:none}
 .setupform .viewtitle{margin-bottom:4px}

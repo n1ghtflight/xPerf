@@ -132,13 +132,16 @@ const Chips=(()=>{
   /* ---------- Start banner: one click fills the aircraft, both airports and the navigation, then plans */
   const EXAMPLES={ c172:["apm:C172","KPAO","KTRK","direct"], sr22:["apm:SR22","EGTF","LFPN","direct"],
     a320:["oap:a320","EGLL","LFPG","direct"], b789:["oap:b789","KJFK","EGLL","awy"] };
-  async function runExample(k){
-    const [ac,dep,arr,nav]=EXAMPLES[k]||[]; if(!ac||$("go").disabled) return;   // data still loading: the click does nothing
+  // also the random flight panel's pick (random.js); etdUtc "YYYY-MM-DDTHH:MM", left as it is when not given
+  async function planFlight(ac,dep,arr,nav,etdUtc){
+    if(!ac||$("go").disabled) return;   // data still loading: the click does nothing
     if($("ac").value!==ac) AcPicker.set(ac);
     $("dep").value=dep; $("arr").value=arr; $("alt").value=""; $("route").value="";
+    if(etdUtc) $("etd").value=etdUtc;
     $("nav").value=nav; $("nav").dispatchEvent(new Event("change",{bubbles:true}));
     syncForm(); await replan();
   }
+  function runExample(k){ const [ac,dep,arr,nav]=EXAMPLES[k]||[]; return planFlight(ac,dep,arr,nav); }
   document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("[data-example]"); if(b) runExample(b.dataset.example); });
 
   /* ---------- All settings drawer */
@@ -254,5 +257,5 @@ const Chips=(()=>{
     }
   },true);
 
-  return { render, afterRender, replan, syncForm, buildSegs, openDrawer, closeDrawer, closeMenu, openImport, routeEnds, newFlight };
+  return { render, afterRender, replan, syncForm, buildSegs, openDrawer, closeDrawer, closeMenu, openImport, routeEnds, newFlight, planFlight };
 })();

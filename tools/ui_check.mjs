@@ -5,6 +5,7 @@ import { spawnSync, spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
 import { launch, replay, planFlight, FLIGHTS, inFlight, paused, lastPage } from "./cdp.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -866,6 +867,72 @@ check("landing-icon", async () => {
     const r = await page.eval(`({ sym:!!document.getElementById('i-landing'), tile:takeoffTile(LAST_X) })`);
     expect(r.sym, "no #i-landing icon");
     expect(r.tile.includes('#i-landing') && !r.tile.includes('scale(1,-1)'), "landing half still uses the flipped takeoff icon");
+  } finally { await page.close(); }
+});
+
+// random flight: a panel in place of the setup form, five options from recorded worldwide weather, picking one plans it
+check("random-flight", async () => {
+  const gz = n => gunzipSync(readFileSync(join(here, "..", "tests", "fixtures", n))).toString("utf8");
+  const fix = JSON.stringify({ metars: gz("awc-metars.csv.gz"), tafs: gz("awc-tafs.xml.gz") });
+  const T0 = Date.parse("2026-10-24T22:18:00.000Z");      // the fixture clock
+  // live data (no replay): the A320's OpenAP files are not in the recorded fixtures; the weather files are overridden in-page
+  const page = await launch({ port, query: mode === "packs" ? "data=packs" : "" });
+  const wait = `const wait=ms=>new Promise(r=>setTimeout(r,ms)), $=id=>document.getElementById(id);`;
+  try {
+    await page.goto("/");
+    await page.eval(`(async()=>{ for(let i=0;i<240&&document.getElementById('go').disabled;i++) await new Promise(r=>setTimeout(r,250)); })()`);
+    expect(!(await page.eval(`document.getElementById('go').disabled`)), "app data did not load");
+    await page.eval(`(()=>{ window.__rfFix=${fix}; XD.wxBulk=k=>Promise.resolve(window.__rfFix[k]); RandomFlight.now=()=>${T0}; })()`);
+    const BULK = `performance.getEntriesByType('resource').filter(e=>/rwyidx|rwyindex|wxbulk|cache\.(csv|xml)/.test(e.name)).length`;
+    expect(await page.eval(BULK) === 0, "worldwide weather or runway index loaded at app start");
+    expect(await visible(page, "#hero [data-random]"), "no Random flight button on the start banner");
+    await page.click("[data-random]"); await settle(page);
+    expect(await visible(page, "#rfPanel") && !(await visible(page, "#surface .formcol")), "the panel did not replace the setup form");
+    await page.click('#rfPanel [data-rf="group"] [data-rv="airliner"]');
+    await page.eval(`(()=>{ const s=document.getElementById('rfAc'); s.value='oap:a320'; s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+    for (const [k, v] of [["time", "any"], ["dep", "any"], ["arr", "any"], ["dist", "short"]]) await page.click(`#rfPanel [data-rf="${k}"] [data-rv="${v}"]`);
+    await page.click("#rfGo");
+    const n = await page.eval(`(async()=>{ ${wait} for(let i=0;i<900&&!document.querySelector('#rfRes .rfopt')&&!document.querySelector('#rfState .err');i++) await wait(100);
+      return document.querySelectorAll('#rfRes .rfopt').length; })()`);
+    expect(n === 5, `${n} options (state: ${await page.eval(`document.getElementById('rfState').textContent`)})`);
+    expect(await page.eval(`(()=>{ const r=JSON.parse(localStorage.getItem('xperf.random')||'{}'); return r.group==='airliner'&&r.dist==='short'&&r.dep==='any'; })()`),
+      "prompts not saved to xperf.random: " + await page.eval(`localStorage.getItem('xperf.random')`));
+    expect(await page.eval(BULK) > 0, "opening the panel did not load the runway index");
+    // phone width: the panel with results fits
+    await page.setViewport(375, 812, true); await settle(page);
+    const o = await page.eval(`({doc:document.documentElement.scrollWidth-innerWidth, surf:(s=>s.scrollWidth-s.clientWidth)(document.getElementById('surface')),
+      panel:(s=>s.scrollWidth-s.clientWidth)(document.getElementById('rfPanel'))})`);
+    expect(o.doc <= 1 && o.surf <= 1 && o.panel <= 1, "horizontal scroll at 375 px: " + JSON.stringify(o));
+    await page.setViewport(1440, 900, false); await settle(page);
+    // pick the first option: it plans like an example flight
+    const pick = await page.eval(`(()=>{ const b=document.querySelector('#rfRes .rfopt'); return {dep:b.dataset.dep, arr:b.dataset.arr}; })()`);
+    expect(pick.dep && pick.arr && pick.dep !== pick.arr, "option idents: " + JSON.stringify(pick));
+    await page.click("#rfRes .rfopt");
+    await page.eval(`(async()=>{ ${wait} for(let i=0;i<1200&&!(window.LAST_X&&LAST_X.arr.icao===${JSON.stringify(pick.arr)})&&!$('err').textContent;i++) await wait(100); })()`);
+    await idle(page);
+    const p = await page.eval(`(()=>{ ${wait} return {dep:$('dep').value, arr:$('arr').value, etd:$('etd').value, ac:MODEL&&MODEL.id, err:$('err').textContent,
+      planned:document.body.classList.contains('planned'), x:!!window.LAST_X&&LAST_X.dep.icao, panel:!$('rfPanel').hidden}; })()`);
+    expect(!p.err && p.planned && p.x === pick.dep, "picked option did not plan: " + JSON.stringify(p));
+    expect(p.dep === pick.dep && p.arr === pick.arr && p.ac === "oap:a320" && p.etd === "2026-10-24T22:20", "form after picking: " + JSON.stringify(p));
+    expect(!p.panel, "panel still open after picking");
+    const vis = await page.eval(VISIBLE_VIEWS);
+    expect(vis.length === 1 && vis[0] === "overview", "after picking, visible views " + JSON.stringify(vis));
+    // reopen with the weather unavailable: the reason and a Retry button, no spinner left
+    await page.click('[data-chip="new"]'); await settle(page);
+    await page.eval(`XD.wxBulk=()=>Promise.reject(new Error("live weather search needs the site's weather relay or the local server"))`);
+    await page.click("[data-random]");
+    const e = await page.eval(`(async()=>{ ${wait} for(let i=0;i<100&&!$('rfRetry');i++) await wait(100);
+      return {txt:$('rfState').textContent, retry:!!$('rfRetry')&&$('rfRetry').getClientRects().length>0, spin:!!document.querySelector('#rfPanel .rfspin'), opts:document.querySelectorAll('#rfRes .rfopt').length}; })()`);
+    expect(/needs the site's weather relay or the local server/.test(e.txt) && e.retry && !e.spin && e.opts === 0, "weather error state: " + JSON.stringify(e));
+    await page.eval(`XD.wxBulk=k=>Promise.resolve(window.__rfFix[k])`);
+    await page.click("#rfRetry");
+    const r = await page.eval(`(async()=>{ ${wait} for(let i=0;i<100&&(document.querySelector('#rfPanel .rfspin')||$('rfRetry'));i++) await wait(100);
+      return {retry:!!$('rfRetry'), spin:!!document.querySelector('#rfPanel .rfspin')}; })()`);
+    expect(!r.retry && !r.spin, "Retry did not recover: " + JSON.stringify(r));
+    // the palette offers it too
+    await page.eval(`document.activeElement?.blur()`);
+    await page.key("k", { ctrl: true }); await settle(page); await page.type("#pInput", "random flight"); await settle(page);
+    expect(/Random flight/.test(await page.eval(`document.querySelector('#pList .p-item[aria-selected="true"]')?.textContent||''`)), "no Random flight command in the palette");
   } finally { await page.close(); }
 });
 
