@@ -427,6 +427,11 @@ Object.assign(RandomFlight, (() => {
     state("loading", LOADING);
     return Promise.all([XD.wxBulk("metars"), XD.wxBulk("tafs"), XD.runwayIndex()]).then(([mt, tt, rwy]) => {
       const obs = data && data.mt === mt ? data.obs : parseMetarCsv(mt);
+      if (!obs.length) {         // an empty file is missing weather, not "no matches" (TAFs may legitimately be few)
+        const e = new Error("Live weather reports came back empty from aviationweather.gov — try again in a minute.");
+        if (my === seq) state("error", e.message);
+        throw e;
+      }
       const tafs = data && data.tt === tt ? data.tafs : parseTafXml(tt);
       data = { mt, tt, rwy, obs, tafs };
       if (my === seq) state("", `Live weather: ${obs.length.toLocaleString()} reports and ${Object.keys(tafs).length.toLocaleString()} forecasts worldwide.`);

@@ -41,19 +41,27 @@ def fetch(url, timeout=90):
         return r.read()
 
 
-def cached_file(name, url, ttl):
-    """Download url into cache/name unless a fresh copy exists. Falls back to a stale copy if offline."""
+def cached_file(name, url, ttl, valid=None):
+    """Download url into cache/name unless a fresh copy exists. Falls back to a stale copy if offline.
+    valid(bytes) -> bool, when given, must accept a cached copy to serve it and a download to keep it: a download it
+    rejects counts as a failed one (the last good copy is served, else the call raises) and is never cached."""
     os.makedirs(CACHE_DIR, exist_ok=True)
     path = os.path.join(CACHE_DIR, name)
-    if os.path.exists(path) and time.time() - os.path.getmtime(path) < ttl:
+    old = None
+    if os.path.exists(path):
         with open(path, "rb") as f:
-            return f.read()
+            old = f.read()
+        if valid and not valid(old):
+            old = None                                    # a bad copy cached earlier is no fallback either
+        elif time.time() - os.path.getmtime(path) < ttl:
+            return old
     try:
         data = fetch(url)
+        if valid and not valid(data):
+            raise ValueError(f"{name}: the download is empty or not the expected format")
     except Exception:
-        if os.path.exists(path):
-            with open(path, "rb") as f:
-                return f.read()
+        if old is not None:
+            return old
         raise
     # write a temp file beside it, then swap it in: a concurrent reader (another thread or server) never sees half a file
     fd, tmp = tempfile.mkstemp(prefix=name + ".", suffix=".tmp", dir=CACHE_DIR)
@@ -185,9 +193,10 @@ def runway_index():
 
 
 def wx_bulk(kind):
-    """Raw .gz bytes of aviationweather.gov's worldwide METAR (csv) or TAF (xml) cache file, cached 300 s."""
+    """Raw .gz bytes of aviationweather.gov's worldwide METAR (csv) or TAF (xml) cache file, cached 300 s.
+    An empty or non-gzip answer (the site sometimes sends a 0-byte 200) is a failed download, never cached or returned."""
     name = {"metars": "metars.cache.csv.gz", "tafs": "tafs.cache.xml.gz"}[kind]
-    return cached_file(name, f"{AWC}/data/cache/{name}", 300)
+    return cached_file(name, f"{AWC}/data/cache/{name}", 300, valid=lambda d: d[:2] == b"\x1f\x8b" and len(d) > 2)
 
 
 def frequencies(cands):

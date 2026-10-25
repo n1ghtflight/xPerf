@@ -942,6 +942,18 @@ check("random-flight", async () => {
     const r = await page.eval(`(async()=>{ ${wait} for(let i=0;i<100&&(document.querySelector('#rfPanel .rfspin')||$('rfRetry'));i++) await wait(100);
       return {retry:!!$('rfRetry'), spin:!!document.querySelector('#rfPanel .rfspin')}; })()`);
     expect(!r.retry && !r.spin, "Retry did not recover: " + JSON.stringify(r));
+    // an empty worldwide METAR file (the site briefly serves a 0-byte 200) is an error with Retry, not "no matches"
+    await page.eval(`XD.wxBulk=k=>Promise.resolve(k==="metars"?"":window.__rfFix[k])`);
+    await page.click("#rfGo");
+    const em = await page.eval(`(async()=>{ ${wait} for(let i=0;i<100&&!$('rfRetry');i++) await wait(100);
+      return {txt:$('rfState').textContent, retry:!!$('rfRetry')&&$('rfRetry').getClientRects().length>0, spin:!!document.querySelector('#rfPanel .rfspin'), opts:document.querySelectorAll('#rfRes .rfopt').length}; })()`);
+    expect(em.txt.startsWith("Live weather reports came back empty from aviationweather.gov — try again in a minute.") && em.retry && !em.spin && em.opts === 0,
+      "empty METAR file state: " + JSON.stringify(em));
+    await page.eval(`XD.wxBulk=k=>Promise.resolve(window.__rfFix[k])`);
+    await page.click("#rfRetry");
+    const er = await page.eval(`(async()=>{ ${wait} for(let i=0;i<100&&(document.querySelector('#rfPanel .rfspin')||$('rfRetry'));i++) await wait(100);
+      return {retry:!!$('rfRetry'), spin:!!document.querySelector('#rfPanel .rfspin')}; })()`);
+    expect(!er.retry && !er.spin, "Retry after the empty file did not recover: " + JSON.stringify(er));
     // a flight planned another way while the panel is open (an example above it, Ctrl+Enter) closes the panel,
     // and New flight then brings the setup form back, not the panel
     const startScreen = `(()=>{ const $=id=>document.getElementById(id); return {panel:!$('rfPanel').hidden, cls:document.body.classList.contains('random-open'),

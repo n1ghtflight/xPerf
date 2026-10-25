@@ -91,3 +91,35 @@ test("still refuses other cache files", async () => {
   assert.equal((await ask("/data/cache/pireps.cache.csv.gz")).status, 404);
   assert.equal(calls.length, 0);
 });
+
+// aviationweather.gov sometimes answers 200 with an empty or non-gzip body; that must not be relayed or edge-cached
+const withBody = async (body, fn) => {
+  const real = globalThis.fetch, puts = [], realCaches = globalThis.caches;
+  globalThis.fetch = async () => new Response(body, { status: 200, headers: { "Content-Type": "application/octet-stream" } });
+  globalThis.caches = { default: { match: async () => undefined, put: async (k, r) => { puts.push(k.url); } } };
+  try { await fn(puts); } finally { globalThis.fetch = real; globalThis.caches = realCaches; }
+};
+const askAndWait = async (path) => { const waits = [];
+  const res = await worker.fetch(new Request("https://xperf-wx.example.workers.dev" + path), {}, { waitUntil: p => waits.push(p) });
+  await Promise.all(waits); return res; };
+
+test("refuses to relay an empty worldwide file", () => withBody("", async puts => {
+  const res = await askAndWait("/data/cache/metars.cache.csv.gz");
+  assert.equal(res.status, 502);
+  assert.equal(res.headers.get("Cache-Control"), "no-store");
+  assert.equal(res.headers.get("Access-Control-Allow-Origin"), "*");
+  assert.deepEqual(puts, [], "an empty answer must not enter the edge cache");
+}));
+
+test("refuses a non-gzip worldwide file", () => withBody("<html>maintenance</html>", async puts => {
+  const res = await askAndWait("/data/cache/tafs.cache.xml.gz");
+  assert.equal(res.status, 502);
+  assert.equal(res.headers.get("Cache-Control"), "no-store");
+  assert.deepEqual(puts, []);
+}));
+
+test("a good worldwide file is still edge-cached", () => withBody(new Uint8Array([0x1f, 0x8b, 8, 0]), async puts => {
+  const res = await askAndWait("/data/cache/metars.cache.csv.gz");
+  assert.equal(res.status, 200);
+  assert.deepEqual(puts, ["https://aviationweather.gov/data/cache/metars.cache.csv.gz"]);
+}));

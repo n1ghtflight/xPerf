@@ -3,7 +3,7 @@
 //
 // Deploy, either:
 //   - Cloudflare dashboard → Workers → Create → paste this file → Deploy, or
-//   - npx wrangler deploy tools/wx-worker.js --name xperf-wx --compatibility-date 2026-10-01
+//   - wrangler, only from an isolated folder with its own wrangler.toml — never from the repo (see HANDOFF, Web release)
 // Optional variable ALLOW_ORIGIN = your site's origin (e.g. https://xperf.pages.dev) instead of "*".
 //
 // Only GET /api/data/metar and /api/data/taf are relayed, with the parameters XPerf uses and validated station
@@ -38,6 +38,10 @@ export default {
       // a station with no report answers 204 No Content, which may not carry a body; the cache files are raw gzip
       // bytes (upstream labels them application/octet-stream), so read arrayBuffer and set the type ourselves
       const body = [204, 205, 304].includes(up.status) ? null : file ? await up.arrayBuffer() : await up.text();
+      // the upstream sometimes answers 200 with an empty or non-gzip body: refuse it, and keep it out of the edge cache
+      if (file && up.ok && !(body && body.byteLength > 2 && new Uint8Array(body)[0] === 0x1f && new Uint8Array(body)[1] === 0x8b))
+        return new Response("upstream sent an empty or non-gzip file", { status: 502,
+          headers: { ...cors, "Content-Type": "text/plain", "Cache-Control": "no-store" } });
       res = new Response(body, { status: up.status,
         headers: { "Content-Type": file ? "application/gzip" : up.headers.get("Content-Type") || "application/json", "Cache-Control": "public, max-age=300" } });
       if (cache && up.ok && ctx.waitUntil) ctx.waitUntil(cache.put(key, res.clone()));
