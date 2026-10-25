@@ -147,7 +147,7 @@ function tafAt(taf, t) {
       if (g.vis != null) vis = g.vis;
       if (g.sky) ceil = g.ceil;
       if (g.wx) wx = g.wx === "NSW" ? "" : g.wx;
-    } else { wx = g.wx; vis = g.vis; ceil = g.ceil; }
+    } else { wx = g.wx === "NSW" ? "" : g.wx; vis = g.vis; ceil = g.ceil; }
   }
   const toks = wx ? wx.split(/\s+/) : [];
   for (const g of taf.fc) {
@@ -193,7 +193,7 @@ function dayNight(elev) { return elev > 0 ? "day" : elev < -6 ? "night" : "twili
      generate       – up to 5 options: full matches first, then near misses labelled with what differs
    ===================================================================== */
 
-const RandomFlight = { now: () => Date.now() }; // the UI reads the clock here, so tests can pin it
+const RandomFlight = { now: () => Date.now(), rand: Math.random }; // the UI reads the clock and randomness here, so tests can pin them
 
 function aircraftLimits(m) {
   const oap = m.kind === "openap", P = m.P || {};
@@ -222,6 +222,7 @@ function estMinutes(nm, kt) { return nm / kt * 60 + 15; } // + climb, descent an
 
 const RAND_NM = 3440.065, RAND_FRESH = 90 * 60000, RAND_COUNT = 5, RAND_SPACING = 100, RAND_WORK = 2e6;
 const RAND_WORD = { snow: "snow", rain: "rain", lowvis: "low visibility" };
+const RAND_ICAO = /^[A-Z]{4}$/, RAND_MIL = /\bAir Base\b|\bAFB\b/i;
 
 function randHm(min) { return Math.floor(min / 60) + ":" + String(min % 60).padStart(2, "0"); }
 
@@ -284,8 +285,10 @@ function generate(input) {
 
   // airports the aircraft can use (index: [longest land runway, longest paved, lit]): a paved runway >= the need,
   // +10 % per 1,000 ft elevation; for propeller GA also an unpaved one with 25 % more (jets and airliners: paved only)
-  const pts = [], byId = new Map();
+  // Only airports FS2024 is likely to have: a 4-letter ICAO ident, and no air base / AFB unless it has a METAR station
+  const reporting = new Set(obs.map(o => o.id)), pts = [], byId = new Map();
   for (const a of airports) {
+    if (!RAND_ICAO.test(a.icao) || (RAND_MIL.test(a.name || "") && !reporting.has(a.icao))) continue;
     const r = rwy[a.icao], need = lim.minRwyFt * (1 + 0.10 * Math.max(a.alt || 0, 0) / 1000);
     if (!r || (r[1] < need && (lim.paved || r[0] < need * 1.25))) continue;
     const q = randPt(a); q.lit = !!r[2]; pts.push(q); byId.set(a.icao, q);
@@ -301,9 +304,11 @@ function generate(input) {
     if (!free && !q.ob) continue;
     const light = dayNight(sunElevation(q.a.lat, q.a.lon, etd));
     if (light !== "day" && !q.lit) continue; // twilight or night: a lit runway
-    deps.push({ q, light, m: [randLightMiss(p.time, light), q.ob && randWxMiss(p.dep, q.ob)].filter(Boolean) });
+    const lm = randLightMiss(p.time, light);
+    // far: the departure is the opposite of the wanted time (day for night), not just twilight
+    deps.push({ q, light, far: lm && light !== "twilight" ? 1 : 0, m: [lm, q.ob && randWxMiss(p.dep, q.ob)].filter(Boolean) });
   }
-  randShuffle(deps, rand).sort((a, b) => a.m.length - b.m.length); // fewest misses first, random within
+  randShuffle(deps, rand).sort((a, b) => a.m.length - b.m.length || a.far - b.far); // fewest misses first, twilight before the opposite, random within
 
   // distance band on the estimated minutes; undefined = out of the band even as a near miss
   const distMiss = min => min < 20 ? undefined
@@ -345,7 +350,7 @@ function generate(input) {
     if (!best) return null;
     const { c, w, am } = best;
     return { dep: d.q.a, arr: c.q.a, nm: Math.round(c.nm), min: c.min, light: d.light, depWx: d.q.ob, arrWx: w,
-      misses: [...d.m, c.dm, am].filter(Boolean), _q: d.q };
+      misses: [...d.m, c.dm, am].filter(Boolean), far: d.far, _q: d.q };
   };
 
   // one option per departure; departures 100 NM apart first, the rest only if those run out. A departure's own
@@ -367,7 +372,7 @@ function generate(input) {
   scan(deferred, false);
 
   // pick fewest misses first; within each level prefer departures 100 NM from those already picked
-  pool.sort((a, b) => a.misses.length - b.misses.length);
+  pool.sort((a, b) => a.misses.length - b.misses.length || a.far - b.far);
   const out = [], used = new Set();
   for (let lv = 0; lv < perLevel.length && out.length < RAND_COUNT; lv++) {
     const level = pool.filter(o => o.misses.length === lv);
@@ -377,7 +382,7 @@ function generate(input) {
       out.push(o); used.add(o);
     }
   }
-  return out.map(({ _q, ...o }) => o);
+  return out.map(({ _q, far, ...o }) => o);
 }
 
 /* =====================================================================
@@ -393,7 +398,7 @@ Object.assign(RandomFlight, (() => {
   const DEF_AC = { ga: "apm:C172", airliner: "oap:a320" };
   const ANY = { time: "any", dep: "any", arr: "any", dist: "any" };
   const LOADING = "Loading live weather from aviationweather.gov…";
-  let ans = null, data = null, seq = 0, busy = false, shown = [];
+  let ans = null, data = null, seq = 0, busy = false, shown = [], retry = null;
 
   const lsGet = k => { try { return localStorage.getItem(k); } catch (_) { return null; } };
   function answers() {
@@ -423,7 +428,9 @@ Object.assign(RandomFlight, (() => {
       b.setAttribute("aria-pressed", String(ans[seg.dataset.rf] === b.dataset.rv))));
   }
   function setBusy(on) { busy = on; $("rfGo").disabled = on; $("rfAny").disabled = on; }
-  function state(kind, text) {
+  // an error's Retry runs `again` (re-run Generate); without one it only reloads the weather
+  function state(kind, text, again) {
+    retry = kind === "error" && again || null;
     const el = $("rfState");
     el.className = "rfstate" + (kind ? " " + kind : "");
     el.innerHTML = kind === "loading" ? `<span class="rfspin" aria-hidden="true"></span>${esc(text)}`
@@ -439,6 +446,7 @@ Object.assign(RandomFlight, (() => {
     return Promise.all([XD.wxBulk("metars"), XD.wxBulk("tafs"), XD.runwayIndex()]).then(([mt, tt, rwy]) => {
       const obs = data && data.mt === mt ? data.obs : parseMetarCsv(mt);
       if (!obs.length) {         // an empty file is missing weather, not "no matches" (TAFs may legitimately be few)
+        XD.wxBulkEvict("metars"); // else Retry would get the same empty file from XD's 5-minute cache
         const e = new Error("Live weather reports came back empty from aviationweather.gov — try again in a minute.");
         if (my === seq) state("error", e.message);
         throw e;
@@ -454,7 +462,8 @@ Object.assign(RandomFlight, (() => {
     if (busy) return;
     if (!$("rfAc").value) fillAircraft();                 // opened while the aircraft list was still loading
     const acId = $("rfAc").value, prompts = full ? ANY : { time: ans.time, dep: ans.dep, arr: ans.arr, dist: ans.dist };
-    if (!acId || !DB.airports.length) { state("error", "The app's data is still loading — try again in a moment."); return; }
+    const again = () => run(full);
+    if (!acId || !DB.airports.length) { state("error", "The app's data is still loading — try again in a moment.", again); return; }
     setBusy(true);
     Busy.show("loading live weather…", [acId.split(":")[1].toUpperCase(),
       ...["dep", "time", "dist"].map(k => prompts[k]).filter(v => v !== "any").map(v => v === "lowvis" ? "low visibility" : v)].join(" · "));
@@ -465,14 +474,14 @@ Object.assign(RandomFlight, (() => {
       if ($("rfPanel").hidden) return;                       // a flight was planned another way meanwhile: keep its aircraft
       if ($("ac").value !== acId) AcPicker.set(acId);
       await MODEL_P;
-      if (!MODEL || MODEL.id !== acId) { state("error", "Could not load the aircraft's performance data."); return; }
+      if (!MODEL || MODEL.id !== acId) { state("error", "Could not load the aircraft's performance data.", again); return; }
       const opts = generate({ airports: DB.airports, rwy: d.rwy, obs: d.obs, tafs: d.tafs, lim: aircraftLimits(MODEL), prompts,
-        now: RandomFlight.now(), rand: Math.random });
+        now: RandomFlight.now(), rand: () => RandomFlight.rand() });
       shown = opts.map(o => ({ ...o, acId }));
       $("rfRes").innerHTML = shown.map(card).join("");
       state("", !opts.length ? "Nothing close enough right now — try Any for one of the prompts."
         : opts.some(o => o.misses.length) ? "Not everything matches right now — the closest flights say what differs." : "");
-    } catch (e) { state("error", e.message); console.error(e); }
+    } catch (e) { state("error", e.message, again); console.error(e); }
     finally { setBusy(false); Busy.hide(); }
   }
 
@@ -543,9 +552,13 @@ Object.assign(RandomFlight, (() => {
     if (b) { const k = b.closest("[data-rf]").dataset.rf; ans[k] = b.dataset.rv; if (k === "group") fillAircraft(); syncSegs(); save(); return; }
     if (t.closest("#rfGo")) { run(false); return; }
     if (t.closest("#rfAny")) { run(true); return; }
-    if (t.closest("#rfRetry")) { load().catch(() => {}); return; }
+    if (t.closest("#rfRetry")) { if (retry) retry(); else load().catch(() => {}); return; }
     if (t.closest("#rfBack")) { close(); $("dep").focus(); return; }
     const c = t.closest(".rfopt"); if (c && shown[+c.dataset.i]) pick(shown[+c.dataset.i]);
+  });
+  if (typeof document !== "undefined") document.addEventListener("keydown", e => {
+    if (e.key !== "Escape" || e.defaultPrevented || $("rfPanel").hidden || Palette.isOpen()) return;
+    e.preventDefault(); close(); $("dep").focus();
   });
   return { open, close };
 })());

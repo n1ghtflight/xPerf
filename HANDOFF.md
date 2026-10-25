@@ -70,7 +70,7 @@ python tools/airac_update.py --check     # current cycle vs local packs vs live 
 | `tools/build_site.py`, `sw.js`, `manifest.webmanifest`, `icons/`, `vendor/` | Static site build: packs mode, service worker (offline + install), Leaflet 1.9.4 vendored |
 | `tools/airac_update.py`, `tools/wx-worker.js` | AIRAC refresh + isolated deploy; METAR/TAF relay Worker |
 | `tools/cdp.mjs`, `tools/ui_check.mjs`, `tools/regress.mjs`, `tools/shoot.mjs` | Test harness (Edge over CDP), UI checks, number regression, screenshots — see Testing |
-| `tests/*.test.mjs` | Unit tests (palette, route import, blueprint, relay, takeoff model) |
+| `tests/*.test.mjs` | Unit tests (palette, route import, blueprint, relay, takeoff model, random flight) |
 | `IOS_PORT_STUDY.md`, `HANDOFF_WINDOWS_APP.md` | iOS portability study; Windows MSI plan (shelved) |
 | `cache/`, `packs/`, `dist/`, `out/` | Generated, gitignored |
 
@@ -124,7 +124,7 @@ download is refused: the last good copy is served, else 502) · `/api/health`
 
 ## Testing
 
-- Unit: `node --test tests/*.test.mjs` (127 tests).
+- Unit: `node --test tests/*.test.mjs` (131 tests).
 - Numbers: `node tools/regress.mjs compare --port 8770` (6 replayed flights must be identical; `--accept` only for an
   intended change, after reading the diff).
 - UI: `node tools/ui_check.mjs --mode server|packs [--only a,b]` (~50 checks, ~10 min per mode; never two runs at once).
@@ -156,8 +156,8 @@ download is refused: the last good copy is served, else 502) · `/api/health`
 - Published routes only exist between larger US airports; small fields fall back to airways.
 - Minimums shown are the standard CAT I baseline; real DA/MDA only on the plate.
 - Takeoff/landing: generic model, no obstacles or VMCG/VMCA/tyre limits; only A20N and B738 tuned closely.
-- Random flight can offer military and non-ICAO fields (the runway index is keyed like the airport list); a departure with a weather
-  condition needs a METAR station, so small fields without one are never picked for it.
+- Random flight offers only 4-letter ICAO-style idents and leaves out "Air Base" / "AFB" fields without a METAR station (they may not
+  exist in FS2024); a departure with a weather condition needs a METAR station, so small fields without one are never picked for it.
 - Forum announcement of the site: on hold (owner's call).
 - Ideas not done: METAR-based runway-in-use, alternate fuel, aircraft V-speeds per weight for GA.
 

@@ -166,7 +166,7 @@ _NOT_LAND = re.compile(r"WAT|SNOW|\bICE\b", re.I)                         # wate
 def runway_index():
     """airport-list ident -> [longestLandFt, longestPavedFt, lit] over open land runways (no water lanes, snow or
     ice; lit = 1 if any of them is lighted). Keyed like server.get_airports: icao_code, else gps_code, else ident;
-    airports with no open land runway are left out."""
+    airports with no open land runway, or whose key is not 4 letters (A-Z), are left out."""
     def build():
         idx = memo("runways", lambda: _index_csv("runways.csv", "airport_ident"))
         text = cached_file("airports.csv", OA + "airports.csv", 7 * DAY).decode("utf-8", "ignore")
@@ -186,8 +186,9 @@ def runway_index():
                     paved = max(paved, n)
                 if r["lighted"] == "1":
                     lit = 1
-            if seen:
-                out.setdefault(a.get("icao_code") or a.get("gps_code") or a["ident"], [longest, paved, lit])
+            key = a.get("icao_code") or a.get("gps_code") or a["ident"]
+            if seen and re.fullmatch(r"[A-Z]{4}", key):     # 4-letter ICAO-style idents only: other fields are unlikely to be in the sim
+                out.setdefault(key, [longest, paved, lit])
         return out
     return memo("rwyindex", build)
 

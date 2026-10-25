@@ -169,6 +169,7 @@ const XD=(()=>{
                      :packAirportInfo(a),
     runwayIndex: ()=>once("rwyidx",()=>S?get("/api/rwyindex","json",90000):pack("rwyidx.json")),   // ident → [longestLandFt, longestPavedFt, lit]
     wxBulk,                           // "metars" | "tafs" → worldwide file text (CSV / XML), cached 5 min
+    wxBulkEvict: kind=>{ delete bulkCache[kind]; },   // drop a cached file (it parsed to nothing): the next wxBulk refetches
     routes: async(dep,arr)=>{
       if(S) return (await fetchT("/api/routes?"+new URLSearchParams({orig:ids(dep),dest:ids(arr),olat:dep.lat,olon:dep.lon,dlat:arr.lat,dlon:arr.lon}),"json",180000)).routes||[];
       const m=await manifest(); if(!m.originSet.has(dep.icao)) return [];

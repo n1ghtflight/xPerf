@@ -909,11 +909,16 @@ check("random-flight", async () => {
   // live data (no replay): the A320's OpenAP files are not in the recorded fixtures; the weather files are overridden in-page
   const page = await launch({ port, query: mode === "packs" ? "data=packs" : "" });
   const wait = `const wait=ms=>new Promise(r=>setTimeout(r,ms)), $=id=>document.getElementById(id);`;
+  const startScreen = `(()=>{ const $=id=>document.getElementById(id); return {panel:!$('rfPanel').hidden, cls:document.body.classList.contains('random-open'),
+    form:!!document.querySelector('#surface .formcol')&&document.querySelector('#surface .formcol').getClientRects().length>0, crumb:$('crumb').textContent}; })()`;
   try {
     await page.goto("/");
     await page.eval(`(async()=>{ for(let i=0;i<240&&document.getElementById('go').disabled;i++) await new Promise(r=>setTimeout(r,250)); })()`);
     expect(!(await page.eval(`document.getElementById('go').disabled`)), "app data did not load");
-    await page.eval(`(()=>{ window.__rfFix=${fix}; XD.wxBulk=k=>Promise.resolve(window.__rfFix[k]); RandomFlight.now=()=>${T0}; })()`);
+    // the weather files, the clock and the randomness are pinned, so every run offers the same flights
+    await page.eval(`(()=>{ window.__rfFix=${fix}; window.__rfRealBulk=XD.wxBulk; XD.wxBulk=k=>Promise.resolve(window.__rfFix[k]); RandomFlight.now=()=>${T0};
+      window.__rfSeed=a=>{ RandomFlight.rand=()=>{ a=(a+0x6D2B79F5)|0; let t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; };
+      __rfSeed(7); })()`);
     const BULK = `performance.getEntriesByType('resource').filter(e=>/rwyidx|rwyindex|wxbulk|cache\.(csv|xml)/.test(e.name)).length`;
     expect(await page.eval(BULK) === 0, "worldwide weather or runway index loaded at app start");
     // before the aircraft list exists (app data still loading) the button does nothing, like the example flights
@@ -935,6 +940,19 @@ check("random-flight", async () => {
     await page.click('#rfPanel [data-rf="group"] [data-rv="airliner"]');
     await page.eval(`(()=>{ const s=document.getElementById('rfAc'); s.value='oap:a320'; s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
     for (const [k, v] of [["time", "any"], ["dep", "any"], ["arr", "any"], ["dist", "short"]]) await page.click(`#rfPanel [data-rf="${k}"] [data-rv="${v}"]`);
+    // a model that never loads: the error's Retry runs Generate again, not only the weather load
+    const perf = await page.eval(`(async()=>{ ${wait} const set=AcPicker.set, other='oap:a320';
+      try {
+        if(MODEL&&MODEL.id===other) return {skip:'the A320 is already the loaded model'};
+        AcPicker.set=()=>{}; $('rfAc').value=other; $('rfGo').click();
+        for(let i=0;i<100&&!$('rfRetry');i++) await wait(100);
+        return {other, txt:$('rfState').textContent, retry:!!$('rfRetry')&&$('rfRetry').getClientRects().length>0, opts:document.querySelectorAll('#rfRes .rfopt').length};
+      } finally { AcPicker.set=set; } })()`);
+    expect(/Could not load the aircraft's performance data/.test(perf.txt) && perf.retry && perf.opts === 0, "performance data error state: " + JSON.stringify(perf));
+    await page.click("#rfRetry");
+    const pr = await page.eval(`(async()=>{ ${wait} for(let i=0;i<300&&!document.querySelector('#rfRes .rfopt')&&!document.querySelector('#rfState .err');i++) await wait(100);
+      return {opts:document.querySelectorAll('#rfRes .rfopt').length, err:!!document.querySelector('#rfState .err'), model:MODEL&&MODEL.id}; })()`);
+    expect(pr.opts > 0 && !pr.err && pr.model === perf.other, "Retry after the performance data error did not generate: " + JSON.stringify(pr));
     await page.click("#rfGo");
     const n = await page.eval(`(async()=>{ ${wait} for(let i=0;i<900&&!document.querySelector('#rfRes .rfopt')&&!document.querySelector('#rfState .err');i++) await wait(100);
       return document.querySelectorAll('#rfRes .rfopt').length; })()`);
@@ -942,6 +960,17 @@ check("random-flight", async () => {
     expect(await page.eval(`(()=>{ const r=JSON.parse(localStorage.getItem('xperf.random')||'{}'); return r.group==='airliner'&&r.dist==='short'&&r.dep==='any'; })()`),
       "prompts not saved to xperf.random: " + await page.eval(`localStorage.getItem('xperf.random')`));
     expect(await page.eval(BULK) > 0, "opening the panel did not load the runway index");
+    // Fully random ignores the four prompts but must not overwrite them in xperf.random or on the buttons
+    const anyOpts = async seed => { await page.eval(`__rfSeed(${seed})`); await page.click("#rfAny");
+      return page.eval(`(async()=>{ ${wait} await wait(50); for(let i=0;i<900&&($('rfGo').disabled||!document.querySelector('#rfRes .rfopt'))&&!document.querySelector('#rfState .err');i++) await wait(100);
+        return [...document.querySelectorAll('#rfRes .rfopt')].map(b=>b.dataset.dep+'-'+b.dataset.arr); })()`); };
+    const pressed = `[...document.querySelectorAll('#rfPanel [data-rf] [aria-pressed="true"]')].map(b=>b.parentElement.dataset.rf+'='+b.dataset.rv).join()`;
+    const lsBefore = await page.eval(`localStorage.getItem('xperf.random')`), pressedBefore = await page.eval(pressed);
+    const fr1 = await anyOpts(11), fr2 = await anyOpts(11);
+    expect(fr1.length === 5 && fr1.join() === fr2.join(), "Fully random with the same seed: " + fr1.join() + " / " + fr2.join());
+    expect(await page.eval(`localStorage.getItem('xperf.random')`) === lsBefore && await page.eval(pressed) === pressedBefore,
+      "Fully random changed the remembered prompts: " + lsBefore + " -> " + await page.eval(`localStorage.getItem('xperf.random')`));
+    await page.eval(`__rfSeed(7)`);
     // phone width: the panel with results fits
     await page.setViewport(375, 812, true); await settle(page);
     const o = await page.eval(`({doc:document.documentElement.scrollWidth-innerWidth, surf:(s=>s.scrollWidth-s.clientWidth)(document.getElementById('surface')),
@@ -985,10 +1014,27 @@ check("random-flight", async () => {
     const er = await page.eval(`(async()=>{ ${wait} for(let i=0;i<100&&(document.querySelector('#rfPanel .rfspin')||$('rfRetry'));i++) await wait(100);
       return {retry:!!$('rfRetry'), spin:!!document.querySelector('#rfPanel .rfspin')}; })()`);
     expect(!er.retry && !er.spin, "Retry after the empty file did not recover: " + JSON.stringify(er));
+    // with the real XD.wxBulk (5-minute cache) and an empty METAR file, Retry fetches the file again instead of reusing the empty one
+    const ev = await page.eval(`(async()=>{ ${wait} const mine=XD.wxBulk, f=window.fetch; let n=0;
+      window.fetch=(u,...a)=>/wxbulk|cache\.(csv|xml)/.test(String(u))?(/metars/.test(String(u))&&n++,Promise.resolve(new Response(new Uint8Array(0)))):f(u,...a);
+      try {
+        XD.wxBulk=window.__rfRealBulk; $('rfGo').click();
+        for(let i=0;i<100&&!$('rfRetry');i++) await wait(100);
+        const first=n; $('rfRetry').click();
+        for(let i=0;i<100&&n<2;i++) await wait(100);
+        await wait(300);
+        return {first, n, retry:!!$('rfRetry')};
+      } finally { window.fetch=f; XD.wxBulk=mine; } })()`);
+    expect(ev.first === 1 && ev.n === 2 && ev.retry, "Retry after an empty METAR file did not refetch it: " + JSON.stringify(ev));
+    await page.eval(`XD.wxBulkEvict("metars")`);
+    // Escape closes the panel and brings the setup form back
+    expect((await page.eval(startScreen)).panel, "panel not open before Escape");
+    await page.key("Escape"); await settle(page);
+    const esc = await page.eval(startScreen);
+    expect(!esc.panel && !esc.cls && esc.form && esc.crumb === "New flight", "Escape with the panel open: " + JSON.stringify(esc));
+    await page.click("[data-random]"); await settle(page);
     // a flight planned another way while the panel is open (an example above it, Ctrl+Enter) closes the panel,
     // and New flight then brings the setup form back, not the panel
-    const startScreen = `(()=>{ const $=id=>document.getElementById(id); return {panel:!$('rfPanel').hidden, cls:document.body.classList.contains('random-open'),
-      form:!!document.querySelector('#surface .formcol')&&document.querySelector('#surface .formcol').getClientRects().length>0, crumb:$('crumb').textContent}; })()`;
     await page.click('[data-example="c172"]');
     await page.eval(`(async()=>{ ${wait} for(let i=0;i<1200&&!(window.LAST_X&&LAST_X.arr.icao==='KTRK')&&!$('err').textContent;i++) await wait(100); })()`);
     await idle(page);
