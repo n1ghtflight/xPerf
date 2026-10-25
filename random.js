@@ -433,7 +433,9 @@ Object.assign(RandomFlight, (() => {
 
   async function run(full) {
     if (busy) return;
+    if (!$("rfAc").value) fillAircraft();                 // opened while the aircraft list was still loading
     const acId = $("rfAc").value, prompts = full ? ANY : { time: ans.time, dep: ans.dep, arr: ans.arr, dist: ans.dist };
+    if (!acId || !DB.airports.length) { state("error", "The app's data is still loading — try again in a moment."); return; }
     setBusy(true);
     try {
       let d;
@@ -447,7 +449,8 @@ Object.assign(RandomFlight, (() => {
       $("rfRes").innerHTML = shown.map(card).join("");
       state("", !opts.length ? "Nothing close enough right now — try Any for one of the prompts."
         : opts.some(o => o.misses.length) ? "Not everything matches right now — the closest flights say what differs." : "");
-    } finally { setBusy(false); }
+    } catch (e) { state("error", e.message); console.error(e); }
+    finally { setBusy(false); }
   }
 
   /* ---------- option cards */
@@ -491,6 +494,7 @@ Object.assign(RandomFlight, (() => {
 
   /* ---------- open / close */
   function open() {
+    if (!document.querySelector("#ac optgroup")) return;     // app data still loading: like the example flights, nothing yet
     if (document.body.classList.contains("planned")) Chips.newFlight();
     else if (Shell.current() === "settings") Shell.showView("overview");   // the start screen is hidden there
     if (!ans) ans = answers();
@@ -501,7 +505,9 @@ Object.assign(RandomFlight, (() => {
     const first = $("rfPanel").querySelector('[aria-pressed="true"]');
     if (first) first.focus({ preventScroll: true });
   }
+  // also called when any plan starts (calculate) and by New flight, so the panel never outlives the start screen
   function close() {
+    if ($("rfPanel").hidden) return;
     $("rfPanel").hidden = true; document.body.classList.remove("random-open");
     Shell.setCrumb("New flight");
   }

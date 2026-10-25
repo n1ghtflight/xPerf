@@ -885,9 +885,22 @@ check("random-flight", async () => {
     await page.eval(`(()=>{ window.__rfFix=${fix}; XD.wxBulk=k=>Promise.resolve(window.__rfFix[k]); RandomFlight.now=()=>${T0}; })()`);
     const BULK = `performance.getEntriesByType('resource').filter(e=>/rwyidx|rwyindex|wxbulk|cache\.(csv|xml)/.test(e.name)).length`;
     expect(await page.eval(BULK) === 0, "worldwide weather or runway index loaded at app start");
+    // before the aircraft list exists (app data still loading) the button does nothing, like the example flights
+    // (#ac as index.html starts it: one "Loading aircraft…" option)
+    const early = await page.eval(`(()=>{ const ac=document.getElementById('ac'), v=ac.value, gs=[...ac.children]; ac.innerHTML='<option>Loading aircraft…</option>';
+      document.querySelector('[data-random]').click(); const shown=!document.getElementById('rfPanel').hidden;
+      if(shown) RandomFlight.close(); ac.replaceChildren(...gs); ac.value=v; return shown; })()`);
+    expect(!early, "the panel opened before the aircraft list had loaded");
     expect(await visible(page, "#hero [data-random]"), "no Random flight button on the start banner");
     await page.click("[data-random]"); await settle(page);
     expect(await visible(page, "#rfPanel") && !(await visible(page, "#surface .formcol")), "the panel did not replace the setup form");
+    // Generate with an empty aircraft list: a message, never AcPicker.set('') (which would remember an empty aircraft)
+    const empty = await page.eval(`(async()=>{ ${wait} const ac=$('ac'), v=ac.value, gs=[...ac.children], calls=[], set=AcPicker.set;
+      AcPicker.set=x=>{ calls.push(x); return set(x); }; ac.innerHTML='<option>Loading aircraft…</option>'; $('rfAc').innerHTML='';
+      $('rfGo').click(); await wait(50); for(let i=0;i<100&&$('rfGo').disabled;i++) await wait(100);
+      const r={calls, err:!!document.querySelector('#rfState .err'), txt:$('rfState').textContent, ls:localStorage.getItem('xperf.ac')};
+      ac.replaceChildren(...gs); ac.value=v; AcPicker.set=set; return r; })()`);
+    expect(!empty.calls.includes("") && empty.err && empty.ls !== "", "Generate with no aircraft list: " + JSON.stringify(empty));
     await page.click('#rfPanel [data-rf="group"] [data-rv="airliner"]');
     await page.eval(`(()=>{ const s=document.getElementById('rfAc'); s.value='oap:a320'; s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
     for (const [k, v] of [["time", "any"], ["dep", "any"], ["arr", "any"], ["dist", "short"]]) await page.click(`#rfPanel [data-rf="${k}"] [data-rv="${v}"]`);
@@ -929,6 +942,22 @@ check("random-flight", async () => {
     const r = await page.eval(`(async()=>{ ${wait} for(let i=0;i<100&&(document.querySelector('#rfPanel .rfspin')||$('rfRetry'));i++) await wait(100);
       return {retry:!!$('rfRetry'), spin:!!document.querySelector('#rfPanel .rfspin')}; })()`);
     expect(!r.retry && !r.spin, "Retry did not recover: " + JSON.stringify(r));
+    // a flight planned another way while the panel is open (an example above it, Ctrl+Enter) closes the panel,
+    // and New flight then brings the setup form back, not the panel
+    const startScreen = `(()=>{ const $=id=>document.getElementById(id); return {panel:!$('rfPanel').hidden, cls:document.body.classList.contains('random-open'),
+      form:!!document.querySelector('#surface .formcol')&&document.querySelector('#surface .formcol').getClientRects().length>0, crumb:$('crumb').textContent}; })()`;
+    await page.click('[data-example="c172"]');
+    await page.eval(`(async()=>{ ${wait} for(let i=0;i<1200&&!(window.LAST_X&&LAST_X.arr.icao==='KTRK')&&!$('err').textContent;i++) await wait(100); })()`);
+    await idle(page);
+    const ex = await page.eval(startScreen);
+    expect(!ex.panel && !ex.cls, "panel still open after an example flight planned: " + JSON.stringify(ex));
+    await page.click('[data-chip="new"]'); await settle(page);
+    const nf = await page.eval(startScreen);
+    expect(!nf.panel && nf.form && nf.crumb === "New flight", "after New flight: " + JSON.stringify(nf));
+    await page.click("[data-random]"); await settle(page);
+    await page.key("Enter", { ctrl: true }); await settle(page);
+    const ce = await page.eval(startScreen);
+    expect(!ce.panel && !ce.cls && ce.form, "Ctrl+Enter with the panel open: " + JSON.stringify(ce));
     // the palette offers it too
     await page.eval(`document.activeElement?.blur()`);
     await page.key("k", { ctrl: true }); await settle(page); await page.type("#pInput", "random flight"); await settle(page);

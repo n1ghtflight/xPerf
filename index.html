@@ -224,8 +224,8 @@
 <script src="acpicker.js?v=2026.10.19q"></script>
 <script src="charts.js?v=2026.10.19a"></script>
 <script src="pln.js?v=2026.10.17a"></script>
-<script src="chips.js?v=2026.10.24a"></script>
-<script src="random.js?v=2026.10.24a"></script>
+<script src="chips.js?v=2026.10.24b"></script>
+<script src="random.js?v=2026.10.24b"></script>
 <script src="toperf.js?v=2026.10.19b"></script>
 <script src="takeoff.js?v=2026.10.19s"></script>
 <script src="blueprint.js?v=2026.10.17c"></script>
@@ -849,6 +849,7 @@ function defaultRouteAlt(m){
 function aptPoint(a){ return {kind:"apt",apt:a,lat:a.lat,lon:a.lon,label:a.icao}; }
 
 async function calculate(){
+  if(typeof RandomFlight!=="undefined") RandomFlight.close();   // a plan made any way (example, Ctrl+Enter, palette) leaves the panel
   $("err").textContent="";
   const dep=resolveApt("dep"), arr=resolveApt("arr"), altTxt=$("alt").value.trim(), alt=altTxt?resolveApt("alt"):null;
   if(!dep||!arr){ $("err").textContent="Enter valid airport codes (ICAO, IATA or local identifier) for departure and arrival."; return; }

@@ -125,6 +125,7 @@ const Chips=(()=>{
       $("chipbar").hidden=true; $("chipbar").innerHTML="";
     }
     window.LAST_X=null; $("results").innerHTML=EMPTY_RESULTS;
+    if(typeof RandomFlight!=="undefined") RandomFlight.close();   // the setup form, not the random flight panel
     Shell.setCrumb("New flight"); Shell.showView("overview"); syncForm();
     $("dep").focus();
   }
