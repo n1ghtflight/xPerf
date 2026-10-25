@@ -133,8 +133,8 @@ function parseTafXml(text) {
 }
 
 // Conditions forecast for moment t: the prevailing period (base, then FM / BECMG in time order), worsened by any
-// TEMPO / PROB period that covers t. A BECMG only overrides the elements it states and counts once it has completed
-// (time_becoming). null when t is outside the TAF's validity.
+// TEMPO / PROB period that covers t. A BECMG only overrides the elements it states (NSW: no significant weather) and
+// counts once it has completed (time_becoming). null when t is outside the TAF's validity.
 function tafAt(taf, t) {
   if (!taf || !(t >= taf.from && t < taf.to)) return null;
   const rank = { "": 0, FM: 1, BECMG: 2 };
@@ -146,7 +146,7 @@ function tafAt(taf, t) {
     if (g.kind === "BECMG") {
       if (g.vis != null) vis = g.vis;
       if (g.sky) ceil = g.ceil;
-      if (g.wx || g.vis != null || g.sky) wx = g.wx;
+      if (g.wx) wx = g.wx === "NSW" ? "" : g.wx;
     } else { wx = g.wx; vis = g.vis; ceil = g.ceil; }
   }
   const toks = wx ? wx.split(/\s+/) : [];
@@ -443,6 +443,7 @@ Object.assign(RandomFlight, (() => {
     try {
       let d;
       try { d = await load(); } catch (_) { return; }        // load() shows the reason and Retry
+      if ($("rfPanel").hidden) return;                       // a flight was planned another way meanwhile: keep its aircraft
       if ($("ac").value !== acId) AcPicker.set(acId);
       await MODEL_P;
       if (!MODEL || MODEL.id !== acId) { state("error", "Could not load the aircraft's performance data."); return; }

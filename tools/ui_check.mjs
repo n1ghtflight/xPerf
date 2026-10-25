@@ -958,6 +958,23 @@ check("random-flight", async () => {
     await page.key("Enter", { ctrl: true }); await settle(page);
     const ce = await page.eval(startScreen);
     expect(!ce.panel && !ce.cls && ce.form, "Ctrl+Enter with the panel open: " + JSON.stringify(ce));
+    // Generate, then an example flight planned while the weather is still loading: the plan keeps its aircraft
+    await idle(page);
+    await page.click("[data-random]"); await settle(page);
+    await page.click('#rfPanel [data-rf="group"] [data-rv="airliner"]');
+    const sw = await page.eval(`(async()=>{ ${wait} let go; const gate=new Promise(r=>go=r), wx=XD.wxBulk, set=AcPicker.set, calls=[];
+      XD.wxBulk=k=>gate.then(()=>wx(k)); AcPicker.set=x=>{ calls.push(x); return set(x); };
+      try {
+        $('rfAc').value='oap:a320'; const want=$('rfAc').value;
+        window.LAST_X=null; $('rfGo').click(); await wait(50); const loading=$('rfGo').disabled;
+        document.querySelector('[data-example="c172"]').click();
+        for(let i=0;i<1200&&!(window.LAST_X&&LAST_X.arr.icao==='KTRK')&&!$('err').textContent;i++) await wait(100);
+        go(); for(let i=0;i<100&&$('rfGo').disabled;i++) await wait(100); await wait(300);
+        return {want, loading, calls, ac:$('ac').value, model:MODEL&&MODEL.id, planned:document.body.classList.contains('planned'),
+          x:!!window.LAST_X&&LAST_X.dep.icao, err:$('err').textContent, panel:!$('rfPanel').hidden};
+      } finally { XD.wxBulk=wx; AcPicker.set=set; } })()`);
+    expect(sw.want === "oap:a320" && sw.loading && sw.planned && !sw.err && sw.x === "KPAO" && !sw.panel && !sw.calls.includes("oap:a320")
+      && sw.ac === "apm:C172" && sw.model === "apm:C172", "Generate, then an example flight while the weather loads: " + JSON.stringify(sw));
     // the palette offers it too
     await page.eval(`document.activeElement?.blur()`);
     await page.key("k", { ctrl: true }); await settle(page); await page.type("#pInput", "random flight"); await settle(page);

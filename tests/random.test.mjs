@@ -143,6 +143,18 @@ test("TAF periods: FM replaces, BECMG overrides given elements, TEMPO/PROB only 
   const e = at("2026-01-01T19:00Z"); assert.equal(e.vis, 1); assert.equal(e.ceil, 800); assert.equal(wxClass(e).snow, true); assert.equal(e.cat, "IFR");
 });
 
+test("a BECMG without weather keeps the prevailing weather; NSW ends it", () => {
+  const g = (from, kind, o = {}) => ({ from: T(from), to: T("2026-01-02T00:00Z"), kind, wx: "", vis: null, ceil: null, sky: false, becoming: null, ...o });
+  const taf = w => ({ id: "T", raw: "", from: T("2026-01-01T00:00Z"), to: T("2026-01-02T00:00Z"), fc: [
+    g("2026-01-01T00:00Z", "", { wx: "-SN", vis: 2, ceil: 900, sky: true }), g("2026-01-01T06:00Z", "BECMG", { vis: 4, ...w })] });
+  const a = tafAt(taf({}), T("2026-01-01T09:00Z"));
+  assert.equal(a.vis, 4); assert.equal(a.wx, "-SN"); assert.equal(wxClass(a).snow, true);
+  const b = tafAt(taf({ wx: "NSW" }), T("2026-01-01T09:00Z"));
+  assert.equal(b.wx, ""); assert.equal(wxClass(b).snow, false);
+  const c = tafAt(taf({ wx: "-RA" }), T("2026-01-01T09:00Z"));
+  assert.equal(c.wx, "-RA");
+});
+
 test("merged TAF weather agrees with METAR rule: rain excludes snow", () => {
   const taf = { id: "T", raw: "", from: T("2026-01-01T00:00Z"), to: T("2026-01-02T00:00Z"), fc: [
     { from: T("2026-01-01T00:00Z"), to: T("2026-01-02T00:00Z"), kind: "", wx: "-SN", vis: 5, ceil: null, sky: true, becoming: null },

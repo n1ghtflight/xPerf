@@ -15,6 +15,7 @@ import json
 import math
 import os
 import re
+import tempfile
 import threading
 import time
 import urllib.request
@@ -54,8 +55,14 @@ def cached_file(name, url, ttl):
             with open(path, "rb") as f:
                 return f.read()
         raise
-    with open(path, "wb") as f:
+    # write a temp file beside it, then swap it in: a concurrent reader (another thread or server) never sees half a file
+    fd, tmp = tempfile.mkstemp(prefix=name + ".", suffix=".tmp", dir=CACHE_DIR)
+    with os.fdopen(fd, "wb") as f:
         f.write(data)
+    try:
+        os.replace(tmp, path)
+    except OSError:          # Windows: the old copy is open in another reader; it is refreshed next time
+        os.remove(tmp)
     return data
 
 
