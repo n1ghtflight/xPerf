@@ -307,7 +307,7 @@ test("respects the runway rule", () => {
   const w = baseWorld();
   const add = (a, r) => { w.airports.push(a); w.rwy[a.icao] = r; };
   add(apt("PAV5", 45, 1.5), [5000, 5000, 1]);        // paved, too short
-  add(apt("GRV9", 45, 4.5), [9000, 0, 0]);           // long, but gravel
+  add(apt("GRV9", 45, 4.5), [9000, 0, 1]);           // long, but gravel (lit: it is night here at ETD)
   add(apt("HIG7", 45, 7.5, 5500), [7000, 7000, 1]);  // long enough at sea level, not at 5,500 ft
   add(apt("HIGX", 45, 10.5, 5500), [10100, 10100, 1]); // 6500 x 1.55 = 10,075 ft: just enough
   w.airports.push(apt("NORW", 45, 6)); // not in the runway index
@@ -321,6 +321,37 @@ test("respects the runway rule", () => {
   const ga = new Set();
   for (const seed of SEEDS) for (const o of run(w, P("any", "any", "any", "any"), seed, { lim: { ...GA, kt: 300, rangeNM: 1000 } })) ga.add(o.dep.icao).add(o.arr.icao);
   assert.ok(ga.has("GRV9") && ga.has("PAV5") && !ga.has("NORW"));
+});
+
+test("a field with no land runway is never offered", () => {
+  // the index gives a water-only seaplane base land length 0 (or leaves it out)
+  const w = baseWorld();
+  w.airports.push(apt("SEA0", 45, 1.5)); w.rwy.SEA0 = [0, 0, 1];
+  for (const seed of SEEDS) for (const o of run(w, P("any", "any", "any", "any"), seed, { lim: { ...GA, minRwyFt: 500, kt: 300, rangeNM: 1000 } }))
+    assert.ok(o.dep.icao !== "SEA0" && o.arr.icao !== "SEA0");
+});
+
+test("jets need a paved runway, propeller GA does not", () => {
+  ctx.basePerf = () => ({ to: 900, ldg: 800 });
+  assert.equal(aircraftLimits({ kind: "apm", engineKind: "jet", P: { cruiseTAS: 430, cruiseRange: 3000 } }).paved, true);
+  assert.equal(aircraftLimits({ kind: "apm", engineKind: "turboprop", P: { cruiseTAS: 250, cruiseRange: 1500 } }).paved, false);
+  assert.equal(aircraftLimits({ kind: "apm", engineKind: "piston", P: { cruiseTAS: 120, cruiseRange: 600 } }).paved, false);
+  ctx.basePerf = () => ({});
+});
+
+test("GA on an unpaved runway needs 25 % more length", () => {
+  const w = baseWorld();
+  const add = (a, r) => { w.airports.push(a); w.rwy[a.icao] = r; };
+  add(apt("GRS4", 45, 1.5), [2400, 0, 1]);              // grass only: 2000 x 1.25 = 2,500 ft needed
+  add(apt("GRS5", 45, 4.5), [2500, 0, 1]);              // just enough
+  add(apt("GRH2", 45, 7.5, 2000), [2990, 0, 1]);        // 2000 x 1.25 x 1.2 = 3,000 ft at 2,000 ft elevation
+  add(apt("GRH3", 45, 10.5, 2000), [3010, 0, 1]);
+  add(apt("MIX1", 46, 1.5), [2400, 1500, 1]);           // the longest runway is grass, the paved one too short
+  add(apt("PAV2", 46, 4.5), [2000, 2000, 1]);           // paved: no margin
+  const seen = new Set();
+  for (const seed of SEEDS) for (const o of run(w, P("any", "any", "any", "any"), seed, { lim: { ...GA, kt: 300, rangeNM: 1000 } })) seen.add(o.dep.icao).add(o.arr.icao);
+  for (const id of ["GRS4", "GRH2", "MIX1"]) assert.ok(!seen.has(id), id);
+  for (const id of ["GRS5", "GRH3", "PAV2"]) assert.ok(seen.has(id), id);
 });
 
 test("distance bands", () => {
@@ -371,6 +402,36 @@ test("night needs real darkness", () => {
   }
   const d = run(w, P("day", "any", "any", "short"), 1);
   assert.deepEqual(d.find(x => x.dep.icao === "TWIL").misses, ["twilight, not full daylight"]);
+});
+
+test("departures before sunrise or after sunset need a lit field", () => {
+  const dk = apt("DARK", 0, lonAtElev(-15)), tw = apt("TWLU", 0, lonAtElev(-3));
+  const airports = [dk, apt("DRKU", 1, dk.lon), tw, apt("DKN1", 2, dk.lon), apt("DKS1", -1, dk.lon), apt("TWN1", 1, tw.lon), apt("TWS1", -1, tw.lon)];
+  const rwy = Object.fromEntries(airports.map(a => [a.icao, [8000, 8000, 1]]));
+  rwy.DRKU = [8000, 8000, 0]; rwy.TWLU = [8000, 8000, 0];
+  const w = { airports, rwy, obs: airports.map(a => ob(a, "")) };
+  const deps = new Set();
+  for (const seed of SEEDS) for (const p of [P("night", "any", "any", "short"), P("any", "any", "any", "any")])
+    for (const o of run(w, p, seed)) { deps.add(o.dep.icao); assert.ok(o.dep.icao !== "DRKU" && o.dep.icao !== "TWLU", o.dep.icao); }
+  assert.ok(deps.has("DARK"));
+});
+
+test("arrivals after dark need a lit field", () => {
+  // the sun at 20 deg at the departure, sinking eastward: 3 deg east is dark by the estimated arrival
+  const L0 = lonAtElev(20), dep = apt("DEPD", 0, L0);
+  const airports = [dep, apt("ARRU", 0, L0 + 3), apt("ARRL", 0.3, L0 + 3), apt("DAYU", 0, L0 - 1)];
+  const rwy = { DEPD: [8000, 8000, 0], ARRU: [8000, 8000, 0], ARRL: [8000, 8000, 1], DAYU: [8000, 8000, 0] };
+  const w = { airports, rwy, obs: airports.map(a => ob(a, "")) };
+  const etaElev = o => sunElevation(o.arr.lat, o.arr.lon, ETD + o.min * 60000);
+  const pairs = new Set();
+  for (const seed of SEEDS) for (const o of run(w, P("any", "any", "any", "any"), seed)) {
+    pairs.add(o.dep.icao + "-" + o.arr.icao);
+    if (!rwy[o.arr.icao][2]) assert.ok(etaElev(o) > 0, o.dep.icao + "-" + o.arr.icao + " lands unlit at " + etaElev(o).toFixed(1));
+    if (!rwy[o.dep.icao][2]) assert.ok(sunElevation(o.dep.lat, o.dep.lon, ETD) > 0);
+  }
+  assert.ok(pairs.has("DEPD-ARRL"), [...pairs].join(" "));       // after dark at the lit field
+  assert.ok(pairs.has("DEPD-DAYU"), [...pairs].join(" "));       // before dark at an unlit one
+  assert.ok(!pairs.has("DEPD-ARRU"));
 });
 
 test("uses the TAF beyond 90 minutes", () => {
@@ -448,7 +509,7 @@ test("generate stays well under a second on a worldwide data set", () => {
   const WX = ["-SN", "SN", "RA", "-RA", "-SHRA", "BR", "FG", "", "", "", "", "", "", "", "", "", "", "", "", ""];
   for (let i = 0; i < 49000; i++) {
     const a = apt("W" + i, -60 + rnd() * 130, -180 + rnd() * 360, Math.round(rnd() * 3000));
-    airports.push(a); rwy[a.icao] = [Math.round(1500 + rnd() * 11000), rnd() < 0.5 ? Math.round(2000 + rnd() * 10000) : 0, 1];
+    airports.push(a); rwy[a.icao] = [Math.round(1500 + rnd() * 11000), rnd() < 0.5 ? Math.round(2000 + rnd() * 10000) : 0, rnd() < 0.5 ? 1 : 0];
     if (i < 5100) {
       const wx = WX[Math.floor(rnd() * WX.length)], low = wx === "FG" || rnd() < 0.1;
       obs.push(ob(a, wx, { t: NOW - rnd() * 150 * 60000, ...(low ? SNOW : {}) }));

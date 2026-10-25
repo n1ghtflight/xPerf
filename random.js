@@ -204,7 +204,7 @@ function aircraftLimits(m) {
   const b = basePerf(m) || {};
   const need = [b.to * (b.sfTo || 1), b.ldg * (b.sfLdg || 1)].filter(x => x > 0).map(x => x / FT);
   const dflt = oap ? 6000 : 2500; // a distance missing from the model: never screen below this
-  return { kt, rangeNM, minRwyFt: need.length === 2 ? Math.max(...need) : Math.max(dflt, ...need), paved: oap };
+  return { kt, rangeNM, minRwyFt: need.length === 2 ? Math.max(...need) : Math.max(dflt, ...need), paved: oap || m.engineKind === "jet" };
 }
 
 function estMinutes(nm, kt) { return nm / kt * 60 + 15; } // + climb, descent and taxi
@@ -271,12 +271,13 @@ function generate(input) {
   const { airports, rwy, obs, tafs, lim, prompts: p, now, rand } = input;
   const etd = Math.ceil(now / 600000) * 600000, kt = lim.kt;
 
-  // airports the aircraft can use: longest (paved, for airliners) runway >= the need, +10 % per 1,000 ft elevation
+  // airports the aircraft can use (index: [longest land runway, longest paved, lit]): a paved runway >= the need,
+  // +10 % per 1,000 ft elevation; for propeller GA also an unpaved one with 25 % more (jets and airliners: paved only)
   const pts = [], byId = new Map();
   for (const a of airports) {
-    const r = rwy[a.icao];
-    if (!r || (lim.paved ? r[1] : r[0]) < lim.minRwyFt * (1 + 0.10 * Math.max(a.alt || 0, 0) / 1000)) continue;
-    const q = randPt(a); pts.push(q); byId.set(a.icao, q);
+    const r = rwy[a.icao], need = lim.minRwyFt * (1 + 0.10 * Math.max(a.alt || 0, 0) / 1000);
+    if (!r || (r[1] < need && (lim.paved || r[0] < need * 1.25))) continue;
+    const q = randPt(a); q.lit = !!r[2]; pts.push(q); byId.set(a.icao, q);
   }
   for (const o of obs) { // the newest current observation of each usable airport
     const q = byId.get(o.id);
@@ -288,6 +289,7 @@ function generate(input) {
   for (const q of pts) {
     if (!free && !q.ob) continue;
     const light = dayNight(sunElevation(q.a.lat, q.a.lon, etd));
+    if (light !== "day" && !q.lit) continue; // twilight or night: a lit runway
     deps.push({ q, light, m: [randLightMiss(p.time, light), q.ob && randWxMiss(p.dep, q.ob)].filter(Boolean) });
   }
   randShuffle(deps, rand).sort((a, b) => a.m.length - b.m.length); // fewest misses first, random within
@@ -324,6 +326,7 @@ function generate(input) {
       const j = Math.floor(rand() * n), c = cand[j]; cand[j] = cand[n - 1];
       const dn = c.dm ? 1 : 0;
       if (dn >= bestN) continue;
+      if (!c.q.lit && sunElevation(c.q.a.lat, c.q.a.lon, etd + c.min * 60000) <= 0) continue; // dark on arrival: lit only
       const w = arrWx(c.q, c.min), am = p.arr === "any" ? null : w ? randWxMiss(p.arr, w) : "no report at arrival";
       work += 20;
       if (dn + (am ? 1 : 0) < bestN) { bestN = dn + (am ? 1 : 0); best = { c, w, am }; }

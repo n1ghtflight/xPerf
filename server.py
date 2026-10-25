@@ -23,7 +23,7 @@ CACHE_DIR = os.path.join(ROOT, "cache")
 UA = "Mozilla/5.0 (flight-performance-calculator; personal use)"
 
 OURAIRPORTS_URL = "https://davidmegginson.github.io/ourairports-data/airports.csv"
-AIRPORT_TYPES = {"large_airport", "medium_airport", "small_airport", "seaplane_base"}
+AIRPORT_TYPES = navdata.AIRPORT_TYPES
 
 
 def get_airports():

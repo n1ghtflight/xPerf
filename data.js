@@ -167,7 +167,7 @@ const XD=(()=>{
     toTune:   ()=>once("totune",()=>get("data/to_tune.json","json",60000)),   // takeoff tuning to airport-planning charts
     airportInfo: a=>S?fetchT("/api/airportinfo?"+new URLSearchParams({ident:a.icao,aliases:[a.iata,...(a.aliases||[])].filter(Boolean).join(","),country:a.country||"",lat:a.lat,lon:a.lon}),"json",120000)
                      :packAirportInfo(a),
-    runwayIndex: ()=>once("rwyidx",()=>S?get("/api/rwyindex","json",90000):pack("rwyidx.json")),   // ident → [longestFt, longestPavedFt, lit]
+    runwayIndex: ()=>once("rwyidx",()=>S?get("/api/rwyindex","json",90000):pack("rwyidx.json")),   // ident → [longestLandFt, longestPavedFt, lit]
     wxBulk,                           // "metars" | "tafs" → worldwide file text (CSV / XML), cached 5 min
     routes: async(dep,arr)=>{
       if(S) return (await fetchT("/api/routes?"+new URLSearchParams({orig:ids(dep),dest:ids(arr),olat:dep.lat,olon:dep.lon,dlat:arr.lat,dlon:arr.lon}),"json",180000)).routes||[];

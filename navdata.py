@@ -27,6 +27,7 @@ OA = "https://davidmegginson.github.io/ourairports-data/"
 XPLANE_NAV = "https://raw.githubusercontent.com/TUDelft-CNS-ATM/openap/master/openap/data/nav/nav.dat"
 AWC = "https://aviationweather.gov"
 DAY = 86400
+AIRPORT_TYPES = {"large_airport", "medium_airport", "small_airport", "seaplane_base"}    # the airport list (server.py)
 
 _lock = threading.RLock()     # re-entrant: builders may use other memoized datasets
 _mem = {}
@@ -144,18 +145,24 @@ def runways(cands):
 
 
 _PAVED = re.compile(r"ASP|CON|PEM|BIT|TAR|PAV|ASF|CONC|BRI|MAC", re.I)    # same pattern as SURF_PAVED in nav.js
+_NOT_LAND = re.compile(r"WAT|SNOW|\bICE\b", re.I)                         # water lanes, snow and ice strips
 
 
 def runway_index():
-    """ident -> [longestFt, longestPavedFt, lit] over open runways (lit = 1 if any runway is lighted)."""
+    """airport-list ident -> [longestLandFt, longestPavedFt, lit] over open land runways (no water lanes, snow or
+    ice; lit = 1 if any of them is lighted). Keyed like server.get_airports: icao_code, else gps_code, else ident;
+    airports with no open land runway are left out."""
     def build():
         idx = memo("runways", lambda: _index_csv("runways.csv", "airport_ident"))
+        text = cached_file("airports.csv", OA + "airports.csv", 7 * DAY).decode("utf-8", "ignore")
         out = {}
-        for ident, rows in idx.items():
+        for a in csv.DictReader(io.StringIO(text)):
+            if a["type"] not in AIRPORT_TYPES or a["ident"].upper() not in idx:
+                continue
             longest = paved = lit = 0
             seen = False
-            for r in rows:
-                if r["closed"] == "1":
+            for r in idx[a["ident"].upper()]:
+                if r["closed"] == "1" or _NOT_LAND.search(r["surface"] or ""):
                     continue
                 seen = True
                 n = int(num(r["length_ft"]) or 0)
@@ -165,7 +172,7 @@ def runway_index():
                 if r["lighted"] == "1":
                     lit = 1
             if seen:
-                out[ident] = [longest, paved, lit]
+                out.setdefault(a.get("icao_code") or a.get("gps_code") or a["ident"], [longest, paved, lit])
         return out
     return memo("rwyindex", build)
 
