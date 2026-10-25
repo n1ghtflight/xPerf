@@ -34,6 +34,8 @@ python tools/airac_update.py --check     # current cycle vs local packs vs live 
 
 - **Site**: Worker `xperf`, assets only, serving `dist/site/`. **Relay**: Worker `xperf-wx` (`tools/wx-worker.js`,
   `ALLOW_ORIGIN = https://xperf.n1ghtflight.workers.dev`), proxies aviationweather.gov METAR/TAF with CORS.
+  It also serves `/data/cache/metars.cache.csv.gz` and `/data/cache/tafs.cache.xml.gz` (the worldwide files Random flight
+  uses; gzip bytes passed through, cached 5 min). An empty or non-gzip upstream body is answered 502, `no-store`, and not cached.
 - **Never run `wrangler deploy` in the repo folder**: wrangler 4 without a config generates one with the current folder
   as the asset directory and publishes the whole repo. Deploy only through `tools/airac_update.py` (or its `deploy()`),
   which writes an explicit `wrangler.toml` in a temp folder and refuses if the asset directory isn't `dist/site`.
@@ -57,6 +59,7 @@ python tools/airac_update.py --check     # current cycle vs local packs vs live 
 | `toperf.js` / `takeoff.js` | Takeoff & landing model (pure functions) / the Takeoff & landing view, Overview tile and FS2024-setup boxes. Airliners only; per-type data in `data/to_ref.json` + `data/to_tune.json` (built by `tools/build_to_ref.py`, tuned with `tools/fit_to_tune.mjs`) |
 | `overview.js`, `blueprint.js` | Overview tiles; top-view aircraft blueprint drawing (Overview tile + Aircraft data card) |
 | `charts.js` (~210) | Winds-aloft layer, cruise-level chart, runway diagram, distance bars, fuel-remaining chart, TAF timeline |
+| `random.js` | Random flight: METAR/TAF cache-file parsing, sun position, airport screening and option picking (pure, unit-tested in `tests/random.test.mjs`), then the start-screen panel |
 | `acpicker.js` | Searchable aircraft combobox over the hidden `#ac` select (`AcPicker.set` changes and remembers the aircraft) |
 | `pln.js` | FS2024 `.PLN` (AceXML) export |
 | `data.js` | **Data adapter `XD`** — every data request goes through it. Mode `server`: the `/api` endpoints. Mode `packs` (`<meta name="xperf-data">`, `?data=packs`, or `localStorage xperf.data`): AIRAC packs + live Open-Meteo; METAR/TAF via the relay in `<meta name="xperf-wx">` |
@@ -76,7 +79,9 @@ python tools/airac_update.py --check     # current cycle vs local packs vs live 
 `/api/airports` OurAirports (49k) · `/api/navaids` · `/api/airways` (V/J/colored) ·
 `/api/airportinfo?ident&aliases&country&lat&lon` (runways, freqs, ILS, charts, SID/STAR procs, METAR/TAF + decoded TAF) ·
 `/api/terrain?locs=lat,lon|…` · `/api/routes?orig&dest&olat&olon&dlat&dlon` (FAA preferred/TEC/CDR expanded to waypoints) ·
-`/api/regions?pts=id,lat,lon|…` (ICAO regions for .PLN) · `/api/health`
+`/api/regions?pts=id,lat,lon|…` (ICAO regions for .PLN) · `/api/rwyindex` (ident → [longest land ft, longest paved ft, lit], for
+Random flight) · `/api/wxbulk?kind=metars|tafs` (aviationweather.gov's worldwide gzip cache files; an empty or non-gzip
+download is refused: the last good copy is served, else 502) · `/api/health`
 
 ## Data sources
 
@@ -85,6 +90,7 @@ python tools/airac_update.py --check     # current cycle vs local packs vs live 
   cruise fuel flow where the table has one. Takeoff/landing: generic transport-jet model tuned per type to manufacturer
   airport-planning charts (A20N and B738 tuned closely). EUROCONTROL data is not used or shipped.
 - **Airports/navaids/runways/frequencies**: OurAirports (public domain). Free-text fields are stripped of `<>"` on load.
+  Packs also hold `rwyidx.json` (ident → [longest land ft, longest paved ft, lit]) for Random flight.
 - **FAA NASR 28-day CSV** (current AIRAC via `navdata.airac()`): ILS, FIX, NAV, AWY, DP, STAR, PFR, CDR.
 - **FAA d-TPP** → official plate PDFs (US only). **ILS outside US**: X-Plane GPL nav.dat via OpenAP (2013, flagged).
 - **Weather**: aviationweather.gov METAR/TAF (server, or the relay on the site); Open-Meteo winds/temps aloft and terrain.
@@ -94,6 +100,13 @@ python tools/airac_update.py --check     # current cycle vs local packs vs live 
 
 - **Start screen**: hero banner (instruction + four one-click example flights: C172 KPAO→KTRK, SR22 EGTF→LFPN,
   A320 EGLL→LFPG, B789 KJFK→EGLL) above the setup form; hidden once planned, back with New flight.
+- **Random flight** (`random.js`): a button on the start banner and a Ctrl+K command open a panel in place of the setup
+  form. Prompts: aircraft group (GA / airliner) and aircraft, time (day / night / any), departure and arrival weather
+  (snow / rain / low visibility / any), distance (short / long / any); "Any" fills all four. It loads aviationweather.gov's
+  worldwide METAR + TAF files (live weather; 5 min cache) and the runway index, screens airports for the aircraft's
+  runway needs, and offers 5 flights, or labelled near misses ("the closest flights say what differs") when fewer match.
+  Night flights use a lit runway; GA needs a land runway, jets a paved one (from `rwyidx.json`). Picking an
+  option plans it like an example flight. An empty METAR file shows an error with Retry, never "no matches".
 - **Setup form**: searchable aircraft (remembered), departure/arrival/alternate (ICAO/IATA/local/aliases), navigation
   (Direct · VOR · VOR+NDB · Airways US · Published FAA · Your route — paste or SimBrief), ETD, payload/TOW, extra fuel,
   level rules, optimise fuel/time, manual level, no-O₂ 12,500 ft limit.
@@ -111,7 +124,7 @@ python tools/airac_update.py --check     # current cycle vs local packs vs live 
 
 ## Testing
 
-- Unit: `node --test tests/*.test.mjs` (93 tests).
+- Unit: `node --test tests/*.test.mjs` (127 tests).
 - Numbers: `node tools/regress.mjs compare --port 8770` (6 replayed flights must be identical; `--accept` only for an
   intended change, after reading the diff).
 - UI: `node tools/ui_check.mjs --mode server|packs [--only a,b]` (~50 checks, ~10 min per mode; never two runs at once).
@@ -134,7 +147,7 @@ python tools/airac_update.py --check     # current cycle vs local packs vs live 
 - Edge headless on Windows: kill the process tree (`taskkill /T`) only while it is still running.
 - localStorage keys: `xperf.ac`, `xperf.theme`, `xperf.data`, `xperf.tab`, `xperf.sec.N`, `xperf.winds`, `xperf.detlog`,
   `xperf.map`, `xperf.aptSel`, `xperf.blueprint`, `xperf.simbrief`, `xperf.to.opts`, `xperf.ldg.opts`, `xperf.to.side`,
-  `xperf.deprwy.ICAO`, `xperf.sid.ICAO`, `xperf.star.ICAO`, `xperf.appr.ICAO`, `xperf.pub.DEP-ARR`.
+  `xperf.deprwy.ICAO`, `xperf.sid.ICAO`, `xperf.star.ICAO`, `xperf.appr.ICAO`, `xperf.pub.DEP-ARR`, `xperf.random`.
 
 ## Known limits / open items
 
@@ -143,6 +156,8 @@ python tools/airac_update.py --check     # current cycle vs local packs vs live 
 - Published routes only exist between larger US airports; small fields fall back to airways.
 - Minimums shown are the standard CAT I baseline; real DA/MDA only on the plate.
 - Takeoff/landing: generic model, no obstacles or VMCG/VMCA/tyre limits; only A20N and B738 tuned closely.
+- Random flight can offer military and non-ICAO fields (the runway index is keyed like the airport list); a departure with a weather
+  condition needs a METAR station, so small fields without one are never picked for it.
 - Forum announcement of the site: on hold (owner's call).
 - Ideas not done: METAR-based runway-in-use, alternate fuel, aircraft V-speeds per weight for GA.
 
