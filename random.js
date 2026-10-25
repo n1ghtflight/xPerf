@@ -202,9 +202,20 @@ function aircraftLimits(m) {
   // airliners: 90 % of the OpenAP cruise range; GA: published range less a 45-minute reserve
   const rangeNM = oap ? (km ? km / 1.852 * 0.9 : 300) : P.cruiseRange ? P.cruiseRange - kt * 0.75 : 300;
   const b = basePerf(m) || {};
-  const need = [b.to * (b.sfTo || 1), b.ldg * (b.sfLdg || 1)].filter(x => x > 0).map(x => x / FT);
   const dflt = oap ? 6000 : 2500; // a distance missing from the model: never screen below this
-  return { kt, rangeNM, minRwyFt: need.length === 2 ? Math.max(...need) : Math.max(dflt, ...need), paved: oap || m.engineKind === "jet" };
+  const ft = x => x / FT;
+  let minRwyFt;
+  if (oap) {
+    // Airliners are screened on the takeoff requirement only: the OpenAP WRAP landing figure (observed braking
+    // distance + 300 m, x1.67) is far above real landing field lengths (B789 ~15,000 ft) and would leave only a
+    // couple of airports in the world. The planned flight still runs the landing checks.
+    minRwyFt = b.to > 0 ? ft(b.to * (b.sfTo || 1)) : dflt;
+  } else {
+    // GA: the larger of takeoff and landing from the POH data
+    const need = [b.to * (b.sfTo || 1), b.ldg * (b.sfLdg || 1)].filter(x => x > 0).map(ft);
+    minRwyFt = need.length === 2 ? Math.max(...need) : Math.max(dflt, ...need);
+  }
+  return { kt, rangeNM, minRwyFt, paved: oap || m.engineKind === "jet" };
 }
 
 function estMinutes(nm, kt) { return nm / kt * 60 + 15; } // + climb, descent and taxi

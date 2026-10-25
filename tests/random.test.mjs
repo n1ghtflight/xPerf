@@ -261,7 +261,7 @@ test("aircraftLimits from model data", () => {
   const a = plain(aircraftLimits({ kind: "openap", cruiseMach: 0.78, ac: { cruise: { range: 5000 } } }));
   assert.ok(Math.abs(a.kt - 0.78 * 573) < 1e-9);
   assert.ok(Math.abs(a.rangeNM - 5000 / 1.852 * 0.9) < 1e-9);
-  assert.ok(Math.abs(a.minRwyFt - 1500 * 1.67 / 0.3048) < 1e-9);
+  assert.ok(Math.abs(a.minRwyFt - 2000 * 1.15 / 0.3048) < 1e-9); // airliner: takeoff requirement only
   assert.equal(a.paved, true);
   ctx.basePerf = () => ({ to: 500, ldg: 400, sfTo: 1.33, sfLdg: 1.43 });
   const g = plain(aircraftLimits({ kind: "apm", P: { cruiseTAS: 120, cruiseRange: 600 } }));
@@ -269,6 +269,22 @@ test("aircraftLimits from model data", () => {
   assert.equal(g.rangeNM, 600 - 120 * 0.75); // 45-min reserve
   assert.ok(Math.abs(g.minRwyFt - 500 * 1.33 / 0.3048) < 1e-9);
   assert.equal(g.paved, false);
+  ctx.basePerf = () => ({});
+});
+
+test("airliner screening uses the takeoff requirement only", () => {
+  // OpenAP landing figures (WRAP braking distance + 300 m, x1.67) are unreliable as a runway minimum
+  ctx.basePerf = () => ({ to: 2490, ldg: 2790, sfTo: 1.15, sfLdg: 1.67 });
+  const a = aircraftLimits({ kind: "openap", cruiseMach: 0.78, ac: { cruise: { range: 5000 } } });
+  assert.ok(Math.abs(a.minRwyFt - 2490 * 1.15 / 0.3048) <= 1, "takeoff figure, got " + a.minRwyFt);
+  assert.ok(Math.abs(a.minRwyFt - 2790 * 1.67 / 0.3048) > 1000, "not the landing figure");
+  // no takeoff distance: the 6000 ft fallback, even when a landing distance is known
+  ctx.basePerf = () => ({ ldg: 2790, sfLdg: 1.67 });
+  assert.equal(aircraftLimits({ kind: "openap", ac: {} }).minRwyFt, 6000);
+  // GA keeps max(takeoff, landing) from its POH data
+  ctx.basePerf = () => ({ to: 400, ldg: 700, sfTo: 1.33, sfLdg: 1.43 });
+  const g = aircraftLimits({ kind: "apm", P: { cruiseTAS: 120, cruiseRange: 600 } });
+  assert.ok(Math.abs(g.minRwyFt - 700 * 1.43 / 0.3048) <= 1, "GA landing-based, got " + g.minRwyFt);
   ctx.basePerf = () => ({});
 });
 
