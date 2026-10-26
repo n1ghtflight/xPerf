@@ -476,20 +476,22 @@ test("day instead of night is labelled, and twilight near misses come first", ()
   assert.deepEqual(run(w2, P("day", "any", "any", "short"), 1).map(x => x.misses), [["night instead of day"]]);
 });
 
-test("only ICAO-style fields are offered; air bases only when they report", () => {
+test("placeholder idents are never offered; air bases only when they report", () => {
   const w = baseWorld();
   const add = (a, rep) => { w.airports.push(a); w.rwy[a.icao] = [8000, 8000, 1]; if (rep) w.obs.push(ob(a, "")); };
   w.obs = [];
-  add({ ...apt("RU-6878", 45, 1.5), name: "Savasleyka Air Base" }, false);   // not 4 letters
-  add({ ...apt("K7AB", 45, 4.5), name: "Seven Field" }, true);               // a digit in the ident, even with a report
+  add({ ...apt("RU-6878", 45, 1.5), name: "Savasleyka Air Base" }, false);   // OurAirports placeholder (hyphen)
+  add({ ...apt("US-1234", 44, 2), name: "Private Strip" }, false);           // OurAirports placeholder
+  add({ ...apt("K7AB", 45, 4.5), name: "Seven Field" }, true);               // FAA-style ident with a digit: a real field
+  add({ ...apt("L35", 44.5, 9), name: "Big Bear City" }, false);             // 3-character FAA ident: a real field
   add({ ...apt("KABC", 45, 7.5), name: "Foo Air Base" }, false);             // air base, no METAR station
   add({ ...apt("KDEF", 45, 10.5), name: "Bar AFB" }, false);
   add({ ...apt("KRPT", 45, 3), name: "Baz Air Base" }, true);                // air base with a METAR station: kept
   add({ ...apt("KAFB", 45, 6), name: "Mount Lafbury Field" }, false);        // "AFB" only inside a word: not an air base
   const seen = new Set();
   for (const seed of SEEDS) for (const o of run(w, P("any", "any", "any", "any"), seed)) seen.add(o.dep.icao).add(o.arr.icao);
-  for (const id of ["RU-6878", "K7AB", "KABC", "KDEF"]) assert.ok(!seen.has(id), id);
-  assert.ok(seen.has("KRPT") && seen.has("KAFB"), [...seen].join(" "));
+  for (const id of ["RU-6878", "US-1234", "KABC", "KDEF"]) assert.ok(!seen.has(id), id);
+  for (const id of ["KRPT", "KAFB", "K7AB", "L35"]) assert.ok(seen.has(id), id + " missing: " + [...seen].join(" "));
 });
 
 test("departures before sunrise or after sunset need a lit field", () => {

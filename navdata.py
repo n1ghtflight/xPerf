@@ -187,7 +187,7 @@ def runway_index():
                 if r["lighted"] == "1":
                     lit = 1
             key = a.get("icao_code") or a.get("gps_code") or a["ident"]
-            if seen and re.fullmatch(r"[A-Z]{4}", key):     # 4-letter ICAO-style idents only: other fields are unlikely to be in the sim
+            if seen and re.fullmatch(r"[A-Z0-9]{3,4}", key):  # ICAO/FAA idents; OurAirports placeholders (RU-6878) aren't in the sim
                 out.setdefault(key, [longest, paved, lit])
         return out
     return memo("rwyindex", build)

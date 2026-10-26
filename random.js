@@ -222,7 +222,8 @@ function estMinutes(nm, kt) { return nm / kt * 60 + 15; } // + climb, descent an
 
 const RAND_NM = 3440.065, RAND_FRESH = 90 * 60000, RAND_COUNT = 5, RAND_SPACING = 100, RAND_WORK = 2e6;
 const RAND_WORD = { snow: "snow", rain: "rain", lowvis: "low visibility" };
-const RAND_ICAO = /^[A-Z]{4}$/, RAND_MIL = /\bAir Base\b|\bAFB\b/i;
+// 3–4 letters/digits: ICAO and FAA idents (KSFO, K1O6, L35); OurAirports placeholders (RU-6878, US-1234) aren't in the sim
+const RAND_ICAO = /^[A-Z0-9]{3,4}$/, RAND_MIL = /\bAir Base\b|\bAFB\b/i;
 
 function randHm(min) { return Math.floor(min / 60) + ":" + String(min % 60).padStart(2, "0"); }
 
