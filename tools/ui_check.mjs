@@ -871,6 +871,37 @@ check("landing-icon", async () => {
 });
 
 // random flight: a panel in place of the setup form, five options from recorded worldwide weather, picking one plans it
+check("busy-loader", async () => {
+  const page = await open("c172");
+  const wait = `const wait=ms=>new Promise(r=>setTimeout(r,ms)), $=id=>document.getElementById(id);`;
+  try {
+    // a job shorter than the 300 ms delay never shows the radar (quick replans don't flash)
+    const flash = await page.eval(`(async()=>{ ${wait} Busy.show("x","y"); await wait(100); Busy.hide(); await wait(400); return !$('busy').hidden; })()`);
+    expect(!flash, "the loader flashed for a 100 ms job");
+    // a slow plan: radar over the surface with the live step and the flight, gone when the plan is done
+    const p = await page.eval(`(async()=>{ ${wait} const ai=XD.airportInfo; XD.airportInfo=a=>new Promise(r=>setTimeout(()=>r(ai(a)),1500));
+      const done=Chips.planFlight("apm:C172","KPAO","KTRK","direct"); await wait(900);
+      const s=$('surface').getBoundingClientRect(), b=$('busy').getBoundingClientRect();
+      const st=$('status').textContent; const mid={shown:!$('busy').hidden, msg:$('busyMsg').textContent, st, sub:$('busySub').textContent, blip:!!document.querySelector('#busy .radar .blip'),
+        over:Math.abs(s.left-b.left)<2&&Math.abs(s.width-b.width)<2};
+      await done; for(let i=0;i<100&&$('go').disabled;i++) await wait(100); XD.airportInfo=ai;
+      return {mid, after:!$('busy').hidden}; })()`);
+    expect(p.mid.shown && p.mid.blip && p.mid.over, "no radar over the surface during a slow plan: " + JSON.stringify(p.mid));
+    // the text is the step the status bar shows right now, capitalised
+    expect(p.mid.msg && p.mid.msg.toLowerCase() === p.mid.st.toLowerCase() && p.mid.sub === "KPAO → KTRK · C172", "loader text: " + JSON.stringify(p.mid));
+    expect(!p.after, "the loader stayed up after the plan finished");
+    // Random flight: up while the weather loads, cleared when the load fails
+    const r = await page.eval(`(async()=>{ ${wait} const wb=XD.wxBulk, ri=XD.runwayIndex;
+      XD.wxBulk=()=>new Promise((_,no)=>setTimeout(()=>no(new Error("relay down")),1200)); XD.runwayIndex=()=>Promise.resolve({});
+      Chips.newFlight(); await wait(200); document.querySelector('[data-random]').click(); await wait(200);
+      $('rfGo').click(); await wait(800); const mid={shown:!$('busy').hidden, msg:$('busyMsg').textContent};
+      for(let i=0;i<50&&!document.querySelector('#rfState .err');i++) await wait(100);
+      const after=!$('busy').hidden; XD.wxBulk=wb; XD.runwayIndex=ri; RandomFlight.close(); return {mid, after}; })()`);
+    expect(r.mid.shown && r.mid.msg === "Loading live weather…", "random flight loader: " + JSON.stringify(r.mid));
+    expect(!r.after, "the loader stayed up after the weather failed to load");
+  } finally { await page.close(); }
+});
+
 check("random-flight", async () => {
   const gz = n => gunzipSync(readFileSync(join(here, "..", "tests", "fixtures", n))).toString("utf8");
   const fix = JSON.stringify({ metars: gz("awc-metars.csv.gz"), tafs: gz("awc-tafs.xml.gz") });

@@ -4,6 +4,22 @@
    the phone tab bar / More sheet and keyboard chords all go through Shell.showView().
    Theme: follows the OS by default ("system"); "dark"/"light" force it via <html data-theme>.
    ===================================================================== */
+/* ---------------------------------------------------------------- working on it
+   Busy.show(msg, sub) puts the radar scope over the main surface while a plan or a random-flight search runs;
+   it appears only after 300 ms so quick replans don't flash. status() in index.html keeps msg in step. */
+const Busy=(()=>{
+  let on=false, t=null;
+  const el=id=>document.getElementById(id), cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):"";
+  function place(){ const r=el("surface").getBoundingClientRect(), b=el("busy").style;
+    b.left=r.left+"px"; b.top=r.top+"px"; b.width=r.width+"px"; b.height=r.height+"px"; }
+  function text(msg,sub){ if(msg!=null) el("busyMsg").textContent=cap(msg); if(sub!=null) el("busySub").textContent=sub; }
+  function show(msg,sub){ text(msg,sub); if(on) return; on=true;
+    t=setTimeout(()=>{ if(on){ place(); el("busy").hidden=false; } },300); }
+  function hide(){ on=false; clearTimeout(t); el("busy").hidden=true; }
+  addEventListener("resize",()=>{ if(!el("busy").hidden) place(); });
+  return {show,text,hide,get on(){ return on; }};
+})();
+
 const Shell=(()=>{
   const root=document.documentElement, THEMES=["system","dark","light"];
   // view links and tab buttons; #surface also carries data-view (the current view, for CSS) but is not a control

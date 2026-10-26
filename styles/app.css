@@ -629,3 +629,22 @@ button.to-reset{display:inline;width:auto;margin:0;padding:0;border:0;background
 .sbox.to-setup{cursor:pointer}.sbox.to-setup:hover{border-color:var(--accent)}.sbox.to-setup .v{white-space:nowrap;font-size:16px}
 @media (max-width:1100px){ .to-grid{grid-template-columns:1fr} .to-grid>.to-col:last-child{order:-1} }
 @media (max-width:600px){ .to-big{grid-template-columns:repeat(3,minmax(0,1fr))} .to-field{grid-template-columns:minmax(0,1fr) 116px} }
+/* working on it: radar scope with a circling plane over the main surface (Busy in shell.js) */
+.busy{position:fixed;z-index:40;display:grid;place-items:center;background:color-mix(in srgb, var(--panel) 72%, transparent)}
+.busy[hidden]{display:none}
+.busycard{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:min(360px,calc(100% - 32px));padding:22px 26px 18px;
+  background:var(--panel);border:var(--hairline) solid var(--line);border-radius:var(--r-lg,12px);
+  box-shadow:0 12px 40px color-mix(in srgb, #000 28%, transparent);text-align:center}
+.radar{position:relative;width:120px;height:120px;margin-bottom:8px;border-radius:50%;border:var(--hairline) solid var(--line);
+  background:radial-gradient(circle, color-mix(in srgb, var(--accent) 6%, var(--field)) 0 62%, var(--field) 63%)}
+.radar::before,.radar::after{content:"";position:absolute;inset:25%;border-radius:50%;border:var(--hairline) solid var(--line-soft)}
+.radar::after{inset:45%}
+.radar .sweep{position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 0deg, transparent 0deg 300deg, color-mix(in srgb, var(--accent) 55%, transparent) 360deg);
+  animation:busySpin 2.2s linear infinite}
+.radar .blip{position:absolute;left:0;top:0;width:16px;height:16px;fill:var(--text);
+  offset-path:path("M60 60 m-38 0 a38 38 0 1 0 76 0 a38 38 0 1 0 -76 0");offset-rotate:auto 90deg;animation:busyOrbit 7s linear infinite}
+.busymsg{font:var(--w-medium) var(--fs-small)/1.4 var(--font);color:var(--text)}
+.busysub{font:var(--fs-micro)/1.4 var(--font);color:var(--text-3)}
+@keyframes busySpin{to{transform:rotate(360deg)}}
+@keyframes busyOrbit{to{offset-distance:100%}}

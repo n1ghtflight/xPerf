@@ -456,9 +456,12 @@ Object.assign(RandomFlight, (() => {
     const acId = $("rfAc").value, prompts = full ? ANY : { time: ans.time, dep: ans.dep, arr: ans.arr, dist: ans.dist };
     if (!acId || !DB.airports.length) { state("error", "The app's data is still loading — try again in a moment."); return; }
     setBusy(true);
+    Busy.show("loading live weather…", [acId.split(":")[1].toUpperCase(),
+      ...["dep", "time", "dist"].map(k => prompts[k]).filter(v => v !== "any").map(v => v === "lowvis" ? "low visibility" : v)].join(" · "));
     try {
       let d;
       try { d = await load(); } catch (_) { return; }        // load() shows the reason and Retry
+      Busy.text(`searching ${d.obs.length.toLocaleString()} weather reports…`);
       if ($("rfPanel").hidden) return;                       // a flight was planned another way meanwhile: keep its aircraft
       if ($("ac").value !== acId) AcPicker.set(acId);
       await MODEL_P;
@@ -470,7 +473,7 @@ Object.assign(RandomFlight, (() => {
       state("", !opts.length ? "Nothing close enough right now — try Any for one of the prompts."
         : opts.some(o => o.misses.length) ? "Not everything matches right now — the closest flights say what differs." : "");
     } catch (e) { state("error", e.message); console.error(e); }
-    finally { setBusy(false); }
+    finally { setBusy(false); Busy.hide(); }
   }
 
   /* ---------- option cards */
