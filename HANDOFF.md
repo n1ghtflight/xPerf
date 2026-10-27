@@ -52,7 +52,7 @@ python tools/airac_update.py --check     # current cycle vs local packs vs live 
 | File | Role |
 |---|---|
 | `index.html` (~1200 lines) | Shell markup, ISA/geo math, aircraft models (OpenAP airliners + XPerf GA table), weather/terrain fetch, level optimisation (`planProfile`), `calculate()`, `render()`, profile SVG, start banner |
-| `shell.js` | App shell: sidebar views (`Shell.VIEWS`), crumb, theme, `G`+letter view keys, command palette (`Palette`, Ctrl+K, typed plans like "KPAO KTRK C172"), tooltips, service-worker registration |
+| `shell.js` | App shell: sidebar views (`Shell.VIEWS`), crumb, theme, `G`+letter view keys, command palette (`Palette`, Ctrl+K, typed plans like "KPAO KTRK C172"), tooltips, `Busy` radar loader (centred, after 300 ms, text from the status line), service-worker registration |
 | `chips.js` | Planned-flight chip bar (aircraft, route, nav, rules, optimise, level, ETD), chip menus, All settings drawer, New flight, route import / SimBrief hand-off, start-banner examples |
 | `nav.js` (~1050) | Navaids, VOR/NDB route planner, airway router, published routes, imported routes, nav log, Leaflet map (whole zoom levels, fit-route button), airport list → detail, briefs/cards, runway performance, minimums, FS2024 setup card, SID/STAR/approach pickers, plate viewer |
 | `routeimport.js` | Route-string tokenising/resolving (airways, coordinates, SID/STAR names) and SimBrief OFP XML parsing |
@@ -120,11 +120,13 @@ download is refused: the last good copy is served, else 502) · `/api/health`
   imported routes (airways expanded, SID/STAR recognised, unresolved idents listed).
 - **Takeoff & landing** (airliners): V1/VR/V2, flex/derate, flaps, required vs available runway; VREF/VAPP, autobrake,
   landing distance (dispatch and at arrival), with Packs/anti-ice/flap/thrust/reverse options.
-- **.PLN export**: FPType/RouteType/CruisingAlt, airports with runways, waypoints with airways, ICAO regions, SID/STAR, approach.
+- **.PLN export** (FS2024 EFB format, confirmed loading in the sim): airports only as DepartureID/DestinationID, en-route
+  waypoints with airways and ICAO regions (no region → User waypoint), runways/SID/STAR/approach in DepartureDetails /
+  ArrivalDetails / ApproachDetails so the sim inserts the procedure legs; VFR gets an approach only if one was picked.
 
 ## Testing
 
-- Unit: `node --test tests/*.test.mjs` (131 tests).
+- Unit: `node --test tests/*.test.mjs` (138 tests).
 - Numbers: `node tools/regress.mjs compare --port 8770` (6 replayed flights must be identical; `--accept` only for an
   intended change, after reading the diff).
 - UI: `node tools/ui_check.mjs --mode server|packs [--only a,b]` (~50 checks, ~10 min per mode; never two runs at once).
@@ -151,15 +153,16 @@ download is refused: the last good copy is served, else 502) · `/api/health`
 
 ## Known limits / open items
 
-- **.PLN not yet confirmed inside FS2024** — ask the user for feedback and adjust tags if needed.
+- Runway numbers come from OurAirports and can differ from the sim's navdata (PABT is 01/19 in XPerf, 02 in FS2024).
 - Free official plates/procedures are **US only**; elsewhere ChartFox/SkyVector links + visual/ILS approach options.
 - Published routes only exist between larger US airports; small fields fall back to airways.
 - Minimums shown are the standard CAT I baseline; real DA/MDA only on the plate.
 - Takeoff/landing: generic model, no obstacles or VMCG/VMCA/tyre limits; only A20N and B738 tuned closely.
-- Random flight offers only 4-letter ICAO-style idents and leaves out "Air Base" / "AFB" fields without a METAR station (they may not
+- Random flight offers only 3–4 character idents (hyphenated placeholder codes dropped) and leaves out "Air Base" / "AFB" fields without a METAR station (they may not
   exist in FS2024); a departure with a weather condition needs a METAR station, so small fields without one are never picked for it.
 - Forum announcement of the site: on hold (owner's call).
-- Ideas not done: METAR-based runway-in-use, alternate fuel, aircraft V-speeds per weight for GA.
+- Ideas not done: METAR-based runway-in-use, alternate fuel. GA speeds by weight were considered and dropped (small
+  effect, no source data — the figures would be invented).
 
 ## User preferences seen in this chat
 
